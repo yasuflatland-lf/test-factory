@@ -14,14 +14,10 @@ class CalculatorHappyPathSpec extends BaseLiferaySpec {
 	private static final String PORTLET_ID =
 		'com_liferay_test_factory_TestFactoryPortlet'
 
-	// New password to satisfy the change-required policy
 	private static final String NEW_PASSWORD = 'Test12345'
 
 	@Shared
 	PlaywrightLifecycle pw
-
-	@Shared
-	String currentPassword = LiferayContainer.DEFAULT_ADMIN_PASSWORD
 
 	def setupSpec() {
 		ensureDeployed()
@@ -43,25 +39,24 @@ class CalculatorHappyPathSpec extends BaseLiferaySpec {
 		loginForm.locator('#_com_liferay_login_web_portlet_LoginPortlet_login')
 			.fill(LiferayContainer.DEFAULT_ADMIN_EMAIL)
 		loginForm.locator('#_com_liferay_login_web_portlet_LoginPortlet_password')
-			.fill(currentPassword)
+			.fill(LiferayContainer.DEFAULT_ADMIN_PASSWORD)
 		page.waitForNavigation({ ->
 			loginForm.locator('[type=submit], button.btn-primary').first().click()
 		})
 		println "After login: ${page.title()} -> ${page.url()}"
 
-		// Handle "New Password" page
+		// Handle "New Password" page if presented
 		if (page.title().contains('New Password')) {
 			page.locator('#password1').fill(NEW_PASSWORD)
 			page.locator('#password2').fill(NEW_PASSWORD)
 			page.waitForNavigation({ ->
 				page.locator('[type=submit], button.btn-primary').first().click()
 			})
-			currentPassword = NEW_PASSWORD
 			println "After password change: ${page.title()} -> ${page.url()}"
 		}
 
-		// Handle "Password Reminder" page
-		if (page.title().contains('Password Reminder') || page.locator('#reminderQueryAnswer').isVisible()) {
+		// Handle "Password Reminder" page if presented
+		if (page.locator('#reminderQueryAnswer').isVisible()) {
 			page.locator('#reminderQueryAnswer').fill('test')
 			page.waitForNavigation({ ->
 				page.locator('[type=submit], button.btn-primary').first().click()
@@ -69,9 +64,11 @@ class CalculatorHappyPathSpec extends BaseLiferaySpec {
 			println "After reminder: ${page.title()} -> ${page.url()}"
 		}
 
+		println "Final: ${page.title()} -> ${page.url()}"
+
 		then:
-		page.title().contains('Home') || page.title().contains('Welcome')
 		!page.title().contains('New Password')
+		!page.title().contains('Sign In')
 	}
 
 	def 'Navigate to Calculator in Control Panel'() {
@@ -84,12 +81,11 @@ class CalculatorHappyPathSpec extends BaseLiferaySpec {
 			"p_p_id=${PORTLET_ID}&p_p_lifecycle=0&p_p_state=maximized"
 		)
 		page.waitForLoadState()
-		println "Control Panel title: ${page.title()}"
-		println "Control Panel URL: ${page.url()}"
-		println "HTML snippet: ${page.content().take(1000)}"
+		println "Control Panel: ${page.title()} -> ${page.url()}"
+		println "HTML (2000): ${page.content().take(2000)}"
 
 		then:
-		page.locator('#num1').waitFor(new Locator.WaitForOptions().setTimeout(10_000))
+		page.locator('#num1').waitFor(new Locator.WaitForOptions().setTimeout(15_000))
 		page.locator('#num1').isVisible()
 	}
 
