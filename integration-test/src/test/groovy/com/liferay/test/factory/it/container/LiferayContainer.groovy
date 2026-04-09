@@ -20,7 +20,7 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 	private static LiferayContainer INSTANCE
 
 	LiferayContainer() {
-		this('liferay/portal:7.4.3.120-ga120')
+		this('liferay/portal:7.4.3.132-ga132')
 	}
 
 	LiferayContainer(String imageName) {
