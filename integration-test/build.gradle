@@ -11,9 +11,9 @@ repositories {
 	mavenCentral()
 }
 
-def spockVersion = '2.3-groovy-4.0'
-def groovyVersion = '4.0.21'
-def testcontainersVersion = '1.19.7'
+def spockVersion = '2.4-groovy-5.0'
+def groovyVersion = '5.0.4'
+def testcontainersVersion = '2.0.4'
 def playwrightVersion = '1.42.0'
 
 dependencies {
@@ -23,7 +23,7 @@ dependencies {
 	testImplementation "org.spockframework:spock-core:${spockVersion}"
 
 	testImplementation "org.testcontainers:testcontainers:${testcontainersVersion}"
-	testImplementation "org.testcontainers:spock:${testcontainersVersion}"
+	testImplementation "org.testcontainers:testcontainers-spock:${testcontainersVersion}"
 
 	testImplementation "com.microsoft.playwright:playwright:${playwrightVersion}"
 
@@ -41,7 +41,7 @@ tasks.register('integrationTest', Test) {
 	testClassesDirs = sourceSets.test.output.classesDirs
 	classpath = sourceSets.test.runtimeClasspath
 
-	jvmArgs '-Xmx1g'
+	jvmArgs '-Xms4g', '-Xmx4g'
 
 	testLogging {
 		events 'passed', 'skipped', 'failed', 'standardOut', 'standardError'
