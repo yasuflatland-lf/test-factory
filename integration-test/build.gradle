@@ -11,10 +11,10 @@ repositories {
 	mavenCentral()
 }
 
-def spockVersion = '2.4-groovy-5.0'
-def groovyVersion = '5.0.4'
-def testcontainersVersion = '2.0.4'
-def playwrightVersion = '1.42.0'
+def spockVersion = project.property('test.spock.version')
+def groovyVersion = project.property('test.groovy.version')
+def testcontainersVersion = project.property('test.testcontainers.version')
+def playwrightVersion = project.property('test.playwright.version')
 
 dependencies {
 	testImplementation "org.apache.groovy:groovy:${groovyVersion}"
@@ -41,7 +41,9 @@ tasks.register('integrationTest', Test) {
 	testClassesDirs = sourceSets.test.output.classesDirs
 	classpath = sourceSets.test.runtimeClasspath
 
-	jvmArgs '-Xms4g', '-Xmx4g'
+	jvmArgs "-Xms${project.property('test.jvm.minHeap')}", "-Xmx${project.property('test.jvm.maxHeap')}"
+	systemProperty 'liferay.docker.image', project.property('liferay.docker.image')
+	environment 'PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD', '1'
 
 	testLogging {
 		events 'passed', 'skipped', 'failed', 'standardOut', 'standardError'
@@ -49,4 +51,11 @@ tasks.register('integrationTest', Test) {
 	}
 
 	dependsOn ':modules:test-factory-calculator:jar'
+	dependsOn 'installPlaywrightBrowsers'
+}
+
+tasks.register('installPlaywrightBrowsers', JavaExec) {
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'com.microsoft.playwright.CLI'
+	args = ['install', 'chromium']
 }

@@ -20,8 +20,15 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 	private static LiferayContainer INSTANCE
 
 	LiferayContainer() {
-		this('liferay/portal:7.4.3.132-ga132')
+		this(System.getProperty('liferay.docker.image', 'liferay/portal:7.4.3.132-ga132'))
 	}
+
+	private static final String PORTAL_EXT_PROPERTIES = [
+		'setup.wizard.enabled=false',
+		'terms.of.use.required=false',
+		'users.reminder.query.enabled=false',
+		'passwords.default.policy.change.required=false',
+	].join('\n') + '\n'
 
 	LiferayContainer(String imageName) {
 		super(DockerImageName.parse(imageName))
@@ -37,6 +44,10 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 			'LIFERAY_TERMS_OF_USE_REQUIRED'       : 'false',
 			'LIFERAY_USERS_REMINDER_QUERY_ENABLED': 'false',
 		])
+		withCopyToContainer(
+			Transferable.of(PORTAL_EXT_PROPERTIES.bytes),
+			'/opt/liferay/portal-ext.properties'
+		)
 		withReuse(true)
 	}
 
@@ -50,8 +61,11 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 
 	void deployJar(Path jarPath) {
 		byte[] jarBytes = Files.readAllBytes(jarPath)
-		String targetPath = DEPLOY_DIR + jarPath.fileName.toString()
-		copyFileToContainer(Transferable.of(jarBytes), targetPath)
+		String fileName = jarPath.fileName.toString()
+		String tmpPath = '/tmp/' + fileName
+		String targetPath = DEPLOY_DIR + fileName
+		copyFileToContainer(Transferable.of(jarBytes), tmpPath)
+		execInContainer('bash', '-c', "cp ${tmpPath} ${targetPath} && chown liferay:liferay ${targetPath} && rm ${tmpPath}")
 	}
 
 	int getHttpPort() {
