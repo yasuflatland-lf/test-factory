@@ -46,7 +46,7 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 		])
 		withCopyToContainer(
 			Transferable.of(PORTAL_EXT_PROPERTIES.bytes),
-			'/opt/liferay/portal-ext.properties'
+			'/opt/liferay/tomcat/webapps/ROOT/WEB-INF/classes/portal-ext.properties'
 		)
 		withReuse(true)
 	}
