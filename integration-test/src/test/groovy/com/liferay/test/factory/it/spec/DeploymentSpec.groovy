@@ -26,12 +26,13 @@ class DeploymentSpec extends BaseLiferaySpec {
 		String output = ''
 
 		new GogoShellClient(liferay.host, liferay.gogoPort).withCloseable { gogo ->
-			output = gogo.execute('lb | grep test.factory')
+			output = gogo.execute('lb')
 		}
+		def matchingLine = output.readLines().find { it.contains('Test Factory') }
 
 		then:
-		output.contains('Active') || output.contains('ACTIVE')
-		output.contains('com.liferay.test.factory')
+		matchingLine != null
+		matchingLine.contains('Active')
 	}
 
 	def 'JSONWS endpoint is registered after deployment'() {

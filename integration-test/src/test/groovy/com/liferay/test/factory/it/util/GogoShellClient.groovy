@@ -25,7 +25,7 @@ class GogoShellClient implements Closeable {
 
 	private String readUntilPrompt() {
 		StringBuilder sb = new StringBuilder()
-		long deadline = System.currentTimeMillis() + 10_000
+		long deadline = System.currentTimeMillis() + 30_000
 
 		while (System.currentTimeMillis() < deadline) {
 			if (inputStream.available() > 0) {
