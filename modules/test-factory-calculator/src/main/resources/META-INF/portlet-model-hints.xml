@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+
+<model-hints>
+	<model name="com.liferay.test.factory.model.CalcEntry">
+		<field name="calcEntryId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="userId" type="long" />
+		<field name="userName" type="String" />
+		<field name="createDate" type="Date" />
+		<field name="modifiedDate" type="Date" />
+		<field name="num1" type="double" />
+		<field name="num2" type="double" />
+		<field name="operator" type="String" />
+		<field name="result" type="double" />
+	</model>
+</model-hints>
