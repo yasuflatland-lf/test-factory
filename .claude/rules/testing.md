@@ -4,9 +4,9 @@
 
 | Dependency      | Version          |
 |-----------------|------------------|
-| Spock           | 2.3-groovy-4.0   |
-| Groovy          | 4.0.21           |
-| Testcontainers  | 1.19.7           |
+| Spock           | 2.4-groovy-5.0   |
+| Groovy          | 5.0.4            |
+| Testcontainers  | 2.0.4            |
 | Playwright      | 1.42.0           |
 
 ## Container Setup
