@@ -1,0 +1,13 @@
+.gradle/
+build/
+node_modules/
+bundles/
+dist/
+classes/
+*.iml
+.idea/
+.settings/
+.classpath
+.project
+bin/
+liferay-theme.json
