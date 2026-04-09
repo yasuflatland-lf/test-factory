@@ -12,12 +12,7 @@ class DeploymentSpec extends BaseLiferaySpec {
 		liferay.running
 
 		when:
-		def connection = new URL("${liferay.baseUrl}/c/portal/login")
-			.openConnection() as HttpURLConnection
-		connection.requestMethod = 'GET'
-		connection.connectTimeout = 10_000
-		connection.readTimeout = 10_000
-		def responseCode = connection.responseCode
+		def responseCode = httpGet("${liferay.baseUrl}/c/portal/login")
 
 		then:
 		responseCode == 200
@@ -28,9 +23,11 @@ class DeploymentSpec extends BaseLiferaySpec {
 		ensureDeployed()
 
 		and:
-		def gogo = new GogoShellClient(liferay.host, liferay.gogoPort)
-		def output = gogo.execute('lb | grep test.factory')
-		gogo.close()
+		String output = ''
+
+		new GogoShellClient(liferay.host, liferay.gogoPort).withCloseable { gogo ->
+			output = gogo.execute('lb | grep test.factory')
+		}
 
 		then:
 		output.contains('Active') || output.contains('ACTIVE')
@@ -42,15 +39,22 @@ class DeploymentSpec extends BaseLiferaySpec {
 		ensureDeployed()
 
 		when:
-		def url = "${liferay.baseUrl}/api/jsonws?contextName=TestFactory"
-		def connection = new URL(url).openConnection() as HttpURLConnection
-		connection.requestMethod = 'GET'
-		connection.connectTimeout = 10_000
-		connection.readTimeout = 10_000
-		def responseCode = connection.responseCode
+		def responseCode = httpGet(
+			"${liferay.baseUrl}/api/jsonws?contextName=TestFactory"
+		)
 
 		then:
 		responseCode == 200
+	}
+
+	private static int httpGet(String url) {
+		def connection = new URL(url).openConnection() as HttpURLConnection
+
+		connection.requestMethod = 'GET'
+		connection.connectTimeout = 10_000
+		connection.readTimeout = 10_000
+
+		return connection.responseCode
 	}
 
 }

@@ -25,9 +25,9 @@ class GogoShellClient implements Closeable {
 
 	private String readUntilPrompt() {
 		StringBuilder sb = new StringBuilder()
-		long timeout = System.currentTimeMillis() + 10_000
+		long deadline = System.currentTimeMillis() + 10_000
 
-		while (System.currentTimeMillis() < timeout) {
+		while (System.currentTimeMillis() < deadline) {
 			if (inputStream.available() > 0) {
 				int ch = inputStream.read()
 
@@ -37,7 +37,13 @@ class GogoShellClient implements Closeable {
 
 				sb.append((char) ch)
 
-				if (sb.toString().endsWith('g! ')) {
+				int len = sb.length()
+
+				if (len >= 3 &&
+					sb.charAt(len - 3) == (char) 'g' &&
+					sb.charAt(len - 2) == (char) '!' &&
+					sb.charAt(len - 1) == (char) ' ') {
+
 					break
 				}
 			}
@@ -51,11 +57,7 @@ class GogoShellClient implements Closeable {
 
 	@Override
 	void close() {
-		try {
-			telnet.disconnect()
-		}
-		catch (ignored) {
-		}
+		try { telnet.disconnect() } catch (ignored) { }
 	}
 
 }

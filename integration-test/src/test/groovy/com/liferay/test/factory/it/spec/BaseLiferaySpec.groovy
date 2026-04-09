@@ -7,7 +7,6 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import java.nio.file.Path
-import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
 
 abstract class BaseLiferaySpec extends Specification {
@@ -19,7 +18,7 @@ abstract class BaseLiferaySpec extends Specification {
 	static boolean jarDeployed = false
 
 	static Path getCalculatorJarPath() {
-		Path workspaceRoot = Paths.get(System.getProperty('user.dir')).parent
+		Path workspaceRoot = Path.of(System.getProperty('user.dir')).parent
 		Path jarDir = workspaceRoot.resolve(
 			'modules/test-factory-calculator/build/libs'
 		)
@@ -45,22 +44,18 @@ abstract class BaseLiferaySpec extends Specification {
 		liferay.deployJar(getCalculatorJarPath())
 
 		boolean active = false
-		int maxAttempts = 60
 
-		for (int i = 0; i < maxAttempts; i++) {
+		for (int i = 0; i < 60; i++) {
 			try {
-				GogoShellClient gogo = new GogoShellClient(
-					liferay.host, liferay.gogoPort
-				)
-				String output = gogo.execute('lb | grep test.factory')
+				new GogoShellClient(liferay.host, liferay.gogoPort).withCloseable { gogo ->
+					String output = gogo.execute('lb | grep test.factory')
 
-				gogo.close()
+					if (output.contains('Active') || output.contains('ACTIVE')) {
+						active = true
+					}
+				}
 
-				if (output.contains('Active') ||
-					output.contains('ACTIVE')) {
-
-					active = true
-
+				if (active) {
 					break
 				}
 			}

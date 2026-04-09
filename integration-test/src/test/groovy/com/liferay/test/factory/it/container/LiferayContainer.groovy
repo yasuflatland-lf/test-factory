@@ -32,9 +32,11 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 				.withRegEx('.*org\\.apache\\.catalina\\.startup\\.Catalina\\.start Server startup in.*')
 				.withStartupTimeout(Duration.ofMinutes(8))
 		)
-		withEnv('LIFERAY_SETUP_WIZARD_ENABLED', 'false')
-		withEnv('LIFERAY_TERMS_OF_USE_REQUIRED', 'false')
-		withEnv('LIFERAY_USERS_REMINDER_QUERY_ENABLED', 'false')
+		withEnv([
+			'LIFERAY_SETUP_WIZARD_ENABLED'       : 'false',
+			'LIFERAY_TERMS_OF_USE_REQUIRED'       : 'false',
+			'LIFERAY_USERS_REMINDER_QUERY_ENABLED': 'false',
+		])
 		withReuse(true)
 	}
 

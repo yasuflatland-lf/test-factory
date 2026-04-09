@@ -21,9 +21,7 @@ class PlaywrightLifecycle implements Closeable {
 	}
 
 	Page newPage() {
-		if (context != null) {
-			context.close()
-		}
+		context?.close()
 
 		context = browser.newContext(
 			new Browser.NewContextOptions().setViewportSize(1280, 720)
@@ -35,10 +33,7 @@ class PlaywrightLifecycle implements Closeable {
 
 	@Override
 	void close() {
-		if (context != null) {
-			context.close()
-		}
-
+		context?.close()
 		browser.close()
 		playwright.close()
 	}

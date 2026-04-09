@@ -11,6 +11,9 @@ import spock.lang.Stepwise
 @Stepwise
 class CalculatorHappyPathSpec extends BaseLiferaySpec {
 
+	private static final String PORTLET_ID =
+		'com_liferay_test_factory_TestFactoryPortlet'
+
 	@Shared
 	PlaywrightLifecycle pw
 
@@ -47,10 +50,9 @@ class CalculatorHappyPathSpec extends BaseLiferaySpec {
 		Page page = pw.page
 
 		when:
-		def portletId = 'com_liferay_test_factory_TestFactoryPortlet'
 		page.navigate(
 			"${liferay.baseUrl}/group/control_panel/manage?" +
-			"p_p_id=${portletId}&p_p_lifecycle=0"
+			"p_p_id=${PORTLET_ID}&p_p_lifecycle=0"
 		)
 		page.waitForLoadState()
 
@@ -61,39 +63,30 @@ class CalculatorHappyPathSpec extends BaseLiferaySpec {
 	}
 
 	def 'Happy path: 10 + 5 = 15'() {
-		given:
-		Page page = pw.page
-
-		when:
-		page.locator('#num1').fill('10')
-		page.locator('#operator').selectOption('+')
-		page.locator('#num2').fill('5')
-		page.locator('button.btn-primary').click()
-
-		then:
-		def resultLocator = page.locator('.alert-success')
-		resultLocator.waitFor(
-			new Locator.WaitForOptions().setTimeout(15_000)
-		)
-		resultLocator.textContent().contains('15')
+		expect:
+		calculateAndVerify(pw.page, '10', '+', '5', '15')
 	}
 
 	def 'Happy path: 20 / 4 = 5'() {
-		given:
-		Page page = pw.page
+		expect:
+		calculateAndVerify(pw.page, '20', '/', '4', '5')
+	}
 
-		when:
-		page.locator('#num1').fill('20')
-		page.locator('#operator').selectOption('/')
-		page.locator('#num2').fill('4')
+	private static boolean calculateAndVerify(
+		Page page, String a, String op, String b, String expected) {
+
+		page.locator('#num1').fill(a)
+		page.locator('#operator').selectOption(op)
+		page.locator('#num2').fill(b)
 		page.locator('button.btn-primary').click()
 
-		then:
 		def resultLocator = page.locator('.alert-success')
+
 		resultLocator.waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
-		resultLocator.textContent().contains('5')
+
+		return resultLocator.textContent().contains(expected)
 	}
 
 }
