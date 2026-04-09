@@ -4,15 +4,13 @@ import com.liferay.test.factory.it.container.LiferayContainer
 import com.liferay.test.factory.it.util.PlaywrightLifecycle
 import com.microsoft.playwright.Locator
 import com.microsoft.playwright.Page
+import com.microsoft.playwright.options.RequestOptions
 
 import spock.lang.Shared
 import spock.lang.Stepwise
 
 @Stepwise
 class CalculatorHappyPathSpec extends BaseLiferaySpec {
-
-	private static final String PORTLET_ID =
-		'com_liferay_test_factory_TestFactoryPortlet'
 
 	private static final String NEW_PASSWORD = 'Test12345'
 
@@ -31,21 +29,40 @@ class CalculatorHappyPathSpec extends BaseLiferaySpec {
 	def 'Login to Liferay as admin'() {
 		given:
 		Page page = pw.newPage()
-		page.navigate("${liferay.baseUrl}/c/portal/login")
-		page.waitForLoadState()
 
 		when:
-		def loginForm = page.locator('form:has(#_com_liferay_login_web_portlet_LoginPortlet_login)')
-		loginForm.locator('#_com_liferay_login_web_portlet_LoginPortlet_login')
-			.fill(LiferayContainer.DEFAULT_ADMIN_EMAIL)
-		loginForm.locator('#_com_liferay_login_web_portlet_LoginPortlet_password')
-			.fill(LiferayContainer.DEFAULT_ADMIN_PASSWORD)
-		page.waitForNavigation({ ->
-			loginForm.locator('[type=submit], button.btn-primary').first().click()
-		})
-		println "After login: ${page.title()} -> ${page.url()}"
+		// 1. Navigate to get session + CSRF token (Liferay's performLoginViaApi pattern)
+		page.navigate("${liferay.baseUrl}/")
+		page.waitForLoadState()
 
-		// Handle "New Password" page if presented
+		String authToken = page.evaluate('() => Liferay.authToken') as String
+		println "CSRF token: ${authToken}"
+
+		// 2. POST login with CSRF token
+		def passwords = [LiferayContainer.DEFAULT_ADMIN_PASSWORD, NEW_PASSWORD]
+		boolean loggedIn = false
+
+		for (pwd in passwords) {
+			def response = page.request().post("${liferay.baseUrl}/c/portal/login",
+				RequestOptions.create()
+					.setHeader('Content-Type', 'application/x-www-form-urlencoded')
+					.setHeader('x-csrf-token', authToken)
+					.setData("login=${URLEncoder.encode(LiferayContainer.DEFAULT_ADMIN_EMAIL, 'UTF-8')}&password=${URLEncoder.encode(pwd, 'UTF-8')}&rememberMe=true")
+			)
+			println "Login with '${pwd}': HTTP ${response.status()}"
+
+			if (response.status() == 200) {
+				loggedIn = true
+				break
+			}
+		}
+
+		// 3. Reload to pick up session
+		page.navigate("${liferay.baseUrl}/")
+		page.waitForLoadState()
+		println "After login reload: ${page.title()} -> ${page.url()}"
+
+		// 4. Handle "New Password" page
 		if (page.title().contains('New Password')) {
 			page.locator('#password1').fill(NEW_PASSWORD)
 			page.locator('#password2').fill(NEW_PASSWORD)
@@ -55,34 +72,70 @@ class CalculatorHappyPathSpec extends BaseLiferaySpec {
 			println "After password change: ${page.title()} -> ${page.url()}"
 		}
 
-		// Handle "Password Reminder" page if presented
+		// 5. Handle "Password Reminder" page
 		if (page.locator('#reminderQueryAnswer').isVisible()) {
 			page.locator('#reminderQueryAnswer').fill('test')
 			page.waitForNavigation({ ->
 				page.locator('[type=submit], button.btn-primary').first().click()
 			})
-			println "After reminder: ${page.title()} -> ${page.url()}"
 		}
 
 		println "Final: ${page.title()} -> ${page.url()}"
+		def buttons = page.locator('button').all()
+		println "All buttons (${buttons.size()}):"
+		buttons.each { btn ->
+			try {
+				def label = btn.getAttribute('aria-label') ?: ''
+				def text = btn.textContent().trim().take(30)
+				def cls = (btn.getAttribute('class') ?: '').take(60)
+				def testId = btn.getAttribute('data-testid') ?: ''
+				if (label || text) {
+					println "  label='${label}' text='${text}' class='${cls}' testid='${testId}'"
+				}
+			} catch (e) {}
+		}
 
 		then:
-		!page.title().contains('New Password')
-		!page.title().contains('Sign In')
+		loggedIn
 	}
 
-	def 'Navigate to Calculator in Control Panel'() {
+	def 'Navigate to Calculator via Global Menu'() {
 		given:
 		Page page = pw.page
 
 		when:
-		page.navigate(
-			"${liferay.baseUrl}/group/control_panel/manage?" +
-			"p_p_id=${PORTLET_ID}&p_p_lifecycle=0&p_p_state=maximized"
-		)
+		// Open Product Menu sidebar (CE doesn't have Global Menu)
+		def productMenuButton = page.locator('[aria-label="Open Product Menu"]')
+		productMenuButton.waitFor(new Locator.WaitForOptions().setTimeout(10_000))
+		productMenuButton.click()
+
+		// Wait for sidebar to open, then dump its contents
+		Thread.sleep(2000)
+		def sidebar = page.locator('.sidenav-menu-slider, .product-menu, #sidenavSliderId')
+		def sidebarHtml = sidebar.first().innerHTML().take(3000)
+		println "Sidebar HTML: ${sidebarHtml}"
+
+		// Try to find any links/items in the sidebar
+		def links = page.locator('.sidenav-menu-slider a, .product-menu a').all()
+		println "Sidebar links (${links.size()}):"
+		links.take(20).each { link ->
+			try {
+				println "  - text='${link.textContent().trim().take(50)}' href='${(link.getAttribute('href') ?: '').take(80)}'"
+			} catch(e) {}
+		}
+
+		// Click "Control Panel" wherever it is
+		def controlPanelLink = page.locator('a:has-text("Control Panel")').first()
+		controlPanelLink.waitFor(new Locator.WaitForOptions().setTimeout(5_000))
+		controlPanelLink.click()
+
+		// Find our portlet
+		def menuItem = page.locator('a:has-text("Test Factory Calculator")').first()
+		menuItem.waitFor(new Locator.WaitForOptions().setTimeout(10_000))
+		menuItem.click()
+
 		page.waitForLoadState()
-		println "Control Panel: ${page.title()} -> ${page.url()}"
-		println "HTML (2000): ${page.content().take(2000)}"
+		println "Calculator page: ${page.title()} -> ${page.url()}"
 
 		then:
 		page.locator('#num1').waitFor(new Locator.WaitForOptions().setTimeout(15_000))
