@@ -1,0 +1,8 @@
+buildService {
+	apiDir = "src/main/java"
+}
+
+dependencies {
+	compileOnly group: "com.liferay.portal", name: "release.dxp.api", version: "default"
+	compileOnly group: "com.liferay.portal", name: "com.liferay.portal.impl", version: "default"
+}

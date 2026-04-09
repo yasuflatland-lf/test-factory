@@ -1,0 +1,12 @@
+Bundle-Name: Test Factory Calculator
+Bundle-SymbolicName: com.liferay.test.factory
+Bundle-Version: 1.0.0
+Export-Package:\
+	com.liferay.test.factory.exception,\
+	com.liferay.test.factory.model,\
+	com.liferay.test.factory.service,\
+	com.liferay.test.factory.service.persistence
+Liferay-Require-SchemaVersion: 1.0.0
+Liferay-Service: true
+Web-ContextPath: /test-factory
+-dsannotations-options: inherit
