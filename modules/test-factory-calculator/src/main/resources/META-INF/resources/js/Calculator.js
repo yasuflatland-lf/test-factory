@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import {useState} from 'react';
 
 function Calculator() {
 	const [num1, setNum1] = useState('');
@@ -35,11 +35,11 @@ function Calculator() {
 				else {
 					setResult(data.result);
 				}
-
-				setLoading(false);
 			})
 			.catch((err) => {
 				setError(err.message);
+			})
+			.finally(() => {
 				setLoading(false);
 			});
 	};

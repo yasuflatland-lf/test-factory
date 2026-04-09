@@ -30,11 +30,13 @@ public class CalcEntryLocalServiceImpl extends CalcEntryLocalServiceBaseImpl {
 
 		User user = userLocalService.getUser(userId);
 
+		Date now = new Date();
+
 		calcEntry.setCompanyId(serviceContext.getCompanyId());
 		calcEntry.setUserId(userId);
 		calcEntry.setUserName(user.getFullName());
-		calcEntry.setCreateDate(new Date());
-		calcEntry.setModifiedDate(new Date());
+		calcEntry.setCreateDate(now);
+		calcEntry.setModifiedDate(now);
 		calcEntry.setNum1(num1);
 		calcEntry.setNum2(num2);
 		calcEntry.setOperator(operator);
