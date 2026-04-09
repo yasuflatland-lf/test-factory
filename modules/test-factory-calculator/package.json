@@ -4,7 +4,7 @@
 		"react-dom": "18.2.0"
 	},
 	"devDependencies": {
-		"@liferay/npm-scripts": "47.0.0"
+		"@liferay/npm-scripts": "51.2.0"
 	},
 	"main": "js/index.js",
 	"name": "test-factory-calculator",

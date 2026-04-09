@@ -1,6 +1,7 @@
 .gradle/
 build/
 node_modules/
+node_modules_cache/
 bundles/
 dist/
 classes/
