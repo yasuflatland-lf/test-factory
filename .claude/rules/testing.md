@@ -11,7 +11,7 @@
 
 ## Container Setup
 
-- Docker image: `liferay/portal:7.4.3.120-ga120` (CE GA120).
+- Docker image: `liferay/portal:7.4.3.132-ga132` (CE GA132).
 - Singleton pattern: `LiferayContainer.getInstance()` starts the container once and reuses it across all specs. Never create a second container instance.
 - Startup timeout: **8 minutes** (log-based wait strategy matching Catalina startup message).
 - Exposed ports: **8080** (HTTP) and **11311** (GoGo Shell). Access via `liferay.httpPort` / `liferay.gogoPort` (mapped ports).

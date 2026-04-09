@@ -5,7 +5,7 @@
 ```
 test-factory/
   settings.gradle            # Liferay Workspace plugin + includes integration-test
-  gradle.properties          # liferay.workspace.product=dxp-2024.q1.1
+  gradle.properties          # liferay.workspace.product=portal-7.4-ga132
   build.gradle
   modules/
     test-factory-calculator/ # Single OSGi bundle (api + service + web)
@@ -69,7 +69,7 @@ The `integration-test` subproject is included via `settings.gradle` at the repos
 
 Key components:
 
-- **LiferayContainer** (`LiferayContainer.groovy`) -- A Testcontainers `GenericContainer` subclass wrapping `liferay/portal:7.4.3.120-ga120`. Singleton pattern (`getInstance()`) ensures one container per test run. Exposes HTTP (8080) and GogoShell (11311) ports. Waits for the Catalina startup log message (up to 8 minutes). Pre-configures setup wizard, terms-of-use, and reminder query to be disabled.
+- **LiferayContainer** (`LiferayContainer.groovy`) -- A Testcontainers `GenericContainer` subclass wrapping `liferay/portal:7.4.3.132-ga132`. Singleton pattern (`getInstance()`) ensures one container per test run. Exposes HTTP (8080) and GogoShell (11311) ports. Waits for the Catalina startup log message (up to 8 minutes). Pre-configures setup wizard, terms-of-use, and reminder query to be disabled.
 - **JAR deployment** -- `deployJar(Path)` copies the built module JAR into `/opt/liferay/deploy/` inside the container.
 - **GogoShell verification** -- Tests connect to the mapped GogoShell port (11311) to verify bundle state.
 - **Playwright UI tests** -- Browser-based tests hit the container's mapped HTTP port to exercise the calculator through the real UI.
@@ -80,6 +80,6 @@ Key components:
 |----------|-----------|
 | **Single JAR** (`apiDir = src/main/java` in Service Builder) | Avoids splitting into three modules (`-api`, `-service`, `-web`) for a small, self-contained calculator. Exported packages in `bnd.bnd` still allow external consumption of the API. |
 | **integration-test at repo root** | The Liferay Workspace plugin auto-applies to everything under `modules/`. Placing the test project at the root and including it explicitly in `settings.gradle` keeps it as a plain Gradle project with no Liferay plugin interference. |
-| **`liferay/portal` CE image for tests** | Uses the free Community Edition Docker image (`liferay/portal:7.4.3.120-ga120`) so integration tests run without a DXP license. The workspace targets `dxp-2024.q1.1` for development, but CE is sufficient for functional verification. |
+| **`liferay/portal` CE image for tests** | Uses the free Community Edition Docker image (`liferay/portal:7.4.3.132-ga132`) so integration tests run without a DXP license. The workspace targets `portal-7.4-ga132` (Portal CE) for development. |
 | **Container reuse (`withReuse(true)`)** | Liferay startup is slow (~8 min). Reusing the container across test runs drastically shortens feedback loops during development. |
 | **Singleton container** | `getInstance()` with `synchronized` guarantees all test classes share a single Liferay instance, preventing resource waste and port conflicts. |
