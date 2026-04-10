@@ -23,7 +23,7 @@ liferay-dummy-factory/
 | Layer | Technology |
 |-------|------------|
 | Portal | Liferay Portal 7.4.3.132-ga132 |
-| Backend | MVCPortlet |
+| Backend | MVCPortlet + MVCResourceCommand (layered) |
 | Frontend | React + Clay CSS |
 | Build | Gradle 8.5 + Liferay Workspace Plugin 10.1.9 |
 | Testing | Spock 2.4 / Groovy 5.0 / Testcontainers 2.0.4 / Playwright 1.59.0 |
