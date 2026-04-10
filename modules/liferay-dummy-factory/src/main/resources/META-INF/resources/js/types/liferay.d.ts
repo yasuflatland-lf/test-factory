@@ -1,6 +1,11 @@
 declare const Liferay: {
-	authToken: string;
 	Language: {
 		get(key: string): string;
 	};
+	ThemeDisplay: {
+		getCompanyId(): string;
+		getPathThemeImages(): string;
+		getScopeGroupId(): string;
+	};
+	authToken: string;
 };
