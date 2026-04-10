@@ -27,7 +27,7 @@ liferay-dummy-factory/
 | Backend | Service Builder (CalcEntry entity) |
 | Frontend | React + Clay CSS |
 | Build | Gradle 8.5 + Liferay Workspace Plugin 10.1.9 |
-| Testing | Spock 2.4 / Groovy 5.0 / Testcontainers 2.0.4 / Playwright 1.42.0 |
+| Testing | Spock 2.4 / Groovy 5.0 / Testcontainers 2.0.4 / Playwright 1.59.0 |
 | Java | JDK 21 |
 
 ## Quick Start (Docker)

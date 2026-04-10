@@ -7,7 +7,7 @@
 | Spock           | 2.4-groovy-5.0   |
 | Groovy          | 5.0.4            |
 | Testcontainers  | 2.0.4            |
-| Playwright      | 1.42.0           |
+| Playwright      | 1.59.0           |
 
 ## Container Setup
 

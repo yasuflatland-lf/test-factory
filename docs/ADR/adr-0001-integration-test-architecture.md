@@ -27,7 +27,7 @@ The liferay-dummy-factory project needs to build E2E integration tests using Tes
 |-----------|--------|-----------|
 | Test framework | Spock 2.4 + Groovy 5.0.4 | Groovy's concise syntax, test ordering via `@Stepwise`, Power Assert |
 | Container management | Testcontainers 2.0.4 | Docker Engine 29.x support (bundles docker-java 3.7.1). Version 1.21.x ships a shaded docker-java supporting up to API v1.44, which is incompatible with Docker 29.x's minimum API v1.40 |
-| Browser tests | Playwright Java 1.42.0 (Chromium only) | Same technology stack as the official Liferay tests. Installing only Chromium reduces download time |
+| Browser tests | Playwright Java 1.59.0 (Chromium only) | Same technology stack as the official Liferay tests. Installing only Chromium reduces download time |
 | GoGo Shell communication | Apache Commons Net (Telnet) | Used to connect to the Liferay OSGi console |
 
 ### 2. Login Method: API POST (with CSRF Token)
@@ -105,7 +105,7 @@ withEnv([                          // Environment variables
    - Change the portlet's `display-category` to make it deployable on widget pages and switch to page placement testing
    - Identify the correct access path to the Control Panel on CE (requires manual browser verification)
 
-2. **Playwright version**: Currently using 1.42.0. Consider updating as needed while maintaining compatibility with the official Liferay tests.
+2. **Playwright version**: Currently using 1.59.0. Consider updating as needed while maintaining compatibility with the official Liferay tests.
 
 ## References
 

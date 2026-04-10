@@ -36,7 +36,7 @@ jobs:
         run: docker pull liferay/portal:7.4.3.132-ga132 &
 
       - name: Install Playwright browsers
-        run: npx playwright@1.42.0 install --with-deps chromium
+        run: npx playwright@1.59.0 install --with-deps chromium
 
       - name: Wait for Docker image pull
         run: wait
