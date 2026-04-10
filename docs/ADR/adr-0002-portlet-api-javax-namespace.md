@@ -1,4 +1,4 @@
-# ADR-0002: Portlet API は javax.portlet (3.0) を使用する
+# ADR-0002: Use javax.portlet (3.0) for the Portlet API
 
 ## Status
 
@@ -10,40 +10,40 @@ Accepted
 
 ## Context
 
-Calculator ポートレットを Docker イメージ `liferay/portal:7.4.3.132-ga132` にデプロイしたところ、バンドルは Active だが PanelApp の `@Reference(com.liferay.portal.kernel.model.Portlet)` が UNSATISFIED のままで、Control Panel にポートレットが表示されなかった。
+After deploying the Calculator portlet to the Docker image `liferay/portal:7.4.3.132-ga132`, the bundle was Active but the PanelApp's `@Reference(com.liferay.portal.kernel.model.Portlet)` remained UNSATISFIED, and the portlet did not appear in the Control Panel.
 
-### 調査の経緯
+### Investigation Process
 
-1. GoGo Shell で確認すると、ポートレットの SCR コンポーネントは SATISFIED で `jakarta.portlet.Portlet` としてサービス登録されていた
-2. しかし PanelApp が依存する `com.liferay.portal.kernel.model.Portlet` サービスが作成されなかった
-3. Liferay ソースの `PortletTracker` を追跡し、`_addingPortlet()` → `setReady(true)` → `model.Portlet` OSGi サービス登録の流れを特定
-4. PortletTracker のログ（`"Adding"`, `"Added"`, `"failed to initialize"`, `"already in use"`）が一切出力されていなかった → `addingService()` 自体が呼ばれていない
-5. **決定的発見**: Docker コンテナ内の PortletTracker（バンドル 27、`com.liferay.portal.osgi.web.portlet.tracker:6.0.39`）の `Import-Package` を確認したところ、`javax.portlet` をインポートしていた（`jakarta.portlet` ではない）
+1. Checking via GoGo Shell revealed that the portlet's SCR component was SATISFIED and registered as a service under `jakarta.portlet.Portlet`
+2. However, the `com.liferay.portal.kernel.model.Portlet` service that the PanelApp depends on was never created
+3. Traced the `PortletTracker` in the Liferay source and identified the flow: `_addingPortlet()` -> `setReady(true)` -> `model.Portlet` OSGi service registration
+4. None of the PortletTracker's log messages (`"Adding"`, `"Added"`, `"failed to initialize"`, `"already in use"`) were output -> `addingService()` itself was never called
+5. **Critical discovery**: Inspecting the `Import-Package` of the PortletTracker inside the Docker container (bundle 27, `com.liferay.portal.osgi.web.portlet.tracker:6.0.39`) revealed that it imports `javax.portlet` (not `jakarta.portlet`)
 
-### 根本原因
+### Root Cause
 
-| レイヤー | 使用していた名前空間 | Portlet API バージョン |
-|---------|-------------------|---------------------|
-| ビルド依存関係 (`release.dxp.api:2026.q1.2`) | `jakarta.portlet` | 4.0 |
-| Docker イメージ (`liferay/portal:7.4.3.132-ga132`) | `javax.portlet` | 3.0 |
+| Layer | Namespace in use | Portlet API version |
+|-------|-----------------|---------------------|
+| Build dependency (`release.dxp.api:2026.q1.2`) | `jakarta.portlet` | 4.0 |
+| Docker image (`liferay/portal:7.4.3.132-ga132`) | `javax.portlet` | 3.0 |
 
-`release.dxp.api:default` は DXP 2024+ 向けの API（`2026.q1.2`）に解決されており、CE 7.4 GA132 のランタイムと互換性がなかった。PortletTracker の `ServiceTracker` は `javax.portlet.Portlet` を追跡するため、`jakarta.portlet.Portlet` として登録されたポートレットは検出できなかった。
+`release.dxp.api:default` resolved to the DXP 2024+ API (`2026.q1.2`), which was incompatible with the CE 7.4 GA132 runtime. Since the PortletTracker's `ServiceTracker` tracks `javax.portlet.Portlet`, portlets registered as `jakarta.portlet.Portlet` could not be detected.
 
 ## Decision
 
-### 1. ビルド依存関係を CE 版に変更
+### 1. Switch build dependency to the CE edition
 
 ```groovy
-// Before (DXP 2024+ API — jakarta 名前空間)
+// Before (DXP 2024+ API — jakarta namespace)
 compileOnly group: "com.liferay.portal", name: "release.dxp.api", version: "default"
-// → 2026.q1.2 に解決される
+// -> Resolves to 2026.q1.2
 
-// After (CE 7.4 GA132 API — javax 名前空間)
+// After (CE 7.4 GA132 API — javax namespace)
 compileOnly group: "com.liferay.portal", name: "release.portal.api", version: "default"
-// → 7.4.3.132 に解決される
+// -> Resolves to 7.4.3.132
 ```
 
-### 2. ポートレットコードで `javax.portlet` を使用
+### 2. Use `javax.portlet` in the portlet code
 
 ```java
 // Before
@@ -55,7 +55,7 @@ import javax.portlet.Portlet;
 // @Component property: "javax.portlet.name=...", "javax.portlet.version=3.0"
 ```
 
-### 3. PanelApp の @Reference ターゲットも統一
+### 3. Align the PanelApp @Reference target accordingly
 
 ```java
 // Before
@@ -69,26 +69,26 @@ import javax.portlet.Portlet;
 
 ### Positive
 
-- ビルド API とランタイム（Docker イメージ）のバージョンが一致し、OSGi サービス追跡が正常に動作する
-- PortletTracker が `javax.portlet.Portlet` サービスを検出し、`com.liferay.portal.kernel.model.Portlet` を登録するため、PanelApp の `@Reference` が解決される
+- The build API and the runtime (Docker image) versions are aligned, so OSGi service tracking works correctly
+- The PortletTracker detects the `javax.portlet.Portlet` service and registers `com.liferay.portal.kernel.model.Portlet`, which resolves the PanelApp's `@Reference`
 
 ### Negative
 
-- `.claude/rules/code-conventions.md` の「`jakarta.portlet` を使用する」ルールは CE 7.4 GA132 には適用されない。DXP 2024+ / CE GA120+ でこのルールが有効になるのは、対応する `release.portal.api` が jakarta 名前空間を提供するバージョン以降のみ
+- The "use `jakarta.portlet`" rule in `.claude/rules/code-conventions.md` does not apply to CE 7.4 GA132. This rule only becomes valid for DXP 2024+ / CE GA120+ once the corresponding `release.portal.api` provides the jakarta namespace
 
-### 教訓: デバッグ手法
+### Lessons Learned: Debugging Methodology
 
-PortletTracker が無反応な場合のデバッグ手順:
+Debugging steps when the PortletTracker is unresponsive:
 
-1. `scr:info <PanelApp FQCN>` — コンポーネント状態と UNSATISFIED REFERENCE の確認
-2. `scr:info <Portlet FQCN>` — ポートレットコンポーネントの状態確認
-3. `services jakarta.portlet.Portlet` / `services javax.portlet.Portlet` — サービス登録の名前空間確認
-4. `headers <PortletTracker bundle ID>` — PortletTracker の `Import-Package` で `javax.portlet` か `jakarta.portlet` かを確認
-5. `docker logs <container> 2>&1 | grep "failed to initialize"` — PortletTracker の初期化エラー確認
+1. `scr:info <PanelApp FQCN>` — Check component state and UNSATISFIED REFERENCE entries
+2. `scr:info <Portlet FQCN>` — Check the portlet component state
+3. `services jakarta.portlet.Portlet` / `services javax.portlet.Portlet` — Verify the namespace of the service registration
+4. `headers <PortletTracker bundle ID>` — Check whether PortletTracker's `Import-Package` uses `javax.portlet` or `jakarta.portlet`
+5. `docker logs <container> 2>&1 | grep "failed to initialize"` — Check for PortletTracker initialization errors
 
 ## References
 
-- Liferay PortletTracker ソース: `modules/apps/static/portal-osgi-web/portal-osgi-web-portlet-tracker/`
+- Liferay PortletTracker source: `modules/apps/static/portal-osgi-web/portal-osgi-web-portlet-tracker/`
   - `PortletTracker.java` — `addingService()` (L119-213), `_addingPortlet()` (L363-473)
-- `PortletImpl.java` — `setReady(true)` が `com.liferay.portal.kernel.model.Portlet` を OSGi サービスとして登録 (L3725-3758)
+- `PortletImpl.java` — `setReady(true)` registers `com.liferay.portal.kernel.model.Portlet` as an OSGi service (L3725-3758)
 - ADR-0001: Integration Test Architecture

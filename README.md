@@ -32,19 +32,19 @@ test-factory/
 
 ## Quick Start (Docker)
 
-Docker で Liferay を起動し、Calculator ポートレットをデプロイする手順です。
+Steps to start Liferay with Docker and deploy the Calculator portlet.
 
-### 1. Liferay コンテナを起動
+### 1. Start the Liferay Container
 
 ```bash
-# フォアグラウンド起動（ログを直接確認できる、Ctrl+C で停止）
+# Foreground mode (view logs directly, Ctrl+C to stop)
 docker run -it -m 8g -p 8080:8080 -p 11311:11311 \
   -e LIFERAY_SETUP_PERIOD_WIZARD_PERIOD_ENABLED=false \
   -e LIFERAY_TERMS_PERIOD_OF_PERIOD_USE_PERIOD_REQUIRED=false \
   -e LIFERAY_USERS_PERIOD_REMINDER_PERIOD_QUERIES_PERIOD_ENABLED=false \
   liferay/portal:7.4.3.132-ga132
 
-# バックグラウンド起動（コンテナ名を指定）
+# Background mode (with a named container)
 docker run -d --name liferay -m 8g -p 8080:8080 -p 11311:11311 \
   -e LIFERAY_SETUP_PERIOD_WIZARD_PERIOD_ENABLED=false \
   -e LIFERAY_TERMS_PERIOD_OF_PERIOD_USE_PERIOD_REQUIRED=false \
@@ -52,44 +52,44 @@ docker run -d --name liferay -m 8g -p 8080:8080 -p 11311:11311 \
   liferay/portal:7.4.3.132-ga132
 ```
 
-| オプション | 説明 |
+| Option | Description |
 |-----------|------|
-| `-m 8g` | メモリ上限 8GB |
-| `-p 8080:8080` | HTTP ポート |
-| `-p 11311:11311` | GoGo Shell ポート（バンドル状態確認用） |
-| 環境変数 | セットアップウィザード・利用規約・リマインダーを無効化 |
+| `-m 8g` | Memory limit 8GB |
+| `-p 8080:8080` | HTTP port |
+| `-p 11311:11311` | GoGo Shell port (for checking bundle status) |
+| Environment variables | Disable setup wizard, terms of use, and reminder queries |
 
-起動完了まで約 5-8 分かかります。バックグラウンド起動の場合は以下で確認：
+Startup takes approximately 5-8 minutes. If running in background mode, check with:
 
 ```bash
-docker logs -f liferay   # "Server startup" メッセージが出れば完了、Ctrl+C で抜ける
+docker logs -f liferay   # When the "Server startup" message appears, startup is complete. Ctrl+C to exit.
 ```
 
-既存のコンテナを再起動する場合：
+To restart an existing container:
 
 ```bash
 docker start liferay && docker logs -f liferay
 ```
 
-### 2. ポートレットのビルドとデプロイ
+### 2. Build and Deploy the Portlet
 
 ```bash
-# モジュール JAR をビルド
+# Build the module JAR
 ./gradlew :modules:test-factory-calculator:jar
 
-# JAR をコンテナにデプロイ
+# Deploy the JAR to the container
 docker cp modules/test-factory-calculator/build/libs/com.liferay.test.factory-1.0.0.jar liferay:/opt/liferay/deploy/
 
-# デプロイ確認（STARTED が表示されれば OK）
+# Verify deployment (if STARTED appears, deployment is successful)
 docker logs -f liferay 2>&1 | grep -i "test.factory"
 ```
 
-### 3. 動作確認
+### 3. Verify Operation
 
-http://localhost:8080 にアクセスし、admin (`test@liferay.com` / `test`) でログイン。
-Control Panel > Configuration に **Test Factory Calculator** が表示されます。
+Navigate to http://localhost:8080 and log in as admin (`test@liferay.com` / `test`).
+**Test Factory Calculator** will appear under Control Panel > Configuration.
 
-GoGo Shell でバンドル状態を確認：
+Check bundle status via GoGo Shell:
 
 ```bash
 docker exec liferay bash -c "(echo 'lb test.factory'; sleep 2) | telnet localhost 11311"

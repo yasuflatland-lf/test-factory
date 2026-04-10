@@ -14,7 +14,7 @@ Liferay Portal CE Workspace: calculator portlet (Service Builder + React) with T
 
 ## Rules
 
-`.claude/rules/` に詳細ガイドライン（Claude Code が自動読み込み）:
+`.claude/rules/` contains detailed guidelines (auto-loaded by Claude Code):
 - `architecture.md` — Module structure, data flow, components
 - `code-conventions.md` — Java, Groovy, JavaScript coding style
 - `testing.md` — Integration test setup, frameworks, how to run

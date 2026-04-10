@@ -10,73 +10,73 @@ Accepted (partially implemented — PanelApp navigation on CE pending)
 
 ## Context
 
-test-factory プロジェクトの calculator ポートレット（Service Builder + React）に対して、Testcontainers を使った E2E インテグレーションテストを構築する必要がある。
+The test-factory project needs to build E2E integration tests using Testcontainers for the calculator portlet (Service Builder + React).
 
-### 制約
+### Constraints
 
-- **ターゲット**: Liferay Portal CE 7.4 GA132（DXP ではなく Community Edition）
-- **実行環境**: WSL2 + Docker Desktop 29.x
-- **ビルド**: Gradle 8.5 + Liferay Workspace Plugin
-- **テスト対象**: OSGi バンドルのデプロイ確認、GoGo Shell によるバンドル状態検証、Playwright によるブラウザ E2E テスト
+- **Target**: Liferay Portal CE 7.4 GA132 (Community Edition, not DXP)
+- **Runtime environment**: WSL2 + Docker Desktop 29.x
+- **Build**: Gradle 8.5 + Liferay Workspace Plugin
+- **Test scope**: OSGi bundle deployment verification, bundle state validation via GoGo Shell, and browser E2E tests via Playwright
 
 ## Decision
 
-### 1. テストフレームワーク構成
+### 1. Test Framework Configuration
 
-| コンポーネント | 選択 | 理由 |
-|-------------|------|------|
-| テストフレームワーク | Spock 2.4 + Groovy 5.0.4 | Groovy の簡潔な記法、`@Stepwise` によるテスト順序制御、Power Assert |
-| コンテナ管理 | Testcontainers 2.0.4 | Docker Engine 29.x 対応（docker-java 3.7.1 同梱）。1.21.x はシェーディング版 docker-java が API v1.44 まで、Docker 29.x の最小 API v1.40 に対応不可 |
-| ブラウザテスト | Playwright Java 1.42.0 (Chromium only) | Liferay 公式テストと同じ技術スタック。Chromium のみインストールしてダウンロード時間を短縮 |
-| GoGo Shell 通信 | Apache Commons Net (Telnet) | Liferay OSGi コンソールへの接続に使用 |
+| Component | Choice | Rationale |
+|-----------|--------|-----------|
+| Test framework | Spock 2.4 + Groovy 5.0.4 | Groovy's concise syntax, test ordering via `@Stepwise`, Power Assert |
+| Container management | Testcontainers 2.0.4 | Docker Engine 29.x support (bundles docker-java 3.7.1). Version 1.21.x ships a shaded docker-java supporting up to API v1.44, which is incompatible with Docker 29.x's minimum API v1.40 |
+| Browser tests | Playwright Java 1.42.0 (Chromium only) | Same technology stack as the official Liferay tests. Installing only Chromium reduces download time |
+| GoGo Shell communication | Apache Commons Net (Telnet) | Used to connect to the Liferay OSGi console |
 
-### 2. ログイン方式: API POST (CSRF トークン付き)
+### 2. Login Method: API POST (with CSRF Token)
 
-**決定**: Liferay 公式 Playwright テスト (`performLoginViaApi`) と同じ方式を採用。
+**Decision**: Adopt the same approach as the official Liferay Playwright tests (`performLoginViaApi`).
 
 ```
-1. page.navigate("/") でセッション確立
-2. page.evaluate("() => Liferay.authToken") で CSRF トークン取得
-3. page.request().post("/c/portal/login") に CSRF トークン付きで POST
-4. page.navigate("/") でリロード
+1. page.navigate("/") to establish a session
+2. page.evaluate("() => Liferay.authToken") to obtain the CSRF token
+3. page.request().post("/c/portal/login") with the CSRF token
+4. page.navigate("/") to reload
 ```
 
-**却下した代替案**:
-- **フォームログイン**: ログイン後のリダイレクトで `/web/guest` に遷移するとセッションが引き継がれない問題。パスワード変更ページの条件分岐が複雑。
-- **Basic 認証**: Liferay CE ではデフォルトで無効。
+**Rejected alternatives**:
+- **Form-based login**: After login, redirecting to `/web/guest` causes the session to not carry over. Conditional handling for the password change page is complex.
+- **Basic authentication**: Disabled by default in Liferay CE.
 
-### 3. パスワードポリシー対応
+### 3. Password Policy Handling
 
-**決定**: 複数パスワードの順次試行 + `portal-ext.properties` 配置。
+**Decision**: Sequential trial of multiple passwords + `portal-ext.properties` placement.
 
-- `portal-ext.properties` を `/opt/liferay/tomcat/webapps/ROOT/WEB-INF/classes/` に配置（`withCopyToContainer`）
-  - ただし Docker イメージの事前構築済み DB には `passwords.default.policy.change.required=false` が効かない
-- テスト側で `test` と `Test12345` の両方を順に試行し、`withReuse(true)` でパスワード変更が永続化されたコンテナにも対応
-- パスワード変更ページが出た場合は自動的にハンドリング
+- Place `portal-ext.properties` in `/opt/liferay/tomcat/webapps/ROOT/WEB-INF/classes/` (via `withCopyToContainer`)
+  - However, `passwords.default.policy.change.required=false` does not take effect on the Docker image's pre-built database
+- The test side tries both `test` and `Test12345` in sequence, also handling containers where the password change has been persisted via `withReuse(true)`
+- If the password change page appears, it is handled automatically
 
-**却下した代替案**:
-- **環境変数 `LIFERAY_PASSWORDS_DEFAULT_POLICY_CHANGE_REQUIRED`**: Liferay が認識しなかった
-- **GoGo Shell 経由 DB 更新**: OSGi コンソールでは SQL 直接実行不可
-- **Groovy スクリプト実行**: GoGo Shell の `groovy:exec` は CE Docker イメージで利用不可
+**Rejected alternatives**:
+- **Environment variable `LIFERAY_PASSWORDS_DEFAULT_POLICY_CHANGE_REQUIRED`**: Not recognized by Liferay
+- **DB update via GoGo Shell**: Direct SQL execution is not possible from the OSGi console
+- **Groovy script execution**: `groovy:exec` in GoGo Shell is not available in the CE Docker image
 
-### 4. JAR デプロイ方式: /tmp 経由コピー + chown
+### 4. JAR Deployment Method: Copy via /tmp + chown
 
-**決定**: `copyFileToContainer` で `/tmp` に配置 → `execInContainer` で `cp` + `chown liferay:liferay` して `/opt/liferay/deploy/` に移動。
+**Decision**: Place the file in `/tmp` using `copyFileToContainer`, then use `execInContainer` to `cp` + `chown liferay:liferay` and move it to `/opt/liferay/deploy/`.
 
-**理由**: `copyFileToContainer` は root 所有でファイルを作成するが、Liferay の AutoDeployScanner は liferay ユーザー (uid=1000) で実行されるため、直接 `/deploy/` にコピーすると `Unable to write` エラーが発生する。
+**Rationale**: `copyFileToContainer` creates files owned by root, but Liferay's AutoDeployScanner runs as the liferay user (uid=1000). Copying directly to `/deploy/` causes an `Unable to write` error.
 
-### 5. GoGo Shell バンドル検証: 全出力取得 + Java フィルタリング
+### 5. GoGo Shell Bundle Verification: Full Output Retrieval + Java-Side Filtering
 
-**決定**: `lb` コマンドの全出力（約 1394 行）を取得し、Java/Groovy 側で `Test Factory` を含む行をフィルタリング。
+**Decision**: Retrieve the full output of the `lb` command (approximately 1394 lines) and filter for lines containing `Test Factory` on the Java/Groovy side.
 
-**理由**: GoGo Shell は OSGi コンソールであり、Unix シェルのパイプ (`|`) や `grep` コマンドは使用不可。`lb | grep test.factory` は `grep` コマンドが `false` を返すだけ。
+**Rationale**: GoGo Shell is an OSGi console and does not support Unix shell pipes (`|`) or the `grep` command. Running `lb | grep test.factory` simply causes the `grep` command to return `false`.
 
-### 6. コンテナ設定
+### 6. Container Configuration
 
 ```groovy
-withReuse(true)                    // 起動に2-3分かかるため再利用
-withCopyToContainer(...)           // portal-ext.properties 配置
-withEnv([                          // 環境変数
+withReuse(true)                    // Reuse container since startup takes 2-3 minutes
+withCopyToContainer(...)           // Place portal-ext.properties
+withEnv([                          // Environment variables
     'LIFERAY_SETUP_WIZARD_ENABLED': 'false',
     'LIFERAY_TERMS_OF_USE_REQUIRED': 'false',
     'LIFERAY_USERS_REMINDER_QUERY_ENABLED': 'false',
@@ -87,34 +87,34 @@ withEnv([                          // 環境変数
 
 ### Positive
 
-- Liferay 公式 Playwright テストパターンに準拠したログイン方式
-- `withReuse(true)` により開発中のテスト実行が高速（コンテナ起動不要）
-- Chromium のみインストールによりダウンロード時間短縮
-- Testcontainers 2.0.4 で Docker Engine 29.x の最新版に対応
+- Login method follows the official Liferay Playwright test patterns
+- `withReuse(true)` enables fast test execution during development (no container startup required)
+- Installing only Chromium reduces download time
+- Testcontainers 2.0.4 provides compatibility with the latest Docker Engine 29.x
 
 ### Negative
 
-- **CE 版の Global Menu 不在**: DXP 専用の Global Menu (`Open Applications Menu`) が CE GA132 に存在しない。PanelApp (`CONTROL_PANEL_CONFIGURATION`) へのブラウザナビゲーションが未解決。
-- `withReuse(true)` によるパスワード変更の永続化に対応するため、複数パスワード試行のロジックが必要
-- `portal-ext.properties` が Docker イメージの事前構築済み DB に対して一部のプロパティ（`passwords.default.policy.change.required`）が無効
+- **No Global Menu in CE**: The DXP-only Global Menu (`Open Applications Menu`) does not exist in CE GA132. Browser navigation to the PanelApp (`CONTROL_PANEL_CONFIGURATION`) remains unresolved.
+- Multiple password trial logic is required to handle password changes persisted by `withReuse(true)`
+- Some properties in `portal-ext.properties` (e.g., `passwords.default.policy.change.required`) have no effect on the Docker image's pre-built database
 
 ### Open Questions
 
-1. **CE GA132 での PanelApp ナビゲーション**: Product Menu サイドバーに Control Panel セクションが表示されない。URL 直接アクセス (`/group/control_panel/manage`) は 404。次の選択肢を検討:
-   - PanelApp の `panel.category.key` を変更してサイト管理セクションに配置
-   - ポートレットの `display-category` を変更してウィジェットページに配置可能にし、ページ配置テストに切り替え
-   - CE 版の Control Panel への正しいアクセスパスを特定（手動ブラウザ確認が必要）
+1. **PanelApp navigation on CE GA132**: The Control Panel section does not appear in the Product Menu sidebar. Direct URL access (`/group/control_panel/manage`) returns 404. The following options are under consideration:
+   - Change the PanelApp's `panel.category.key` to place it in the Site Administration section
+   - Change the portlet's `display-category` to make it deployable on widget pages and switch to page placement testing
+   - Identify the correct access path to the Control Panel on CE (requires manual browser verification)
 
-2. **Playwright バージョン**: 現在 1.42.0 を使用。Liferay 公式テストとの互換性を維持しつつ、必要に応じて更新を検討。
+2. **Playwright version**: Currently using 1.42.0. Consider updating as needed while maintaining compatibility with the official Liferay tests.
 
 ## References
 
-- Liferay Portal ソース: `/home/yasuflatland/tmp/liferay-portal`
-- Liferay 公式 Playwright テスト: `modules/test/playwright/`
-  - `utils/performLogin.ts` — API ログインパターン
-  - `helpers/ApiHelpers.ts` — CSRF トークン取得
-  - `pages/product-navigation-applications-menu/GlobalMenuPage.ts` — Global Menu (DXP)
-  - `utils/productMenu.ts` — Product Menu
-  - `env/portal-ext.properties` — テスト用プロパティ
-- Testcontainers ソース: `/home/yasuflatland/tmp/testcontainers-java`
-- 詳細な実装計画: `.claude/plan/integrationtest.md`
+- Liferay Portal source: `/home/yasuflatland/tmp/liferay-portal`
+- Official Liferay Playwright tests: `modules/test/playwright/`
+  - `utils/performLogin.ts` -- API login pattern
+  - `helpers/ApiHelpers.ts` -- CSRF token retrieval
+  - `pages/product-navigation-applications-menu/GlobalMenuPage.ts` -- Global Menu (DXP)
+  - `utils/productMenu.ts` -- Product Menu
+  - `env/portal-ext.properties` -- Test properties
+- Testcontainers source: `/home/yasuflatland/tmp/testcontainers-java`
+- Detailed implementation plan: `.claude/plan/integrationtest.md`
