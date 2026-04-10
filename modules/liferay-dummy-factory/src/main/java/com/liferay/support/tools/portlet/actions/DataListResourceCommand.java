@@ -4,6 +4,8 @@ import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.OrganizationConstants;
 import com.liferay.portal.kernel.model.Role;
@@ -93,6 +95,8 @@ public class DataListResourceCommand extends BaseMVCResourceCommand {
 
 				break;
 			default:
+				_log.warn("Unknown data list type requested: " + type);
+
 				break;
 		}
 
@@ -108,6 +112,9 @@ public class DataListResourceCommand extends BaseMVCResourceCommand {
 
 		return jsonObject;
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		DataListResourceCommand.class);
 
 	@Reference
 	private Portal _portal;
