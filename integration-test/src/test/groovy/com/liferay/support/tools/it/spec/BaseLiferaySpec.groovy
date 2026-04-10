@@ -2,6 +2,10 @@ package com.liferay.support.tools.it.spec
 
 import com.liferay.support.tools.it.container.LiferayContainer
 import com.liferay.support.tools.it.util.GogoShellClient
+import com.liferay.support.tools.it.util.PlaywrightLifecycle
+
+import com.microsoft.playwright.Page
+import com.microsoft.playwright.options.RequestOptions
 
 import spock.lang.Shared
 import spock.lang.Specification
@@ -13,6 +17,9 @@ import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
 abstract class BaseLiferaySpec extends Specification {
+
+	protected static final String NEW_PASSWORD = 'Test12345'
+	protected static final String PORTLET_ID = 'com_liferay_support_tools_portlet_LiferayDummyFactoryPortlet'
 
 	private static final Logger log = LoggerFactory.getLogger(BaseLiferaySpec)
 
@@ -58,10 +65,8 @@ abstract class BaseLiferaySpec extends Specification {
 					String output = gogo.execute('lb')
 					def allLines = output.readLines()
 					int lineCount = allLines.size()
-					// Log last 5 lines to see actual bundle names
 					def tail = allLines.takeRight(5)
 					log.info('GoGo Shell attempt {}: {} lines, last 5: {}', i + 1, lineCount, tail)
-					// Search with relaxed matching
 					def lines = allLines.findAll { it.toLowerCase().contains('liferay') && it.toLowerCase().contains('dummy') && it.toLowerCase().contains('factory') }
 					log.info('Matches: {}', lines ?: '(no match)')
 
@@ -89,6 +94,63 @@ abstract class BaseLiferaySpec extends Specification {
 		}
 
 		bundleVerified = true
+	}
+
+	protected static String loginAsAdmin(PlaywrightLifecycle pw) {
+		Page page = pw.newPage()
+
+		page.navigate("${liferay.baseUrl}/")
+		page.waitForLoadState()
+
+		String authToken = page.evaluate('() => Liferay.authToken') as String
+
+		def passwords = [LiferayContainer.DEFAULT_ADMIN_PASSWORD, NEW_PASSWORD]
+		String activePassword = null
+
+		for (pwd in passwords) {
+			def response = page.request().post("${liferay.baseUrl}/c/portal/login",
+				RequestOptions.create()
+					.setHeader('Content-Type', 'application/x-www-form-urlencoded')
+					.setHeader('x-csrf-token', authToken)
+					.setData("login=${URLEncoder.encode(LiferayContainer.DEFAULT_ADMIN_EMAIL, 'UTF-8')}&password=${URLEncoder.encode(pwd, 'UTF-8')}&rememberMe=true")
+			)
+
+			if (response.status() == 200) {
+				activePassword = pwd
+				break
+			}
+		}
+
+		page.navigate("${liferay.baseUrl}/")
+		page.waitForLoadState()
+
+		if (page.title().contains('New Password')) {
+			page.locator('#password1').fill(NEW_PASSWORD)
+			page.locator('#password2').fill(NEW_PASSWORD)
+			page.waitForNavigation({ ->
+				page.locator('[type=submit], button.btn-primary').first().click()
+			})
+			activePassword = NEW_PASSWORD
+		}
+
+		if (page.locator('#reminderQueryAnswer').isVisible()) {
+			page.locator('#reminderQueryAnswer').fill('test')
+			page.waitForNavigation({ ->
+				page.locator('[type=submit], button.btn-primary').first().click()
+			})
+		}
+
+		return activePassword
+	}
+
+	protected static int httpGet(String url) {
+		def connection = new URL(url).openConnection() as HttpURLConnection
+
+		connection.requestMethod = 'GET'
+		connection.connectTimeout = 30_000
+		connection.readTimeout = 30_000
+
+		return connection.responseCode
 	}
 
 }

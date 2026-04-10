@@ -5,7 +5,6 @@ import com.liferay.support.tools.it.util.PlaywrightLifecycle
 
 import com.microsoft.playwright.Locator
 import com.microsoft.playwright.Page
-import com.microsoft.playwright.options.RequestOptions
 
 import groovy.json.JsonSlurper
 
@@ -20,8 +19,6 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 
 	private static final Logger log = LoggerFactory.getLogger(OrganizationFunctionalSpec)
 
-	private static final String PORTLET_ID = 'com_liferay_support_tools_portlet_LiferayDummyFactoryPortlet'
-	private static final String NEW_PASSWORD = 'Test12345'
 	private static final String BASE_ORG_NAME = 'IT Test Org'
 	private static final int ORG_COUNT = 3
 
@@ -44,7 +41,8 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 			try {
 				headlessDelete("/o/headless-admin-user/v1.0/organizations/${id}")
 			}
-			catch (Exception ignored) {
+			catch (Exception e) {
+				log.warn('Failed to clean up organization {}: {}', id, e.message)
 			}
 		}
 
@@ -52,54 +50,11 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 	}
 
 	def 'Login to Liferay as admin'() {
-		given:
-		Page page = pw.newPage()
-
 		when:
-		page.navigate("${liferay.baseUrl}/")
-		page.waitForLoadState()
-
-		String authToken = page.evaluate('() => Liferay.authToken') as String
-
-		def passwords = [LiferayContainer.DEFAULT_ADMIN_PASSWORD, NEW_PASSWORD]
-		boolean loggedIn = false
-
-		for (pwd in passwords) {
-			def response = page.request().post("${liferay.baseUrl}/c/portal/login",
-				RequestOptions.create()
-					.setHeader('Content-Type', 'application/x-www-form-urlencoded')
-					.setHeader('x-csrf-token', authToken)
-					.setData("login=${URLEncoder.encode(LiferayContainer.DEFAULT_ADMIN_EMAIL, 'UTF-8')}&password=${URLEncoder.encode(pwd, 'UTF-8')}&rememberMe=true")
-			)
-
-			if (response.status() == 200) {
-				activePassword = pwd
-				loggedIn = true
-				break
-			}
-		}
-
-		page.navigate("${liferay.baseUrl}/")
-		page.waitForLoadState()
-
-		if (page.title().contains('New Password')) {
-			page.locator('#password1').fill(NEW_PASSWORD)
-			page.locator('#password2').fill(NEW_PASSWORD)
-			page.waitForNavigation({ ->
-				page.locator('[type=submit], button.btn-primary').first().click()
-			})
-			activePassword = NEW_PASSWORD
-		}
-
-		if (page.locator('#reminderQueryAnswer').isVisible()) {
-			page.locator('#reminderQueryAnswer').fill('test')
-			page.waitForNavigation({ ->
-				page.locator('[type=submit], button.btn-primary').first().click()
-			})
-		}
+		activePassword = loginAsAdmin(pw)
 
 		then:
-		loggedIn
+		activePassword
 	}
 
 	def 'Organizations are created via portlet UI'() {
@@ -172,8 +127,6 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 			(item.name as String).startsWith(BASE_ORG_NAME)
 		}
 	}
-
-	// -- Headless REST API helpers --
 
 	private Map headlessGet(String path) {
 		def conn = new URL("${liferay.baseUrl}${path}").openConnection() as HttpURLConnection

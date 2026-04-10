@@ -67,14 +67,4 @@ class DeploymentSpec extends BaseLiferaySpec {
 		responseCode == 200
 	}
 
-	private static int httpGet(String url) {
-		def connection = new URL(url).openConnection() as HttpURLConnection
-
-		connection.requestMethod = 'GET'
-		connection.connectTimeout = 30_000
-		connection.readTimeout = 30_000
-
-		return connection.responseCode
-	}
-
 }

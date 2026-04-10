@@ -1,19 +1,15 @@
 package com.liferay.support.tools.it.spec
 
-import com.liferay.support.tools.it.container.LiferayContainer
 import com.liferay.support.tools.it.util.PlaywrightLifecycle
+
 import com.microsoft.playwright.Locator
 import com.microsoft.playwright.Page
-import com.microsoft.playwright.options.RequestOptions
 
 import spock.lang.Shared
 import spock.lang.Stepwise
 
 @Stepwise
 class PortletRenderSpec extends BaseLiferaySpec {
-
-	private static final String NEW_PASSWORD = 'Test12345'
-	private static final String PORTLET_ID = 'com_liferay_support_tools_portlet_LiferayDummyFactoryPortlet'
 
 	@Shared
 	PlaywrightLifecycle pw
@@ -31,52 +27,8 @@ class PortletRenderSpec extends BaseLiferaySpec {
 	}
 
 	def 'Login to Liferay as admin'() {
-		given:
-		Page page = pw.newPage()
-
-		when:
-		page.navigate("${liferay.baseUrl}/")
-		page.waitForLoadState()
-
-		String authToken = page.evaluate('() => Liferay.authToken') as String
-
-		def passwords = [LiferayContainer.DEFAULT_ADMIN_PASSWORD, NEW_PASSWORD]
-		boolean loggedIn = false
-
-		for (pwd in passwords) {
-			def response = page.request().post("${liferay.baseUrl}/c/portal/login",
-				RequestOptions.create()
-					.setHeader('Content-Type', 'application/x-www-form-urlencoded')
-					.setHeader('x-csrf-token', authToken)
-					.setData("login=${URLEncoder.encode(LiferayContainer.DEFAULT_ADMIN_EMAIL, 'UTF-8')}&password=${URLEncoder.encode(pwd, 'UTF-8')}&rememberMe=true")
-			)
-
-			if (response.status() == 200) {
-				loggedIn = true
-				break
-			}
-		}
-
-		page.navigate("${liferay.baseUrl}/")
-		page.waitForLoadState()
-
-		if (page.title().contains('New Password')) {
-			page.locator('#password1').fill(NEW_PASSWORD)
-			page.locator('#password2').fill(NEW_PASSWORD)
-			page.waitForNavigation({ ->
-				page.locator('[type=submit], button.btn-primary').first().click()
-			})
-		}
-
-		if (page.locator('#reminderQueryAnswer').isVisible()) {
-			page.locator('#reminderQueryAnswer').fill('test')
-			page.waitForNavigation({ ->
-				page.locator('[type=submit], button.btn-primary').first().click()
-			})
-		}
-
-		then:
-		loggedIn
+		expect:
+		loginAsAdmin(pw)
 	}
 
 	def 'Portlet renders without JavaScript errors'() {
@@ -103,10 +55,10 @@ class PortletRenderSpec extends BaseLiferaySpec {
 		page.waitForLoadState()
 
 		then: 'React component renders'
-		page.locator('#num1').waitFor(
+		page.locator('#count').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
-		page.locator('#num1').isVisible()
+		page.locator('#count').isVisible()
 
 		and: 'no critical JavaScript errors in console'
 		jsErrors.findAll {
@@ -135,16 +87,6 @@ class PortletRenderSpec extends BaseLiferaySpec {
 
 		then:
 		responseCode == 200
-	}
-
-	private static int httpGet(String url) {
-		def connection = new URL(url).openConnection() as HttpURLConnection
-
-		connection.requestMethod = 'GET'
-		connection.connectTimeout = 30_000
-		connection.readTimeout = 30_000
-
-		return connection.responseCode
 	}
 
 }
