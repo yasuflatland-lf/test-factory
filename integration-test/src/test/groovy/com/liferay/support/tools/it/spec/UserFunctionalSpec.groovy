@@ -31,13 +31,22 @@ class UserFunctionalSpec extends BaseLiferaySpec {
 	}
 
 	def cleanupSpec() {
-		createdUserIds.each { id ->
-			try {
-				headlessDelete("/o/headless-admin-user/v1.0/user-accounts/${id}")
-			}
-			catch (Exception e) {
-				log.warn('Failed to clean up user {}: {}', id, e.message)
-			}
+		try {
+			def result = headlessGet('/o/headless-admin-user/v1.0/user-accounts?pageSize=100')
+			String prefix = BASE_USER_NAME.toLowerCase()
+
+			result.items?.findAll { (it.alternateName as String).startsWith(prefix) }
+				?.each { item ->
+					try {
+						headlessDelete("/o/headless-admin-user/v1.0/user-accounts/${item.id}")
+					}
+					catch (Exception e) {
+						log.warn('Failed to clean up user {}: {}', item.id, e.message)
+					}
+				}
+		}
+		catch (Exception e) {
+			log.warn('Fallback cleanup failed: {}', e.message)
 		}
 
 		pw?.close()
@@ -103,6 +112,8 @@ class UserFunctionalSpec extends BaseLiferaySpec {
 		matchingItems.size() == USER_COUNT
 		matchingItems.collect { it.alternateName }.sort() ==
 			(1..USER_COUNT).collect { "${expectedPrefix}${it}" }
+		matchingItems.collect { it.emailAddress }.sort() ==
+			(1..USER_COUNT).collect { "${expectedPrefix}${it}@liferay.com" }
 	}
 
 	def 'Test users are cleaned up via headless REST API'() {
