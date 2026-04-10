@@ -40,7 +40,7 @@ The PortletTracker in CE 7.4 GA132 tracks `javax.portlet.Portlet` services, **no
 - Runs **headless Chromium** via `PlaywrightLifecycle`.
 - Login credentials: `test@liferay.com` / `test` (Liferay default admin).
 - Navigate to portlets via **direct URL** with the portlet ID in the query string (`p_p_id=...&p_p_lifecycle=0`). Do not click through menus -- direct navigation is faster and more reliable.
-- Use CSS selectors for locators (`#num1`, `.alert-success`, `button.btn-primary`, `[type=submit]`).
+- Use CSS selectors for locators (`#count`, `.alert-success`, `button.btn-primary`, `[type=submit]`).
 - Set explicit timeouts on waits: `waitForURL(..., new Page.WaitForURLOptions().setTimeout(30_000))`, `waitFor(new Locator.WaitForOptions().setTimeout(15_000))`.
 - Close the `PlaywrightLifecycle` instance in `cleanupSpec()` using safe-navigation: `pw?.close()`.
 
@@ -57,7 +57,7 @@ The PortletTracker in CE 7.4 GA132 tracks `javax.portlet.Portlet` services, **no
 - The module build depends on `release.portal.api` (Portal CE), **not** `release.dxp.api`. Using the wrong dependency artifact will cause build failures or runtime class-loading issues against the CE Docker image.
 - The default `test` task is **disabled** (`enabled = false`). All integration tests run exclusively via the `integrationTest` task.
 - The `integrationTest` task automatically depends on `:modules:liferay-dummy-factory:jar`, so a standalone `./gradlew :integration-test:integrationTest` will build the JAR first.
-- JVM args: `-Xmx1g`.
+- JVM args: `-Xms4g -Xmx4g`.
 - Test logging outputs `passed`, `skipped`, `failed`, `standardOut`, and `standardError`.
 
 ## Adding New Tests

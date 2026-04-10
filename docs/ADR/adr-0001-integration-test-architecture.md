@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (partially implemented — PanelApp navigation on CE pending)
+Accepted
 
 ## Date
 
@@ -74,7 +74,7 @@ The liferay-dummy-factory project needs to build E2E integration tests using Tes
 ### 6. Container Configuration
 
 ```groovy
-withReuse(true)                    // Reuse container since startup takes 2-3 minutes
+withReuse(true)                    // Reuse container since startup takes ~8 minutes
 withCopyToContainer(...)           // Place portal-ext.properties
 withEnv([                          // Environment variables
     'LIFERAY_SETUP_WIZARD_ENABLED': 'false',
@@ -94,18 +94,17 @@ withEnv([                          // Environment variables
 
 ### Negative
 
-- **No Global Menu in CE**: The DXP-only Global Menu (`Open Applications Menu`) does not exist in CE GA132. Browser navigation to the PanelApp (`CONTROL_PANEL_CONFIGURATION`) remains unresolved.
+- **No Global Menu in CE**: The DXP-only Global Menu (`Open Applications Menu`) does not exist in CE GA132. Resolved by using direct URL access with `p_p_state=maximized` (e.g., `/group/control_panel/manage?p_p_id=...&p_p_lifecycle=0&p_p_state=maximized`).
 - Multiple password trial logic is required to handle password changes persisted by `withReuse(true)`
 - Some properties in `portal-ext.properties` (e.g., `passwords.default.policy.change.required`) have no effect on the Docker image's pre-built database
 
+### Resolved Questions
+
+1. **PanelApp navigation on CE GA132**: Resolved by using direct URL access with `p_p_state=maximized` query parameter. The URL pattern `/group/control_panel/manage?p_p_id=<portlet_id>&p_p_lifecycle=0&p_p_state=maximized` renders the portlet directly without needing the Product Menu sidebar or Global Menu.
+
 ### Open Questions
 
-1. **PanelApp navigation on CE GA132**: The Control Panel section does not appear in the Product Menu sidebar. Direct URL access (`/group/control_panel/manage`) returns 404. The following options are under consideration:
-   - Change the PanelApp's `panel.category.key` to place it in the Site Administration section
-   - Change the portlet's `display-category` to make it deployable on widget pages and switch to page placement testing
-   - Identify the correct access path to the Control Panel on CE (requires manual browser verification)
-
-2. **Playwright version**: Currently using 1.59.0. Consider updating as needed while maintaining compatibility with the official Liferay tests.
+1. **Playwright version**: Currently using 1.59.0. Consider updating as needed while maintaining compatibility with the official Liferay tests.
 
 ## References
 

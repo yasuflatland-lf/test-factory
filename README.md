@@ -9,7 +9,7 @@ liferay-dummy-factory/
 ├── modules/
 │   └── liferay-dummy-factory/   # OSGi bundle (Portlet + Web)
 │       └── src/main/
-│           ├── java/              # MVCPortlet, constants
+│           ├── java/              # MVCPortlet, MVCResourceCommand, services, constants
 │           └── resources/
 │               └── META-INF/resources/
 │                   └── js/        # React frontend
@@ -117,6 +117,7 @@ Tests automatically start a Liferay container via Testcontainers and verify:
 
 - **DeploymentSpec** -- Bundle deployment and activation (via GoGo Shell)
 - **PortletRenderSpec** -- Login and portlet rendering through the browser (Playwright)
+- **OrganizationFunctionalSpec** -- Organization batch creation via portlet UI with REST API verification (Playwright)
 
 ## CI
 

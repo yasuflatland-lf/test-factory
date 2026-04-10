@@ -10,7 +10,7 @@ liferay-dummy-factory/
   modules/
     liferay-dummy-factory/ # Single OSGi bundle (portlet + web)
       bnd.bnd
-      src/main/java/         # Java: portlet, constants
+      src/main/java/         # Java: portlet, resource commands, services, constants
       src/main/resources/
         META-INF/resources/
           js/               # React frontend components
