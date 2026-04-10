@@ -1,6 +1,6 @@
 # liferay-dummy-factory
 
-A Liferay Portal 7.4 (CE GA132) workspace featuring a Calculator portlet built with MVCPortlet + React, along with Testcontainers-based integration tests.
+A Liferay Portal 7.4 (CE GA132) workspace featuring a portlet built with MVCPortlet + React, along with Testcontainers-based integration tests.
 
 ## Project Structure
 
@@ -9,7 +9,7 @@ liferay-dummy-factory/
 ├── modules/
 │   └── liferay-dummy-factory/   # OSGi bundle (Portlet + Web)
 │       └── src/main/
-│           ├── java/              # MVCPortlet, MVCResourceCommand
+│           ├── java/              # MVCPortlet, MVCResourceCommand, services, constants
 │           └── resources/
 │               └── META-INF/resources/
 │                   └── js/        # React frontend
@@ -23,7 +23,7 @@ liferay-dummy-factory/
 | Layer | Technology |
 |-------|------------|
 | Portal | Liferay Portal 7.4.3.132-ga132 |
-| Backend | MVCPortlet + MVCResourceCommand (stateless) |
+| Backend | MVCPortlet + MVCResourceCommand (layered) |
 | Frontend | React + Clay CSS |
 | Build | Gradle 8.5 + Liferay Workspace Plugin 10.1.9 |
 | Testing | Spock 2.4 / Groovy 5.0 / Testcontainers 2.0.4 / Playwright 1.59.0 |
@@ -31,7 +31,7 @@ liferay-dummy-factory/
 
 ## Quick Start (Docker)
 
-Steps to start Liferay with Docker and deploy the Calculator portlet.
+Steps to start Liferay with Docker and deploy the portlet.
 
 ### 1. Start the Liferay Container
 
@@ -116,7 +116,8 @@ Requires Docker to be running.
 Tests automatically start a Liferay container via Testcontainers and verify:
 
 - **DeploymentSpec** -- Bundle deployment and activation (via GoGo Shell)
-- **CalculatorHappyPathSpec** -- Login and calculation through the browser (Playwright)
+- **PortletRenderSpec** -- Login and portlet rendering through the browser (Playwright)
+- **OrganizationFunctionalSpec** -- Organization batch creation via portlet UI with REST API verification (Playwright)
 
 ## CI
 

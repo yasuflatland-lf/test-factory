@@ -2,6 +2,9 @@ package com.liferay.support.tools.it.spec
 
 import com.liferay.support.tools.it.util.GogoShellClient
 
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+
 import spock.lang.Stepwise
 
 @Stepwise
@@ -12,7 +15,23 @@ class DeploymentSpec extends BaseLiferaySpec {
 		liferay.running
 
 		when:
-		def responseCode = httpGet("${liferay.baseUrl}/c/portal/login")
+		int responseCode = -1
+		int maxRetries = 3
+
+		for (int attempt = 1; attempt <= maxRetries; attempt++) {
+			try {
+				responseCode = httpGet("${liferay.baseUrl}/c/portal/login")
+				break
+			}
+			catch (SocketTimeoutException | ConnectException e) {
+				if (attempt < maxRetries) {
+					Thread.sleep(10_000)
+				}
+				else {
+					throw e
+				}
+			}
+		}
 
 		then:
 		responseCode == 200
@@ -20,7 +39,7 @@ class DeploymentSpec extends BaseLiferaySpec {
 
 	def 'Liferay Dummy Factory JAR deploys and bundle becomes ACTIVE'() {
 		when:
-		ensureDeployed()
+		ensureBundleActive()
 
 		and:
 		String output = ''
@@ -37,7 +56,7 @@ class DeploymentSpec extends BaseLiferaySpec {
 
 	def 'Portlet web resources are accessible after deployment'() {
 		given:
-		ensureDeployed()
+		ensureBundleActive()
 
 		when:
 		def responseCode = httpGet(
@@ -46,16 +65,6 @@ class DeploymentSpec extends BaseLiferaySpec {
 
 		then:
 		responseCode == 200
-	}
-
-	private static int httpGet(String url) {
-		def connection = new URL(url).openConnection() as HttpURLConnection
-
-		connection.requestMethod = 'GET'
-		connection.connectTimeout = 10_000
-		connection.readTimeout = 10_000
-
-		return connection.responseCode
 	}
 
 }

@@ -10,7 +10,7 @@ Accepted
 
 ## Context
 
-After deploying the Calculator portlet to the Docker image `liferay/portal:7.4.3.132-ga132`, the bundle was Active but the PanelApp's `@Reference(com.liferay.portal.kernel.model.Portlet)` remained UNSATISFIED, and the portlet did not appear in the Control Panel.
+After deploying the portlet to the Docker image `liferay/portal:7.4.3.132-ga132`, the bundle was Active but the PanelApp's `@Reference(com.liferay.portal.kernel.model.Portlet)` remained UNSATISFIED, and the portlet did not appear in the Control Panel.
 
 ### Investigation Process
 

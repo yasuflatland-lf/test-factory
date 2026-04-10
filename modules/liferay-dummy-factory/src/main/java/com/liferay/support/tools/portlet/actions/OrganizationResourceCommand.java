@@ -2,12 +2,20 @@ package com.liferay.support.tools.portlet.actions;
 
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
+import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.transaction.TransactionConfig;
+import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.support.tools.constants.LDFPortletKeys;
+import com.liferay.support.tools.service.OrganizationCreator;
 
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
@@ -35,26 +43,77 @@ public class OrganizationResourceCommand extends BaseMVCResourceCommand {
 			_portal.getOriginalServletRequest(
 				_portal.getHttpServletRequest(resourceRequest));
 
-		int numberOfOrganizations = ParamUtil.getInteger(
-			httpServletRequest, "numberOfOrganizations");
-		String baseOrganizationName = ParamUtil.getString(
-			httpServletRequest, "baseOrganizationName");
-		long parentOrganizationId = ParamUtil.getLong(
-			httpServletRequest, "parentOrganizationId");
-		boolean organizationSiteCreate = ParamUtil.getBoolean(
-			httpServletRequest, "organizationSiteCreate");
+		String dataString = ParamUtil.getString(
+			httpServletRequest, "data");
 
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+		JSONObject responseJson = JSONFactoryUtil.createJSONObject();
 
-		jsonObject.put("baseOrganizationName", baseOrganizationName);
-		jsonObject.put("numberOfOrganizations", numberOfOrganizations);
-		jsonObject.put("organizationSiteCreate", organizationSiteCreate);
-		jsonObject.put("parentOrganizationId", parentOrganizationId);
-		jsonObject.put("success", true);
+		try {
+			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
+
+			int count = GetterUtil.getInteger(
+				data.getString("count"));
+			String baseName = data.getString("baseName");
+			long parentOrganizationId = GetterUtil.getLong(
+				data.getString("parentOrganizationId"));
+			boolean site = GetterUtil.getBoolean(
+				data.getString("site"));
+
+			String validationError = _validate(count, baseName);
+
+			if (validationError != null) {
+				responseJson.put("error", validationError);
+				responseJson.put("success", false);
+
+				JSONPortletResponseUtil.writeJSON(
+					resourceRequest, resourceResponse, responseJson);
+
+				return;
+			}
+
+			long userId = _portal.getUserId(resourceRequest);
+
+			responseJson = TransactionInvokerUtil.invoke(
+				_transactionConfig,
+				() -> _organizationCreator.create(
+					userId, count, baseName,
+					parentOrganizationId, site));
+		}
+		catch (Throwable throwable) {
+			_log.error("Failed to create organizations", throwable);
+
+			responseJson.put(
+				"error",
+				(throwable.getMessage() != null)
+					? throwable.getMessage() : "An unexpected error occurred");
+			responseJson.put("success", false);
+		}
 
 		JSONPortletResponseUtil.writeJSON(
-			resourceRequest, resourceResponse, jsonObject);
+			resourceRequest, resourceResponse, responseJson);
 	}
+
+	private static String _validate(int count, String baseName) {
+		if (count <= 0) {
+			return "count must be greater than 0";
+		}
+
+		if (Validator.isNull(baseName)) {
+			return "baseName is required";
+		}
+
+		return null;
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		OrganizationResourceCommand.class);
+
+	private static final TransactionConfig _transactionConfig =
+		TransactionConfig.Factory.create(
+			Propagation.REQUIRED, new Class<?>[] {Exception.class});
+
+	@Reference
+	private OrganizationCreator _organizationCreator;
 
 	@Reference
 	private Portal _portal;
