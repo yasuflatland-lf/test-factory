@@ -7,6 +7,8 @@ import com.liferay.support.tools.it.util.PlaywrightLifecycle
 import com.microsoft.playwright.Page
 import com.microsoft.playwright.options.RequestOptions
 
+import groovy.json.JsonSlurper
+
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -151,6 +153,43 @@ abstract class BaseLiferaySpec extends Specification {
 		connection.readTimeout = 30_000
 
 		return connection.responseCode
+	}
+
+	protected Map headlessGet(String path) {
+		def conn = new URL("${liferay.baseUrl}${path}").openConnection() as HttpURLConnection
+
+		conn.requestMethod = 'GET'
+		conn.connectTimeout = 10_000
+		conn.readTimeout = 10_000
+		conn.setRequestProperty('Authorization', basicAuthHeader())
+		conn.setRequestProperty('Accept', 'application/json')
+
+		int status = conn.responseCode
+		String body = (status < 400) ? conn.inputStream.text : (conn.errorStream?.text ?: '')
+
+		if (status >= 400) {
+			throw new IllegalStateException("headlessGet ${path} returned HTTP ${status}: ${body}")
+		}
+
+		return new JsonSlurper().parseText(body) as Map
+	}
+
+	protected int headlessDelete(String path) {
+		def conn = new URL("${liferay.baseUrl}${path}").openConnection() as HttpURLConnection
+
+		conn.requestMethod = 'DELETE'
+		conn.connectTimeout = 10_000
+		conn.readTimeout = 10_000
+		conn.setRequestProperty('Authorization', basicAuthHeader())
+
+		return conn.responseCode
+	}
+
+	protected String basicAuthHeader() {
+		String credentials =
+			"${LiferayContainer.DEFAULT_ADMIN_EMAIL}:${NEW_PASSWORD}"
+
+		return "Basic ${credentials.bytes.encodeBase64().toString()}"
 	}
 
 }

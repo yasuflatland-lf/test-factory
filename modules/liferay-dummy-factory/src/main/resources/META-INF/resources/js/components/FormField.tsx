@@ -8,7 +8,27 @@ interface FormFieldProps {
 	value: string;
 }
 
+function FieldLabel({field}: {field: FieldDefinition}) {
+	return (
+		<label htmlFor={field.name}>
+			{Liferay.Language.get(field.label)}
+
+			{field.required && <span className="reference-mark text-warning">*</span>}
+		</label>
+	);
+}
+
+function FieldError({error}: {error?: string}) {
+	if (!error) {
+		return null;
+	}
+
+	return <div className="form-feedback-item">{error}</div>;
+}
+
 function FormField({error, field, onChange, options, value}: FormFieldProps) {
+	const resolvedOptions = options || field.options || [];
+
 	if (field.type === 'toggle') {
 		return (
 			<div className="form-group">
@@ -35,14 +55,43 @@ function FormField({error, field, onChange, options, value}: FormFieldProps) {
 		);
 	}
 
+	if (field.type === 'multiselect') {
+		const selectedValues = value ? value.split(',').filter(Boolean) : [];
+
+		return (
+			<div className={`form-group ${error ? 'has-error' : ''}`}>
+				<FieldLabel field={field} />
+
+				<select
+					className="form-control"
+					id={field.name}
+					multiple
+					onChange={(e) => {
+						const selected = Array.from(
+							e.target.selectedOptions,
+							(opt) => opt.value
+						);
+
+						onChange(field.name, selected.join(','));
+					}}
+					value={selectedValues}
+				>
+					{resolvedOptions.map((opt) => (
+						<option key={opt.value} value={opt.value}>
+							{opt.label}
+						</option>
+					))}
+				</select>
+
+				<FieldError error={error} />
+			</div>
+		);
+	}
+
 	if (field.type === 'select') {
 		return (
 			<div className={`form-group ${error ? 'has-error' : ''}`}>
-				<label htmlFor={field.name}>
-					{Liferay.Language.get(field.label)}
-
-					{field.required && <span className="reference-mark text-warning">*</span>}
-				</label>
+				<FieldLabel field={field} />
 
 				<select
 					className="form-control"
@@ -52,25 +101,21 @@ function FormField({error, field, onChange, options, value}: FormFieldProps) {
 				>
 					<option value="">{Liferay.Language.get('select')}</option>
 
-					{(options || field.options || []).map((opt) => (
+					{resolvedOptions.map((opt) => (
 						<option key={opt.value} value={opt.value}>
 							{opt.label}
 						</option>
 					))}
 				</select>
 
-				{error && <div className="form-feedback-item">{error}</div>}
+				<FieldError error={error} />
 			</div>
 		);
 	}
 
 	return (
 		<div className={`form-group ${error ? 'has-error' : ''}`}>
-			<label htmlFor={field.name}>
-				{Liferay.Language.get(field.label)}
-
-				{field.required && <span className="reference-mark text-warning">*</span>}
-			</label>
+			<FieldLabel field={field} />
 
 			<input
 				className="form-control"
@@ -80,7 +125,7 @@ function FormField({error, field, onChange, options, value}: FormFieldProps) {
 				value={value}
 			/>
 
-			{error && <div className="form-feedback-item">{error}</div>}
+			<FieldError error={error} />
 		</div>
 	);
 }

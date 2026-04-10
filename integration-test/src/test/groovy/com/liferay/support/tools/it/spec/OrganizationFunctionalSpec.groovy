@@ -1,12 +1,9 @@
 package com.liferay.support.tools.it.spec
 
-import com.liferay.support.tools.it.container.LiferayContainer
 import com.liferay.support.tools.it.util.PlaywrightLifecycle
 
 import com.microsoft.playwright.Locator
 import com.microsoft.playwright.Page
-
-import groovy.json.JsonSlurper
 
 import spock.lang.Shared
 import spock.lang.Stepwise
@@ -24,9 +21,6 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 
 	@Shared
 	PlaywrightLifecycle pw
-
-	@Shared
-	String activePassword = LiferayContainer.DEFAULT_ADMIN_PASSWORD
 
 	@Shared
 	List<Long> createdOrganizationIds = []
@@ -50,11 +44,8 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 	}
 
 	def 'Login to Liferay as admin'() {
-		when:
-		activePassword = loginAsAdmin(pw)
-
-		then:
-		activePassword
+		expect:
+		loginAsAdmin(pw)
 	}
 
 	def 'Organizations are created via portlet UI'() {
@@ -126,43 +117,6 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 		!result.items?.any { item ->
 			(item.name as String).startsWith(BASE_ORG_NAME)
 		}
-	}
-
-	private Map headlessGet(String path) {
-		def conn = new URL("${liferay.baseUrl}${path}").openConnection() as HttpURLConnection
-
-		conn.requestMethod = 'GET'
-		conn.connectTimeout = 10_000
-		conn.readTimeout = 10_000
-		conn.setRequestProperty('Authorization', basicAuthHeader())
-		conn.setRequestProperty('Accept', 'application/json')
-
-		int status = conn.responseCode
-		String body = (status < 400) ? conn.inputStream.text : (conn.errorStream?.text ?: '')
-
-		if (status >= 400) {
-			throw new IllegalStateException("headlessGet ${path} returned HTTP ${status}: ${body}")
-		}
-
-		return new JsonSlurper().parseText(body) as Map
-	}
-
-	private int headlessDelete(String path) {
-		def conn = new URL("${liferay.baseUrl}${path}").openConnection() as HttpURLConnection
-
-		conn.requestMethod = 'DELETE'
-		conn.connectTimeout = 10_000
-		conn.readTimeout = 10_000
-		conn.setRequestProperty('Authorization', basicAuthHeader())
-
-		return conn.responseCode
-	}
-
-	private String basicAuthHeader() {
-		String credentials =
-			"${LiferayContainer.DEFAULT_ADMIN_EMAIL}:${activePassword}"
-
-		return "Basic ${credentials.bytes.encodeBase64().toString()}"
 	}
 
 }

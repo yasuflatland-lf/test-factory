@@ -1,5 +1,6 @@
 package com.liferay.support.tools.portlet.actions;
 
+import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
@@ -12,7 +13,7 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.support.tools.constants.LDFPortletKeys;
-import com.liferay.support.tools.service.OrganizationCreator;
+import com.liferay.support.tools.service.UserCreator;
 
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
@@ -25,11 +26,11 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	property = {
 		"javax.portlet.name=" + LDFPortletKeys.LIFERAY_DUMMY_FACTORY,
-		"mvc.command.name=/ldf/org"
+		"mvc.command.name=/ldf/user"
 	},
 	service = MVCResourceCommand.class
 )
-public class OrganizationResourceCommand extends BaseMVCResourceCommand {
+public class UserResourceCommand extends BaseMVCResourceCommand {
 
 	@Override
 	protected void doServeResource(
@@ -51,10 +52,6 @@ public class OrganizationResourceCommand extends BaseMVCResourceCommand {
 			int count = GetterUtil.getInteger(
 				data.getString("count"));
 			String baseName = data.getString("baseName");
-			long parentOrganizationId = GetterUtil.getLong(
-				data.getString("parentOrganizationId"));
-			boolean site = GetterUtil.getBoolean(
-				data.getString("site"));
 
 			String validationError = ResourceCommandUtil.validate(
 				count, baseName);
@@ -69,16 +66,33 @@ public class OrganizationResourceCommand extends BaseMVCResourceCommand {
 				return;
 			}
 
+			String emailDomain = GetterUtil.getString(
+				data.getString("emailDomain"), "liferay.com");
+			String password = GetterUtil.getString(
+				data.getString("password"), "test");
+			boolean male = GetterUtil.getBoolean(
+				data.getString("male"), true);
+			String jobTitle = GetterUtil.getString(
+				data.getString("jobTitle"), "");
+
+			long[] organizationIds = _toLongArray(
+				data.getJSONArray("organizationIds"));
+			long[] roleIds = _toLongArray(data.getJSONArray("roleIds"));
+			long[] userGroupIds = _toLongArray(
+				data.getJSONArray("userGroupIds"));
+
 			long userId = _portal.getUserId(resourceRequest);
+			long companyId = _portal.getCompanyId(resourceRequest);
 
 			responseJson = TransactionInvokerUtil.invoke(
 				ResourceCommandUtil.TRANSACTION_CONFIG,
-				() -> _organizationCreator.create(
-					userId, count, baseName,
-					parentOrganizationId, site));
+				() -> _userCreator.create(
+					userId, companyId, count, baseName,
+					emailDomain, password, male, jobTitle,
+					organizationIds, roleIds, userGroupIds));
 		}
 		catch (Throwable throwable) {
-			_log.error("Failed to create organizations", throwable);
+			_log.error("Failed to create users", throwable);
 
 			responseJson.put(
 				"error",
@@ -91,13 +105,27 @@ public class OrganizationResourceCommand extends BaseMVCResourceCommand {
 			resourceRequest, resourceResponse, responseJson);
 	}
 
-	private static final Log _log = LogFactoryUtil.getLog(
-		OrganizationResourceCommand.class);
+	private long[] _toLongArray(JSONArray jsonArray) {
+		if ((jsonArray == null) || (jsonArray.length() == 0)) {
+			return new long[0];
+		}
 
-	@Reference
-	private OrganizationCreator _organizationCreator;
+		long[] result = new long[jsonArray.length()];
+
+		for (int i = 0; i < jsonArray.length(); i++) {
+			result[i] = GetterUtil.getLong(jsonArray.get(i));
+		}
+
+		return result;
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		UserResourceCommand.class);
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private UserCreator _userCreator;
 
 }
