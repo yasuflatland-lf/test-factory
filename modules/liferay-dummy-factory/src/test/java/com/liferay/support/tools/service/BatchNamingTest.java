@@ -31,4 +31,9 @@ class BatchNamingTest {
 		assertEquals("Org 1", BatchNaming.resolve("Org", 3, 0, " "));
 	}
 
+	@Test
+	void separatorVariantWithSingleCount() {
+		assertEquals("Org", BatchNaming.resolve("Org", 1, 0, " "));
+	}
+
 }
