@@ -49,8 +49,7 @@ public class SiteCreator {
 		serviceContext.setUserId(userId);
 
 		for (int i = 0; i < count; i++) {
-			String siteName = (count == 1) ?
-				baseName : baseName + (i + 1);
+			String siteName = BatchNaming.resolve(baseName, count, i);
 
 			Map<Locale, String> nameMap = Collections.singletonMap(
 				LocaleUtil.getDefault(), siteName);

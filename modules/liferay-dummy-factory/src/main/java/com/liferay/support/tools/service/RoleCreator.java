@@ -36,7 +36,7 @@ public class RoleCreator {
 		int skipped = 0;
 
 		for (int i = 0; i < count; i++) {
-			String name = (count == 1) ? baseName : baseName + (i + 1);
+			String name = BatchNaming.resolve(baseName, count, i);
 
 			Map<Locale, String> titleMap = Collections.singletonMap(
 				LocaleUtil.getDefault(), name);

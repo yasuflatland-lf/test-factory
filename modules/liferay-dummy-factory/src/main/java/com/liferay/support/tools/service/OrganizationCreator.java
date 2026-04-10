@@ -24,7 +24,7 @@ public class OrganizationCreator {
 		JSONArray created = JSONFactoryUtil.createJSONArray();
 
 		for (int i = 0; i < count; i++) {
-			String name = (count == 1) ? baseName : baseName + " " + (i + 1);
+			String name = BatchNaming.resolve(baseName, count, i, " ");
 
 			Organization organization =
 				_organizationLocalService.addOrganization(
