@@ -10,7 +10,7 @@ Accepted (partially implemented — PanelApp navigation on CE pending)
 
 ## Context
 
-The test-factory project needs to build E2E integration tests using Testcontainers for the calculator portlet (Service Builder + React).
+The liferay-dummy-factory project needs to build E2E integration tests using Testcontainers for the calculator portlet (MVCPortlet + React).
 
 ### Constraints
 
@@ -27,7 +27,7 @@ The test-factory project needs to build E2E integration tests using Testcontaine
 |-----------|--------|-----------|
 | Test framework | Spock 2.4 + Groovy 5.0.4 | Groovy's concise syntax, test ordering via `@Stepwise`, Power Assert |
 | Container management | Testcontainers 2.0.4 | Docker Engine 29.x support (bundles docker-java 3.7.1). Version 1.21.x ships a shaded docker-java supporting up to API v1.44, which is incompatible with Docker 29.x's minimum API v1.40 |
-| Browser tests | Playwright Java 1.42.0 (Chromium only) | Same technology stack as the official Liferay tests. Installing only Chromium reduces download time |
+| Browser tests | Playwright Java 1.59.0 (Chromium only) | Same technology stack as the official Liferay tests. Installing only Chromium reduces download time |
 | GoGo Shell communication | Apache Commons Net (Telnet) | Used to connect to the Liferay OSGi console |
 
 ### 2. Login Method: API POST (with CSRF Token)
@@ -67,9 +67,9 @@ The test-factory project needs to build E2E integration tests using Testcontaine
 
 ### 5. GoGo Shell Bundle Verification: Full Output Retrieval + Java-Side Filtering
 
-**Decision**: Retrieve the full output of the `lb` command (approximately 1394 lines) and filter for lines containing `Test Factory` on the Java/Groovy side.
+**Decision**: Retrieve the full output of the `lb` command (approximately 1394 lines) and filter for lines containing `Liferay Dummy Factory` on the Java/Groovy side.
 
-**Rationale**: GoGo Shell is an OSGi console and does not support Unix shell pipes (`|`) or the `grep` command. Running `lb | grep test.factory` simply causes the `grep` command to return `false`.
+**Rationale**: GoGo Shell is an OSGi console and does not support Unix shell pipes (`|`) or the `grep` command. Running `lb | grep dummy.factory` simply causes the `grep` command to return `false`.
 
 ### 6. Container Configuration
 
@@ -105,7 +105,7 @@ withEnv([                          // Environment variables
    - Change the portlet's `display-category` to make it deployable on widget pages and switch to page placement testing
    - Identify the correct access path to the Control Panel on CE (requires manual browser verification)
 
-2. **Playwright version**: Currently using 1.42.0. Consider updating as needed while maintaining compatibility with the official Liferay tests.
+2. **Playwright version**: Currently using 1.59.0. Consider updating as needed while maintaining compatibility with the official Liferay tests.
 
 ## References
 

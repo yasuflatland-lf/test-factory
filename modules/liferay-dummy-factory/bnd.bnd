@@ -1,0 +1,8 @@
+Bundle-Name: Liferay Dummy Factory Portlet
+Bundle-SymbolicName: liferay.dummy.factory
+Bundle-Version: 1.0.0
+Web-ContextPath: /liferay-dummy-factory
+-dsannotations-options: inherit
+-includeresource:\
+	META-INF/resources/liferay-dummy-factory-1.0.0.jar=classes/META-INF/resources/liferay-dummy-factory-1.0.0.jar,\
+	package.json

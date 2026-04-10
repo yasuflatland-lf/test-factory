@@ -7,7 +7,7 @@
 | Spock           | 2.4-groovy-5.0   |
 | Groovy          | 5.0.4            |
 | Testcontainers  | 2.0.4            |
-| Playwright      | 1.42.0           |
+| Playwright      | 1.59.0           |
 
 ## Container Setup
 
@@ -21,8 +21,8 @@
 ## Deploy Verification
 
 1. The calculator JAR is copied into the container at `/opt/liferay/deploy/` using `liferay.deployJar(path)`.
-2. The JAR must be pre-built: run `./gradlew :modules:test-factory-calculator:jar` before running tests.
-3. Bundle activation is verified via GoGo Shell: `lb | grep test.factory` must show `Active` or `ACTIVE`.
+2. The JAR must be pre-built: run `./gradlew :modules:liferay-dummy-factory:jar` before running tests.
+3. Bundle activation is verified via GoGo Shell: `lb | grep dummy.factory` must show `Active` or `ACTIVE`.
 4. The `ensureDeployed()` method in `BaseLiferaySpec` polls GoGo Shell every 5 seconds for up to 5 minutes until the bundle is active. It is synchronized and runs only once per test suite.
 
 ## PortletTracker and jakarta.portlet Compatibility (CE GA132)
@@ -48,7 +48,7 @@ The PortletTracker in CE 7.4 GA132 tracks `javax.portlet.Portlet` services, **no
 
 ```bash
 # Build the module JAR first (required)
-./gradlew :modules:test-factory-calculator:jar
+./gradlew :modules:liferay-dummy-factory:jar
 
 # Run integration tests (requires Docker)
 ./gradlew :integration-test:integrationTest
@@ -56,13 +56,13 @@ The PortletTracker in CE 7.4 GA132 tracks `javax.portlet.Portlet` services, **no
 
 - The module build depends on `release.portal.api` (Portal CE), **not** `release.dxp.api`. Using the wrong dependency artifact will cause build failures or runtime class-loading issues against the CE Docker image.
 - The default `test` task is **disabled** (`enabled = false`). All integration tests run exclusively via the `integrationTest` task.
-- The `integrationTest` task automatically depends on `:modules:test-factory-calculator:jar`, so a standalone `./gradlew :integration-test:integrationTest` will build the JAR first.
+- The `integrationTest` task automatically depends on `:modules:liferay-dummy-factory:jar`, so a standalone `./gradlew :integration-test:integrationTest` will build the JAR first.
 - JVM args: `-Xmx1g`.
 - Test logging outputs `passed`, `skipped`, `failed`, `standardOut`, and `standardError`.
 
 ## Adding New Tests
 
-1. Create a new Groovy class under `integration-test/src/test/groovy/com/liferay/test/factory/it/spec/`.
+1. Create a new Groovy class under `integration-test/src/test/groovy/com/liferay/support/tools/it/spec/`.
 2. **Extend `BaseLiferaySpec`** -- this gives you the shared `liferay` container instance and `ensureDeployed()`.
 3. Call `ensureDeployed()` in `setupSpec()` (or in the first test) to guarantee the bundle is deployed and active before your tests run.
 4. Use `@Stepwise` if your tests must execute in declaration order (e.g., login then interact).

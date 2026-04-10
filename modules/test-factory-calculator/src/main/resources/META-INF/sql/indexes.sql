@@ -1,1 +1,0 @@
-create index IX_D5576DF6 on TestFactory_CalcEntry (userId);
