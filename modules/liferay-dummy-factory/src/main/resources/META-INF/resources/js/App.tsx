@@ -20,28 +20,36 @@ function App({actionResourceURL, dataResourceURL, progressResourceURL}: AppProps
 
 	return (
 		<div className="container-fluid container-fluid-max-xl">
-			<EntitySelector
-				onSelect={setSelectedEntity}
-				selected={selectedEntity}
-			/>
-
-			{entityConfig ? (
-				<EntityForm
-					actionResourceURL={actionResourceURL}
-					config={entityConfig}
-					dataResourceURL={dataResourceURL}
-					key={selectedEntity}
-					progressResourceURL={progressResourceURL}
-				/>
-			) : (
-				<div className="sheet sheet-lg">
-					<div className="sheet-section">
-						<div className="alert alert-info">
-							{Liferay.Language.get('this-entity-type-is-not-yet-available')}
-						</div>
-					</div>
+			<div className="row">
+				<div className="col-md-3">
+					<EntitySelector
+						onSelect={setSelectedEntity}
+						selected={selectedEntity}
+					/>
 				</div>
-			)}
+
+				<div className="col-md-9">
+					{entityConfig ? (
+						<EntityForm
+							actionResourceURL={actionResourceURL}
+							config={entityConfig}
+							dataResourceURL={dataResourceURL}
+							key={selectedEntity}
+							progressResourceURL={progressResourceURL}
+						/>
+					) : (
+						<div className="sheet sheet-lg">
+							<div className="sheet-section">
+								<div className="alert alert-info">
+									{Liferay.Language.get(
+										'this-entity-type-is-not-yet-available'
+									)}
+								</div>
+							</div>
+						</div>
+					)}
+				</div>
+			</div>
 		</div>
 	);
 }

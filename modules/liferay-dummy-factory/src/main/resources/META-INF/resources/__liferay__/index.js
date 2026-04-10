@@ -28,18 +28,6 @@ var ENTITY_LABELS = {
   USERS: "users",
   WCM: "web-content"
 };
-var ENTITY_ICONS = {
-  BLOGS: "blogs",
-  CATEGORY: "categories",
-  COMPANY: "briefcase",
-  DOC: "documents-and-media",
-  MB: "message-boards",
-  ORG: "organizations",
-  PAGES: "page",
-  SITES: "sites",
-  USERS: "user",
-  WCM: "web-content"
-};
 
 // src/main/resources/META-INF/resources/js/config/entities.ts
 var ORGANIZATION_CONFIG = {
@@ -504,21 +492,15 @@ var EntityForm_default = EntityForm;
 // src/main/resources/META-INF/resources/js/components/EntitySelector.tsx
 var ENTITY_LIST = Object.values(ENTITY_TYPES);
 function EntitySelector({ onSelect, selected }) {
-  return /* @__PURE__ */ React.createElement("div", { className: "card-page card-page-equal-height" }, ENTITY_LIST.map((entityType) => /* @__PURE__ */ React.createElement("div", { className: "card-page-item col-md-3 col-sm-6", key: entityType }, /* @__PURE__ */ React.createElement(
-    "div",
+  return /* @__PURE__ */ React.createElement("nav", { className: "menubar menubar-transparent menubar-vertical-expand-md" }, /* @__PURE__ */ React.createElement("ul", { className: "nav nav-nested" }, ENTITY_LIST.map((entityType) => /* @__PURE__ */ React.createElement("li", { className: "nav-item", key: entityType }, /* @__PURE__ */ React.createElement(
+    "button",
     {
-      className: `card card-interactive card-interactive-primary ${selected === entityType ? "active" : ""}`,
+      className: `btn btn-unstyled nav-link ${selected === entityType ? "active" : ""}`,
       onClick: () => onSelect(entityType),
-      role: "button",
-      tabIndex: 0
+      type: "button"
     },
-    /* @__PURE__ */ React.createElement("div", { className: "card-body" }, /* @__PURE__ */ React.createElement("div", { className: "card-row" }, /* @__PURE__ */ React.createElement("div", { className: "autofit-col" }, /* @__PURE__ */ React.createElement("span", { className: "sticker sticker-primary" }, /* @__PURE__ */ React.createElement("svg", { className: "lexicon-icon" }, /* @__PURE__ */ React.createElement(
-      "use",
-      {
-        xlinkHref: `${Liferay.ThemeDisplay.getPathThemeImages()}/clay/icons.svg#${ENTITY_ICONS[entityType]}`
-      }
-    )))), /* @__PURE__ */ React.createElement("div", { className: "autofit-col autofit-col-expand" }, /* @__PURE__ */ React.createElement("div", { className: "card-title" }, Liferay.Language.get(ENTITY_LABELS[entityType])))))
-  ))));
+    Liferay.Language.get(ENTITY_LABELS[entityType])
+  )))));
 }
 var EntitySelector_default = EntitySelector;
 
@@ -528,13 +510,13 @@ function App({ actionResourceURL, dataResourceURL, progressResourceURL }) {
     ENTITY_TYPES.ORGANIZATION
   );
   const entityConfig = getEntityConfig(selectedEntity);
-  return /* @__PURE__ */ React.createElement("div", { className: "container-fluid container-fluid-max-xl" }, /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { className: "container-fluid container-fluid-max-xl" }, /* @__PURE__ */ React.createElement("div", { className: "row" }, /* @__PURE__ */ React.createElement("div", { className: "col-md-3" }, /* @__PURE__ */ React.createElement(
     EntitySelector_default,
     {
       onSelect: setSelectedEntity,
       selected: selectedEntity
     }
-  ), entityConfig ? /* @__PURE__ */ React.createElement(
+  )), /* @__PURE__ */ React.createElement("div", { className: "col-md-9" }, entityConfig ? /* @__PURE__ */ React.createElement(
     EntityForm_default,
     {
       actionResourceURL,
@@ -543,7 +525,9 @@ function App({ actionResourceURL, dataResourceURL, progressResourceURL }) {
       key: selectedEntity,
       progressResourceURL
     }
-  ) : /* @__PURE__ */ React.createElement("div", { className: "sheet sheet-lg" }, /* @__PURE__ */ React.createElement("div", { className: "sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "alert alert-info" }, Liferay.Language.get("this-entity-type-is-not-yet-available")))));
+  ) : /* @__PURE__ */ React.createElement("div", { className: "sheet sheet-lg" }, /* @__PURE__ */ React.createElement("div", { className: "sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "alert alert-info" }, Liferay.Language.get(
+    "this-entity-type-is-not-yet-available"
+  )))))));
 }
 var App_default = App;
 
