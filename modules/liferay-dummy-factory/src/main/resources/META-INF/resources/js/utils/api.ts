@@ -1,5 +1,26 @@
 import {ApiResponse} from '../types';
 
+function toErrorResponse<T>(error: unknown): ApiResponse<T> {
+	return {
+		error: error instanceof Error ? error.message : 'Unknown error',
+		success: false,
+	};
+}
+
+async function parseResponse<T>(response: Response): Promise<ApiResponse<T>> {
+	if (!response.ok) {
+		return {error: `Server error: ${response.status}`, success: false};
+	}
+
+	const data = await response.json();
+
+	if (data.error) {
+		return {error: data.error, success: false};
+	}
+
+	return {data, success: true};
+}
+
 export async function fetchResource<T>(
 	resourceURL: string,
 	params?: Record<string, string>
@@ -18,23 +39,10 @@ export async function fetchResource<T>(
 			method: 'GET',
 		});
 
-		if (!response.ok) {
-			return {error: `Server error: ${response.status}`, success: false};
-		}
-
-		const data = await response.json();
-
-		if (data.error) {
-			return {error: data.error, success: false};
-		}
-
-		return {data, success: true};
+		return parseResponse<T>(response);
 	}
 	catch (error) {
-		return {
-			error: error instanceof Error ? error.message : 'Unknown error',
-			success: false,
-		};
+		return toErrorResponse<T>(error);
 	}
 }
 
@@ -57,22 +65,9 @@ export async function postResource<T>(
 			method: 'POST',
 		});
 
-		if (!response.ok) {
-			return {error: `Server error: ${response.status}`, success: false};
-		}
-
-		const data = await response.json();
-
-		if (data.error) {
-			return {error: data.error, success: false};
-		}
-
-		return {data, success: true};
+		return parseResponse<T>(response);
 	}
 	catch (error) {
-		return {
-			error: error instanceof Error ? error.message : 'Unknown error',
-			success: false,
-		};
+		return toErrorResponse<T>(error);
 	}
 }
