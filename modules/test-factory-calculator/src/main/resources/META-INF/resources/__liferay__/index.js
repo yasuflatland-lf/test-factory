@@ -2,7 +2,7 @@ import * as React from 'react';
 
 // src/main/resources/META-INF/resources/js/Calculator.js
 import { useState } from "react";
-function Calculator() {
+function Calculator({ calculateURL }) {
   const [num1, setNum1] = useState("");
   const [num2, setNum2] = useState("");
   const [operator, setOperator] = useState("+");
@@ -12,21 +12,13 @@ function Calculator() {
   const handleCalculate = () => {
     setLoading(true);
     setError(null);
-    const formData = new FormData();
-    formData.append("num1", num1);
-    formData.append("num2", num2);
-    formData.append("operator", operator);
-    formData.append("serviceContext", JSON.stringify({}));
-    fetch("/api/jsonws/TestFactory.CalcEntry/calculate", {
-      body: formData,
+    const url = calculateURL + "&num1=" + encodeURIComponent(num1) + "&num2=" + encodeURIComponent(num2) + "&operator=" + encodeURIComponent(operator);
+    fetch(url, {
       credentials: "include",
-      headers: {
-        "x-csrf-token": Liferay.authToken
-      },
-      method: "POST"
+      method: "GET"
     }).then((response) => response.json()).then((data) => {
-      if (data.exception) {
-        setError(data.exception);
+      if (data.error) {
+        setError(data.error);
       } else {
         setResult(data.result);
       }
