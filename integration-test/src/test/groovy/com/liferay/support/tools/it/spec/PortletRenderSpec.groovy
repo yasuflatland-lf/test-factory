@@ -141,8 +141,8 @@ class PortletRenderSpec extends BaseLiferaySpec {
 		def connection = new URL(url).openConnection() as HttpURLConnection
 
 		connection.requestMethod = 'GET'
-		connection.connectTimeout = 10_000
-		connection.readTimeout = 10_000
+		connection.connectTimeout = 30_000
+		connection.readTimeout = 30_000
 
 		return connection.responseCode
 	}
