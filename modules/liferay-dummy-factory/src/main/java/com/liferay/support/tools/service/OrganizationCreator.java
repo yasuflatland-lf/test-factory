@@ -5,8 +5,6 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.service.OrganizationLocalService;
-import com.liferay.portal.kernel.transaction.Isolation;
-import com.liferay.portal.kernel.transaction.Transactional;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -14,10 +12,6 @@ import org.osgi.service.component.annotations.Reference;
 @Component(service = OrganizationCreator.class)
 public class OrganizationCreator {
 
-	@Transactional(
-		isolation = Isolation.PORTAL,
-		rollbackFor = {Exception.class}
-	)
 	public JSONObject create(
 			long userId, int count, String baseName,
 			long parentOrganizationId, boolean site)

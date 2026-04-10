@@ -2,9 +2,14 @@ package com.liferay.support.tools.portlet.actions;
 
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
+import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.transaction.TransactionConfig;
+import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -54,18 +59,10 @@ public class OrganizationResourceCommand extends BaseMVCResourceCommand {
 			boolean site = GetterUtil.getBoolean(
 				data.getString("site"));
 
-			if (count <= 0) {
-				responseJson.put("error", "count must be greater than 0");
-				responseJson.put("success", false);
+			String validationError = _validate(count, baseName);
 
-				JSONPortletResponseUtil.writeJSON(
-					resourceRequest, resourceResponse, responseJson);
-
-				return;
-			}
-
-			if (Validator.isNull(baseName)) {
-				responseJson.put("error", "baseName is required");
+			if (validationError != null) {
+				responseJson.put("error", validationError);
 				responseJson.put("success", false);
 
 				JSONPortletResponseUtil.writeJSON(
@@ -76,11 +73,15 @@ public class OrganizationResourceCommand extends BaseMVCResourceCommand {
 
 			long userId = _portal.getUserId(resourceRequest);
 
-			responseJson = _organizationCreator.create(
-				userId, count, baseName,
-				parentOrganizationId, site);
+			responseJson = TransactionInvokerUtil.invoke(
+				_transactionConfig,
+				() -> _organizationCreator.create(
+					userId, count, baseName,
+					parentOrganizationId, site));
 		}
 		catch (Throwable throwable) {
+			_log.error("Failed to create organizations", throwable);
+
 			responseJson.put(
 				"error",
 				(throwable.getMessage() != null)
@@ -91,6 +92,25 @@ public class OrganizationResourceCommand extends BaseMVCResourceCommand {
 		JSONPortletResponseUtil.writeJSON(
 			resourceRequest, resourceResponse, responseJson);
 	}
+
+	private static String _validate(int count, String baseName) {
+		if (count <= 0) {
+			return "count must be greater than 0";
+		}
+
+		if (Validator.isNull(baseName)) {
+			return "baseName is required";
+		}
+
+		return null;
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		OrganizationResourceCommand.class);
+
+	private static final TransactionConfig _transactionConfig =
+		TransactionConfig.Factory.create(
+			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private OrganizationCreator _organizationCreator;
