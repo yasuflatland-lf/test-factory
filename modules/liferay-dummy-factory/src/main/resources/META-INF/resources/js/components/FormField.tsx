@@ -35,6 +35,43 @@ function FormField({error, field, onChange, options, value}: FormFieldProps) {
 		);
 	}
 
+	if (field.type === 'multiselect') {
+		const selectedValues = value ? value.split(',').filter(Boolean) : [];
+
+		return (
+			<div className={`form-group ${error ? 'has-error' : ''}`}>
+				<label htmlFor={field.name}>
+					{Liferay.Language.get(field.label)}
+
+					{field.required && <span className="reference-mark text-warning">*</span>}
+				</label>
+
+				<select
+					className="form-control"
+					id={field.name}
+					multiple
+					onChange={(e) => {
+						const selected = Array.from(
+							e.target.selectedOptions,
+							(opt) => opt.value
+						);
+
+						onChange(field.name, selected.join(','));
+					}}
+					value={selectedValues}
+				>
+					{(options || field.options || []).map((opt) => (
+						<option key={opt.value} value={opt.value}>
+							{opt.label}
+						</option>
+					))}
+				</select>
+
+				{error && <div className="form-feedback-item">{error}</div>}
+			</div>
+		);
+	}
+
 	if (field.type === 'select') {
 		return (
 			<div className={`form-group ${error ? 'has-error' : ''}`}>
