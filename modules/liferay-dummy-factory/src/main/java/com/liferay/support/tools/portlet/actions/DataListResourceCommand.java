@@ -52,7 +52,16 @@ public class DataListResourceCommand extends BaseMVCResourceCommand {
 		JSONArray jsonArray;
 
 		if (provider != null) {
-			jsonArray = provider.getOptions(companyId, type);
+			try {
+				jsonArray = provider.getOptions(companyId, type);
+			}
+			catch (Exception exception) {
+				_log.error(
+					"Failed to load data list options for type: " + type,
+					exception);
+
+				jsonArray = JSONFactoryUtil.createJSONArray();
+			}
 		}
 		else {
 			_log.warn("Unknown data list type requested: " + type);
@@ -77,7 +86,7 @@ public class DataListResourceCommand extends BaseMVCResourceCommand {
 
 	private void _removeProvider(DataListProvider provider) {
 		for (String type : provider.getSupportedTypes()) {
-			_providers.remove(type);
+			_providers.remove(type, provider);
 		}
 	}
 
