@@ -1,26 +1,36 @@
 package com.liferay.support.tools.service;
 
-import org.junit.jupiter.api.Assertions;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import com.liferay.portal.kernel.model.role.RoleConstants;
+
 import org.junit.jupiter.api.Test;
 
 class RoleTypeTest {
 
 	@Test
 	void fromStringUpperCase() {
-		Assertions.assertEquals(
-			RoleType.REGULAR, RoleType.fromString("REGULAR"));
+		assertEquals(RoleType.REGULAR, RoleType.fromString("REGULAR"));
 	}
 
 	@Test
 	void fromStringLowerCase() {
-		Assertions.assertEquals(RoleType.SITE, RoleType.fromString("site"));
+		assertEquals(RoleType.SITE, RoleType.fromString("site"));
 	}
 
 	@Test
 	void fromStringInvalidThrowsException() {
-		Assertions.assertThrows(
+		assertThrows(
 			IllegalArgumentException.class,
 			() -> RoleType.fromString("invalid"));
+	}
+
+	@Test
+	void toLiferayConstant() {
+		assertEquals(RoleConstants.TYPE_REGULAR, RoleType.REGULAR.toLiferayConstant());
+		assertEquals(RoleConstants.TYPE_SITE, RoleType.SITE.toLiferayConstant());
+		assertEquals(RoleConstants.TYPE_ORGANIZATION, RoleType.ORGANIZATION.toLiferayConstant());
 	}
 
 }

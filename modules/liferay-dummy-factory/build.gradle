@@ -4,3 +4,7 @@ dependencies {
 	testImplementation group: "com.liferay.portal", name: "release.portal.api", version: "default"
 	testImplementation group: "org.junit.jupiter", name: "junit-jupiter", version: "5.10.2"
 }
+
+test {
+	useJUnitPlatform()
+}
