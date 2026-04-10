@@ -15,7 +15,7 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.sites.kernel.util.Sites;
 
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 
@@ -41,13 +41,11 @@ public class SiteCreator {
 			String siteName = (count == 1) ?
 				baseName : baseName + (i + 1);
 
-			Map<Locale, String> nameMap = new HashMap<>();
+			Map<Locale, String> nameMap = Collections.singletonMap(
+				LocaleUtil.getDefault(), siteName);
 
-			nameMap.put(LocaleUtil.getDefault(), siteName);
-
-			Map<Locale, String> descriptionMap = new HashMap<>();
-
-			descriptionMap.put(LocaleUtil.getDefault(), description);
+			Map<Locale, String> descriptionMap = Collections.singletonMap(
+				LocaleUtil.getDefault(), description);
 
 			ServiceContext serviceContext = new ServiceContext();
 
