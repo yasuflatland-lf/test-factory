@@ -1,14 +1,17 @@
 import {useState} from 'react';
 
-function Calculator({calculateURL}) {
-	const [num1, setNum1] = useState('');
-	const [num2, setNum2] = useState('');
-	const [operator, setOperator] = useState('+');
-	const [result, setResult] = useState(null);
-	const [error, setError] = useState(null);
+interface CalculatorProps {
+	calculateURL: string;
+}
 
+function Calculator({calculateURL}: CalculatorProps) {
+	const [num1, setNum1] = useState<string>('');
+	const [num2, setNum2] = useState<string>('');
+	const [operator, setOperator] = useState<string>('+');
+	const [result, setResult] = useState<number | null>(null);
+	const [error, setError] = useState<string | null>(null);
 
-	const [loading, setLoading] = useState(false);
+	const [loading, setLoading] = useState<boolean>(false);
 
 	const handleCalculate = () => {
 		setLoading(true);

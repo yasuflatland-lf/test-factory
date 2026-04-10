@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-// src/main/resources/META-INF/resources/js/Calculator.js
+// src/main/resources/META-INF/resources/js/Calculator.tsx
 import { useState } from "react";
 function Calculator({ calculateURL }) {
   const [num1, setNum1] = useState("");

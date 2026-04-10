@@ -1,0 +1,20 @@
+{
+	"compilerOptions": {
+		"allowSyntheticDefaultImports": true,
+		"jsx": "react",
+		"module": "es2022",
+		"moduleResolution": "node",
+		"strict": true,
+		"target": "esnext",
+		"skipLibCheck": true,
+		"noEmit": true,
+		"baseUrl": ".",
+		"typeRoots": ["./node_modules/@types", "./src/main/resources/META-INF/resources/js/types"]
+	},
+	"include": [
+		"src/main/resources/META-INF/resources/**/*.ts",
+		"src/main/resources/META-INF/resources/**/*.tsx",
+		"test/**/*.ts",
+		"test/**/*.tsx"
+	]
+}
