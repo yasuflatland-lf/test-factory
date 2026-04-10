@@ -47,7 +47,7 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 			}
 		}
 
-		const response = await postResource(actionURL, submitValues as Record<string, string>);
+		const response = await postResource(actionURL, submitValues);
 
 		endSubmit();
 
