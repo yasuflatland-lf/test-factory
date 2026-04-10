@@ -51,12 +51,14 @@ public class OrganizationCreator {
 			}
 		}
 
-		result.put("count", created.length());
+		int createdCount = created.length();
+
+		result.put("count", createdCount);
 		result.put("organizations", created);
 		result.put("skipped", skipped);
-		result.put("success", created.length() > 0);
+		result.put("success", createdCount > 0);
 
-		if (created.length() == 0) {
+		if (createdCount == 0) {
 			result.put(
 				"error",
 				"No organizations were created (all names may already " +

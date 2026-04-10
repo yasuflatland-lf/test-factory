@@ -35,14 +35,14 @@ public class RoleCreator {
 		JSONArray created = JSONFactoryUtil.createJSONArray();
 		int skipped = 0;
 
+		Map<Locale, String> descriptionMap = Collections.singletonMap(
+			LocaleUtil.getDefault(), description);
+
 		for (int i = 0; i < count; i++) {
 			String name = BatchNaming.resolve(baseName, count, i);
 
 			Map<Locale, String> titleMap = Collections.singletonMap(
 				LocaleUtil.getDefault(), name);
-
-			Map<Locale, String> descriptionMap = Collections.singletonMap(
-				LocaleUtil.getDefault(), description);
 
 			try {
 				Role role = _roleLocalService.addRole(

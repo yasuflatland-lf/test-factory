@@ -1,6 +1,5 @@
 package com.liferay.support.tools.service;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -10,7 +9,7 @@ class BatchSpecTest {
 
 	@Test
 	void normalCreation() {
-		BatchSpec spec = assertDoesNotThrow(() -> new BatchSpec(5, "TestSite"));
+		BatchSpec spec = new BatchSpec(5, "TestSite");
 
 		assertEquals(5, spec.count());
 		assertEquals("TestSite", spec.baseName());
@@ -18,7 +17,7 @@ class BatchSpecTest {
 
 	@Test
 	void boundaryValues() {
-		BatchSpec spec = assertDoesNotThrow(() -> new BatchSpec(1, "a"));
+		BatchSpec spec = new BatchSpec(1, "a");
 
 		assertEquals(1, spec.count());
 		assertEquals("a", spec.baseName());
