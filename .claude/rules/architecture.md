@@ -11,11 +11,6 @@ liferay-dummy-factory/
     liferay-dummy-factory/ # Single OSGi bundle (portlet + web)
       bnd.bnd
       src/main/java/         # Java: portlet, resource commands, services, constants
-        com/liferay/support/tools/
-          portlet/actions/
-            UserResourceCommand.java
-          service/
-            UserCreator.java
       src/main/resources/
         META-INF/resources/
           js/               # React frontend components
@@ -29,7 +24,7 @@ liferay-dummy-factory/
 
 **MVCPortlet + PanelApp** -- The portlet (`com_liferay_support_tools_portlet_LiferayDummyFactoryPortlet`) is registered in the Control Panel under Configuration. The portlet uses `javax.portlet` namespace (Portlet API 3.0). The PanelApp's `@Reference` uses a target filter of `javax.portlet.name=...`. The view JSP renders the React component via the `<react:component>` tag.
 
-**MVCResourceCommands** -- `/ldf/user` (`UserResourceCommand`) handles User creation, and `/ldf/data` now serves organizations, roles, and user-groups dropdown data.
+**MVCResourceCommands** -- Entity creation is handled by per-entity resource commands: `/ldf/org` (Organization), `/ldf/user` (User), `/ldf/role` (Role), `/ldf/site` (Site). `/ldf/data` (`DataListResourceCommand`) serves dropdown data for organizations, roles, user-groups, site-roles, org-roles, sites, and site-templates.
 
 **React frontend** -- React components live under `META-INF/resources/js/`. The view JSP passes server-side data (such as resource URLs) to the React component as props. The frontend uses `credentials: 'include'` so Liferay session cookies are sent automatically.
 
