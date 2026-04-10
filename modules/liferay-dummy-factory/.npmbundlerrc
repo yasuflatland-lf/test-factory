@@ -1,5 +1,0 @@
-{
-	"create-jar": {
-		"output-dir": "classes/META-INF/resources"
-	}
-}
