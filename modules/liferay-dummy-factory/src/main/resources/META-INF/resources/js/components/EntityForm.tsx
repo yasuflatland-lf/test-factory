@@ -3,7 +3,7 @@ import {useState} from 'react';
 import {EntityFormConfig, FieldDefinition} from '../types';
 import {useFormState} from '../hooks/useFormState';
 import {useProgress} from '../hooks/useProgress';
-import {fetchResource} from '../utils/api';
+import {postResource} from '../utils/api';
 import AdvancedOptions from './AdvancedOptions';
 import DynamicSelect from './DynamicSelect';
 import FormField from './FormField';
@@ -34,7 +34,7 @@ function EntityForm({actionResourceURL, config, dataResourceURL, progressResourc
 		startSubmit();
 		setResult(null);
 
-		const response = await fetchResource(actionResourceURL, values);
+		const response = await postResource(actionResourceURL, values);
 
 		endSubmit();
 

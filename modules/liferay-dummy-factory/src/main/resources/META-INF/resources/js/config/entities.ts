@@ -7,7 +7,7 @@ const ORGANIZATION_CONFIG: EntityFormConfig = {
 	fields: [
 		{
 			label: 'number-of-organizations',
-			name: 'numberOfOrganizations',
+			name: 'count',
 			required: true,
 			type: 'number',
 			validators: [
@@ -17,7 +17,7 @@ const ORGANIZATION_CONFIG: EntityFormConfig = {
 		},
 		{
 			label: 'base-organization-name',
-			name: 'baseOrganizationName',
+			name: 'baseName',
 			required: true,
 			type: 'text',
 		},
@@ -32,7 +32,7 @@ const ORGANIZATION_CONFIG: EntityFormConfig = {
 		{
 			defaultValue: false,
 			label: 'create-organization-site',
-			name: 'organizationSiteCreate',
+			name: 'site',
 			required: false,
 			type: 'toggle',
 		},

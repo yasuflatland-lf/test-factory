@@ -18,6 +18,49 @@ export async function fetchResource<T>(
 			method: 'GET',
 		});
 
+		if (!response.ok) {
+			return {error: `Server error: ${response.status}`, success: false};
+		}
+
+		const data = await response.json();
+
+		if (data.error) {
+			return {error: data.error, success: false};
+		}
+
+		return {data, success: true};
+	}
+	catch (error) {
+		return {
+			error: error instanceof Error ? error.message : 'Unknown error',
+			success: false,
+		};
+	}
+}
+
+export async function postResource<T>(
+	resourceURL: string,
+	values: Record<string, string>
+): Promise<ApiResponse<T>> {
+	try {
+		const body = new URLSearchParams();
+
+		body.append('data', JSON.stringify(values));
+
+		const response = await fetch(resourceURL, {
+			body: body.toString(),
+			credentials: 'include',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'x-csrf-token': Liferay.authToken,
+			},
+			method: 'POST',
+		});
+
+		if (!response.ok) {
+			return {error: `Server error: ${response.status}`, success: false};
+		}
+
 		const data = await response.json();
 
 		if (data.error) {
