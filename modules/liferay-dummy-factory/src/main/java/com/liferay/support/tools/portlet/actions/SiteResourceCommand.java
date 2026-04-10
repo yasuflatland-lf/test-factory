@@ -68,17 +68,16 @@ public class SiteResourceCommand extends BaseMVCResourceCommand {
 			String membershipType = GetterUtil.getString(
 				data.getString("membershipType"), "open");
 			long parentGroupId = GetterUtil.getLong(
-				data.getString("parentGroupId"), 0);
+				data.getString("parentGroupId"));
 			long siteTemplateId = GetterUtil.getLong(
-				data.getString("siteTemplateId"), 0);
+				data.getString("siteTemplateId"));
 			boolean manualMembership = GetterUtil.getBoolean(
 				data.getString("manualMembership"), true);
 			boolean inheritContent = GetterUtil.getBoolean(
-				data.getString("inheritContent"), false);
+				data.getString("inheritContent"));
 			boolean active = GetterUtil.getBoolean(
 				data.getString("active"), true);
-			String description = GetterUtil.getString(
-				data.getString("description"), "");
+			String description = data.getString("description");
 
 			long userId = _portal.getUserId(resourceRequest);
 			long companyId = _portal.getCompanyId(resourceRequest);

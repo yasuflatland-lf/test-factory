@@ -37,20 +37,20 @@ public class SiteCreator {
 
 		int type = _toGroupType(membershipType);
 
+		Map<Locale, String> descriptionMap = Collections.singletonMap(
+			LocaleUtil.getDefault(), description);
+
+		ServiceContext serviceContext = new ServiceContext();
+
+		serviceContext.setCompanyId(companyId);
+		serviceContext.setUserId(userId);
+
 		for (int i = 0; i < count; i++) {
 			String siteName = (count == 1) ?
 				baseName : baseName + (i + 1);
 
 			Map<Locale, String> nameMap = Collections.singletonMap(
 				LocaleUtil.getDefault(), siteName);
-
-			Map<Locale, String> descriptionMap = Collections.singletonMap(
-				LocaleUtil.getDefault(), description);
-
-			ServiceContext serviceContext = new ServiceContext();
-
-			serviceContext.setCompanyId(companyId);
-			serviceContext.setUserId(userId);
 
 			Group group;
 
@@ -77,8 +77,15 @@ public class SiteCreator {
 			}
 
 			if (siteTemplateId > 0) {
-				_sites.updateLayoutSetPrototypesLinks(
-					group, siteTemplateId, 0, true, false);
+				try {
+					_sites.updateLayoutSetPrototypesLinks(
+						group, siteTemplateId, 0, true, false);
+				}
+				catch (Exception e) {
+					_log.error(
+						"Failed to apply site template " + siteTemplateId +
+						" to site '" + siteName + "'", e);
+				}
 			}
 
 			JSONObject siteJson = JSONFactoryUtil.createJSONObject();
