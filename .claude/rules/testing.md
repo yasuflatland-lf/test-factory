@@ -20,7 +20,7 @@
 
 ## Deploy Verification
 
-1. The calculator JAR is copied into the container at `/opt/liferay/deploy/` using `liferay.deployJar(path)`.
+1. The module JAR is copied into the container at `/opt/liferay/deploy/` using `liferay.deployJar(path)`.
 2. The JAR must be pre-built: run `./gradlew :modules:liferay-dummy-factory:jar` before running tests.
 3. Bundle activation is verified via GoGo Shell: `lb | grep dummy.factory` must show `Active` or `ACTIVE`.
 4. The `ensureDeployed()` method in `BaseLiferaySpec` polls GoGo Shell every 5 seconds for up to 5 minutes until the bundle is active. It is synchronized and runs only once per test suite.

@@ -1,6 +1,6 @@
 # liferay-dummy-factory
 
-Liferay Portal CE Workspace: calculator portlet (MVCPortlet + React) with Testcontainers integration tests.
+Liferay Portal CE Workspace: MVCPortlet + React portlet with Testcontainers integration tests.
 
 ## Commands
 

@@ -20,9 +20,9 @@ abstract class BaseLiferaySpec extends Specification {
 	static LiferayContainer liferay = LiferayContainer.getInstance()
 
 	@Shared
-	static boolean jarDeployed = false
+	static boolean bundleVerified = false
 
-	static Path getCalculatorJarPath() {
+	static Path getModuleJarPath() {
 		Path workspaceRoot = Path.of(System.getProperty('user.dir')).parent
 		Path jarDir = workspaceRoot.resolve(
 			'modules/liferay-dummy-factory/build/libs'
@@ -33,8 +33,8 @@ abstract class BaseLiferaySpec extends Specification {
 
 		if (jars == null || jars.length == 0) {
 			throw new IllegalStateException(
-				"Calculator JAR not found in ${jarDir}. " +
-				"Run './gradlew :modules:liferay-dummy-factory:jar' first."
+				"Module JAR not found in ${jarDir}. " +
+				"Run './gradlew :modules:liferay-dummy-factory:build' first."
 			)
 		}
 
@@ -42,12 +42,12 @@ abstract class BaseLiferaySpec extends Specification {
 	}
 
 	static synchronized void ensureDeployed() {
-		if (jarDeployed) {
+		if (bundleVerified) {
 			return
 		}
 
-		log.info('Deploying JAR: {}', getCalculatorJarPath())
-		liferay.deployJar(getCalculatorJarPath())
+		log.info('Deploying JAR: {}', getModuleJarPath())
+		liferay.deployJar(getModuleJarPath())
 		log.info('JAR copied to container. GoGo Shell at {}:{}', liferay.host, liferay.gogoPort)
 
 		boolean active = false
@@ -88,7 +88,7 @@ abstract class BaseLiferaySpec extends Specification {
 			)
 		}
 
-		jarDeployed = true
+		bundleVerified = true
 	}
 
 }
