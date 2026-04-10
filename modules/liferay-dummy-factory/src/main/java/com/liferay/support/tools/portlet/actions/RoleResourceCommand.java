@@ -7,7 +7,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
+import com.liferay.portal.kernel.transaction.TransactionInvoker;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -65,7 +65,7 @@ public class RoleResourceCommand extends BaseMVCResourceCommand {
 
 			long userId = _portal.getUserId(resourceRequest);
 
-			responseJson = TransactionInvokerUtil.invoke(
+			responseJson = _transactionInvoker.invoke(
 				ResourceCommandUtil.TRANSACTION_CONFIG,
 				() -> _roleCreator.create(
 					userId, batchSpec,
@@ -97,5 +97,8 @@ public class RoleResourceCommand extends BaseMVCResourceCommand {
 
 	@Reference
 	private RoleCreator _roleCreator;
+
+	@Reference
+	private TransactionInvoker _transactionInvoker;
 
 }

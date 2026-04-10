@@ -8,7 +8,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
+import com.liferay.portal.kernel.transaction.TransactionInvoker;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -78,7 +78,7 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 			long userId = _portal.getUserId(resourceRequest);
 			long companyId = _portal.getCompanyId(resourceRequest);
 
-			responseJson = TransactionInvokerUtil.invoke(
+			responseJson = _transactionInvoker.invoke(
 				ResourceCommandUtil.TRANSACTION_CONFIG,
 				() -> _userCreator.create(
 					userId, companyId, batchSpec,
@@ -123,6 +123,9 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private TransactionInvoker _transactionInvoker;
 
 	@Reference
 	private UserCreator _userCreator;
