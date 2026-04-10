@@ -10,7 +10,7 @@ Accepted (partially implemented — PanelApp navigation on CE pending)
 
 ## Context
 
-The liferay-dummy-factory project needs to build E2E integration tests using Testcontainers for the calculator portlet (Service Builder + React).
+The liferay-dummy-factory project needs to build E2E integration tests using Testcontainers for the calculator portlet (MVCPortlet + React).
 
 ### Constraints
 

@@ -1,16 +1,15 @@
 # liferay-dummy-factory
 
-A Liferay Portal 7.4 (CE GA132) workspace featuring a Calculator portlet built with Service Builder + React, along with Testcontainers-based integration tests.
+A Liferay Portal 7.4 (CE GA132) workspace featuring a Calculator portlet built with MVCPortlet + React, along with Testcontainers-based integration tests.
 
 ## Project Structure
 
 ```
 liferay-dummy-factory/
 ├── modules/
-│   └── liferay-dummy-factory/   # OSGi bundle (API + Service + Web)
-│       ├── service.xml            # CalcEntry entity definition
+│   └── liferay-dummy-factory/   # OSGi bundle (Portlet + Web)
 │       └── src/main/
-│           ├── java/              # MVCPortlet, Service Builder
+│           ├── java/              # MVCPortlet, MVCResourceCommand
 │           └── resources/
 │               └── META-INF/resources/
 │                   └── js/        # React frontend
@@ -24,7 +23,7 @@ liferay-dummy-factory/
 | Layer | Technology |
 |-------|------------|
 | Portal | Liferay Portal 7.4.3.132-ga132 |
-| Backend | Service Builder (CalcEntry entity) |
+| Backend | MVCPortlet + MVCResourceCommand (stateless) |
 | Frontend | React + Clay CSS |
 | Build | Gradle 8.5 + Liferay Workspace Plugin 10.1.9 |
 | Testing | Spock 2.4 / Groovy 5.0 / Testcontainers 2.0.4 / Playwright 1.59.0 |
@@ -98,9 +97,6 @@ docker exec liferay bash -c "(echo 'lb dummy.factory'; sleep 2) | telnet localho
 ## Build
 
 ```bash
-# Service Builder code generation
-./gradlew :modules:liferay-dummy-factory:buildService
-
 # Module build
 ./gradlew :modules:liferay-dummy-factory:build
 ```

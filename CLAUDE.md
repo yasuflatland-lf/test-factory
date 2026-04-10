@@ -1,11 +1,10 @@
 # liferay-dummy-factory
 
-Liferay Portal CE Workspace: calculator portlet (Service Builder + React) with Testcontainers integration tests.
+Liferay Portal CE Workspace: calculator portlet (MVCPortlet + React) with Testcontainers integration tests.
 
 ## Commands
 
 ```bash
-./gradlew :modules:liferay-dummy-factory:buildService   # Service Builder codegen
 ./gradlew :modules:liferay-dummy-factory:build           # Full module build
 ./gradlew :integration-test:integrationTest                # Integration tests (requires Docker)
 # Single spec:
