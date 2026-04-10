@@ -30,14 +30,30 @@ public class UserCreator {
 			String screenName = baseName.toLowerCase() + (i + 1);
 			String emailAddress = screenName + "@" + emailDomain;
 
-			User user = _userLocalService.addUser(
-				creatorUserId, companyId, false, password, password,
-				false, screenName, emailAddress,
-				LocaleUtil.getDefault(), baseName, "",
-				String.valueOf(i + 1), 0L, 0L, male,
-				Calendar.JANUARY, 1, 1970, jobTitle, 0, null,
-				organizationIds, roleIds, userGroupIds, false,
-				new ServiceContext());
+			ServiceContext serviceContext = new ServiceContext();
+
+			serviceContext.setCompanyId(companyId);
+			serviceContext.setUserId(creatorUserId);
+
+			User user;
+
+			try {
+				user = _userLocalService.addUser(
+					creatorUserId, companyId, false, password, password,
+					false, screenName, emailAddress,
+					LocaleUtil.getDefault(), baseName, "",
+					String.valueOf(i + 1), 0L, 0L, male,
+					Calendar.JANUARY, 1, 1970, jobTitle, 0, null,
+					organizationIds, roleIds, userGroupIds, false,
+					serviceContext);
+			}
+			catch (Exception e) {
+				throw new Exception(
+					"Failed to create user '" + screenName + "' (" +
+						(i + 1) + " of " + count + "): " +
+						e.getMessage(),
+					e);
+			}
 
 			JSONObject userJson = JSONFactoryUtil.createJSONObject();
 
