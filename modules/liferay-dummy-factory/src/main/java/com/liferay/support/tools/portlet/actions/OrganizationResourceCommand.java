@@ -5,9 +5,12 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.support.tools.constants.LDFPortletKeys;
+import com.liferay.support.tools.service.OrganizationCreator;
 
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
@@ -35,26 +38,62 @@ public class OrganizationResourceCommand extends BaseMVCResourceCommand {
 			_portal.getOriginalServletRequest(
 				_portal.getHttpServletRequest(resourceRequest));
 
-		int numberOfOrganizations = ParamUtil.getInteger(
-			httpServletRequest, "numberOfOrganizations");
-		String baseOrganizationName = ParamUtil.getString(
-			httpServletRequest, "baseOrganizationName");
-		long parentOrganizationId = ParamUtil.getLong(
-			httpServletRequest, "parentOrganizationId");
-		boolean organizationSiteCreate = ParamUtil.getBoolean(
-			httpServletRequest, "organizationSiteCreate");
+		String dataString = ParamUtil.getString(
+			httpServletRequest, "data");
 
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+		JSONObject responseJson = JSONFactoryUtil.createJSONObject();
 
-		jsonObject.put("baseOrganizationName", baseOrganizationName);
-		jsonObject.put("numberOfOrganizations", numberOfOrganizations);
-		jsonObject.put("organizationSiteCreate", organizationSiteCreate);
-		jsonObject.put("parentOrganizationId", parentOrganizationId);
-		jsonObject.put("success", true);
+		try {
+			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
+
+			int count = GetterUtil.getInteger(
+				data.getString("count"));
+			String baseName = data.getString("baseName");
+			long parentOrganizationId = GetterUtil.getLong(
+				data.getString("parentOrganizationId"));
+			boolean site = GetterUtil.getBoolean(
+				data.getString("site"));
+
+			if (count <= 0) {
+				responseJson.put("error", "count must be greater than 0");
+				responseJson.put("success", false);
+
+				JSONPortletResponseUtil.writeJSON(
+					resourceRequest, resourceResponse, responseJson);
+
+				return;
+			}
+
+			if (Validator.isNull(baseName)) {
+				responseJson.put("error", "baseName is required");
+				responseJson.put("success", false);
+
+				JSONPortletResponseUtil.writeJSON(
+					resourceRequest, resourceResponse, responseJson);
+
+				return;
+			}
+
+			long userId = _portal.getUserId(resourceRequest);
+
+			responseJson = _organizationCreator.create(
+				userId, count, baseName,
+				parentOrganizationId, site);
+		}
+		catch (Throwable throwable) {
+			responseJson.put(
+				"error",
+				(throwable.getMessage() != null)
+					? throwable.getMessage() : "An unexpected error occurred");
+			responseJson.put("success", false);
+		}
 
 		JSONPortletResponseUtil.writeJSON(
-			resourceRequest, resourceResponse, jsonObject);
+			resourceRequest, resourceResponse, responseJson);
 	}
+
+	@Reference
+	private OrganizationCreator _organizationCreator;
 
 	@Reference
 	private Portal _portal;
