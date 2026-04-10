@@ -78,7 +78,7 @@ function FormField({error, field, onChange, options, value}: FormFieldProps) {
 				>
 					{resolvedOptions.map((opt) => (
 						<option key={opt.value} value={opt.value}>
-							{opt.label}
+							{Liferay.Language.get(opt.label)}
 						</option>
 					))}
 				</select>
@@ -103,10 +103,28 @@ function FormField({error, field, onChange, options, value}: FormFieldProps) {
 
 					{resolvedOptions.map((opt) => (
 						<option key={opt.value} value={opt.value}>
-							{opt.label}
+							{Liferay.Language.get(opt.label)}
 						</option>
 					))}
 				</select>
+
+				<FieldError error={error} />
+			</div>
+		);
+	}
+
+	if (field.type === 'textarea') {
+		return (
+			<div className={`form-group ${error ? 'has-error' : ''}`}>
+				<FieldLabel field={field} />
+
+				<textarea
+					className="form-control"
+					id={field.name}
+					onChange={(e) => onChange(field.name, e.target.value)}
+					rows={3}
+					value={value}
+				/>
 
 				<FieldError error={error} />
 			</div>

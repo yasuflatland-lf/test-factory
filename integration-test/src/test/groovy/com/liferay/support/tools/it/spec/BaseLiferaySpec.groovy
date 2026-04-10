@@ -31,6 +31,9 @@ abstract class BaseLiferaySpec extends Specification {
 	@Shared
 	static boolean bundleVerified = false
 
+	@Shared
+	static String activePassword = NEW_PASSWORD
+
 	static Path getModuleJarPath() {
 		Path workspaceRoot = Path.of(System.getProperty('user.dir')).parent
 		Path jarDir = workspaceRoot.resolve(
@@ -107,7 +110,7 @@ abstract class BaseLiferaySpec extends Specification {
 		String authToken = page.evaluate('() => Liferay.authToken') as String
 
 		def passwords = [LiferayContainer.DEFAULT_ADMIN_PASSWORD, NEW_PASSWORD]
-		String activePassword = null
+		String loggedInPassword = null
 
 		for (pwd in passwords) {
 			def response = page.request().post("${liferay.baseUrl}/c/portal/login",
@@ -118,7 +121,7 @@ abstract class BaseLiferaySpec extends Specification {
 			)
 
 			if (response.status() == 200) {
-				activePassword = pwd
+				loggedInPassword = pwd
 				break
 			}
 		}
@@ -132,8 +135,10 @@ abstract class BaseLiferaySpec extends Specification {
 			page.waitForNavigation({ ->
 				page.locator('[type=submit], button.btn-primary').first().click()
 			})
-			activePassword = NEW_PASSWORD
+			loggedInPassword = NEW_PASSWORD
 		}
+
+		activePassword = loggedInPassword ?: LiferayContainer.DEFAULT_ADMIN_PASSWORD
 
 		if (page.locator('#reminderQueryAnswer').isVisible()) {
 			page.locator('#reminderQueryAnswer').fill('test')
@@ -174,6 +179,31 @@ abstract class BaseLiferaySpec extends Specification {
 		return new JsonSlurper().parseText(body) as Map
 	}
 
+	protected Map headlessPost(String path, String jsonBody) {
+		def conn = new URL("${liferay.baseUrl}${path}").openConnection() as HttpURLConnection
+
+		conn.requestMethod = 'POST'
+		conn.doOutput = true
+		conn.connectTimeout = 10_000
+		conn.readTimeout = 10_000
+		conn.setRequestProperty('Authorization', basicAuthHeader())
+		conn.setRequestProperty('Content-Type', 'application/json')
+		conn.setRequestProperty('Accept', 'application/json')
+
+		conn.outputStream.withWriter('UTF-8') { writer ->
+			writer.write(jsonBody)
+		}
+
+		int status = conn.responseCode
+		String body = (status < 400) ? conn.inputStream.text : (conn.errorStream?.text ?: '')
+
+		if (status >= 400) {
+			throw new IllegalStateException("headlessPost ${path} returned HTTP ${status}: ${body}")
+		}
+
+		return new JsonSlurper().parseText(body) as Map
+	}
+
 	protected int headlessDelete(String path) {
 		def conn = new URL("${liferay.baseUrl}${path}").openConnection() as HttpURLConnection
 
@@ -187,7 +217,7 @@ abstract class BaseLiferaySpec extends Specification {
 
 	protected String basicAuthHeader() {
 		String credentials =
-			"${LiferayContainer.DEFAULT_ADMIN_EMAIL}:${NEW_PASSWORD}"
+			"${LiferayContainer.DEFAULT_ADMIN_EMAIL}:${activePassword}"
 
 		return "Basic ${credentials.bytes.encodeBase64().toString()}"
 	}

@@ -72,14 +72,8 @@ public class DataListResourceCommand extends BaseMVCResourceCommand {
 
 				break;
 			case "roles":
-				List<Role> roles = RoleLocalServiceUtil.getRoles(
-					companyId,
-					new int[] {RoleConstants.TYPE_REGULAR});
-
-				for (Role role : roles) {
-					jsonArray.put(
-						_createOption(role.getName(), role.getRoleId()));
-				}
+				_addRoleOptions(
+					jsonArray, companyId, RoleConstants.TYPE_REGULAR);
 
 				break;
 			case "user-groups":
@@ -94,6 +88,16 @@ public class DataListResourceCommand extends BaseMVCResourceCommand {
 				}
 
 				break;
+			case "site-roles":
+				_addRoleOptions(
+					jsonArray, companyId, RoleConstants.TYPE_SITE);
+
+				break;
+			case "org-roles":
+				_addRoleOptions(
+					jsonArray, companyId, RoleConstants.TYPE_ORGANIZATION);
+
+				break;
 			default:
 				_log.warn("Unknown data list type requested: " + type);
 
@@ -102,6 +106,17 @@ public class DataListResourceCommand extends BaseMVCResourceCommand {
 
 		JSONPortletResponseUtil.writeJSON(
 			resourceRequest, resourceResponse, jsonArray);
+	}
+
+	private static void _addRoleOptions(
+			JSONArray jsonArray, long companyId, int roleType) {
+
+		List<Role> roles = RoleLocalServiceUtil.getRoles(
+			companyId, new int[] {roleType});
+
+		for (Role role : roles) {
+			jsonArray.put(_createOption(role.getName(), role.getRoleId()));
+		}
 	}
 
 	private static JSONObject _createOption(String label, long value) {

@@ -28,6 +28,7 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 		'terms.of.use.required=false',
 		'users.reminder.query.enabled=false',
 		'passwords.default.policy.change.required=false',
+		'auth.verifier.BasicAuthHeaderAuthVerifier.urls.includes=/api/*',
 	].join('\n') + '\n'
 
 	LiferayContainer(String imageName) {
