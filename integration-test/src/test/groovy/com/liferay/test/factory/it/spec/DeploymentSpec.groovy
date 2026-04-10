@@ -35,13 +35,13 @@ class DeploymentSpec extends BaseLiferaySpec {
 		matchingLine.contains('Active')
 	}
 
-	def 'JSONWS endpoint is registered after deployment'() {
+	def 'Portlet web resources are accessible after deployment'() {
 		given:
 		ensureDeployed()
 
 		when:
 		def responseCode = httpGet(
-			"${liferay.baseUrl}/api/jsonws?contextName=TestFactory"
+			"${liferay.baseUrl}/o/test-factory-calculator/__liferay__/index.js"
 		)
 
 		then:
