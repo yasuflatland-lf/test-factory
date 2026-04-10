@@ -8,13 +8,10 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
-import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.TransactionConfig;
 import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.support.tools.constants.LDFPortletKeys;
 import com.liferay.support.tools.service.UserCreator;
 
@@ -56,7 +53,8 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 				data.getString("count"));
 			String baseName = data.getString("baseName");
 
-			String validationError = _validate(count, baseName);
+			String validationError = ResourceCommandUtil.validate(
+				count, baseName);
 
 			if (validationError != null) {
 				responseJson.put("error", validationError);
@@ -87,7 +85,7 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 			long companyId = _portal.getCompanyId(resourceRequest);
 
 			responseJson = TransactionInvokerUtil.invoke(
-				_transactionConfig,
+				ResourceCommandUtil.TRANSACTION_CONFIG,
 				() -> _userCreator.create(
 					userId, companyId, count, baseName,
 					emailDomain, password, male, jobTitle,
@@ -107,18 +105,6 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 			resourceRequest, resourceResponse, responseJson);
 	}
 
-	private static String _validate(int count, String baseName) {
-		if (count <= 0) {
-			return "count must be greater than 0";
-		}
-
-		if (Validator.isNull(baseName)) {
-			return "baseName is required";
-		}
-
-		return null;
-	}
-
 	private long[] _toLongArray(JSONArray jsonArray) {
 		if ((jsonArray == null) || (jsonArray.length() == 0)) {
 			return new long[0];
@@ -135,10 +121,6 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		UserResourceCommand.class);
-
-	private static final TransactionConfig _transactionConfig =
-		TransactionConfig.Factory.create(
-			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private Portal _portal;

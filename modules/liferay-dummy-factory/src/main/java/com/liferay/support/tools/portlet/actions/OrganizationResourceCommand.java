@@ -7,13 +7,10 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
-import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.TransactionConfig;
 import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.support.tools.constants.LDFPortletKeys;
 import com.liferay.support.tools.service.OrganizationCreator;
 
@@ -59,7 +56,8 @@ public class OrganizationResourceCommand extends BaseMVCResourceCommand {
 			boolean site = GetterUtil.getBoolean(
 				data.getString("site"));
 
-			String validationError = _validate(count, baseName);
+			String validationError = ResourceCommandUtil.validate(
+				count, baseName);
 
 			if (validationError != null) {
 				responseJson.put("error", validationError);
@@ -74,7 +72,7 @@ public class OrganizationResourceCommand extends BaseMVCResourceCommand {
 			long userId = _portal.getUserId(resourceRequest);
 
 			responseJson = TransactionInvokerUtil.invoke(
-				_transactionConfig,
+				ResourceCommandUtil.TRANSACTION_CONFIG,
 				() -> _organizationCreator.create(
 					userId, count, baseName,
 					parentOrganizationId, site));
@@ -93,24 +91,8 @@ public class OrganizationResourceCommand extends BaseMVCResourceCommand {
 			resourceRequest, resourceResponse, responseJson);
 	}
 
-	private static String _validate(int count, String baseName) {
-		if (count <= 0) {
-			return "count must be greater than 0";
-		}
-
-		if (Validator.isNull(baseName)) {
-			return "baseName is required";
-		}
-
-		return null;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		OrganizationResourceCommand.class);
-
-	private static final TransactionConfig _transactionConfig =
-		TransactionConfig.Factory.create(
-			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private OrganizationCreator _organizationCreator;
