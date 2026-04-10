@@ -6,6 +6,9 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.model.LayoutSetPrototype;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.OrganizationConstants;
 import com.liferay.portal.kernel.model.Role;
@@ -14,9 +17,12 @@ import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.LayoutSetPrototypeLocalServiceUtil;
 import com.liferay.portal.kernel.service.OrganizationLocalServiceUtil;
 import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserGroupLocalServiceUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.support.tools.constants.LDFPortletKeys;
@@ -96,6 +102,34 @@ public class DataListResourceCommand extends BaseMVCResourceCommand {
 			case "org-roles":
 				_addRoleOptions(
 					jsonArray, companyId, RoleConstants.TYPE_ORGANIZATION);
+
+				break;
+			case "sites":
+				List<Group> groups = GroupLocalServiceUtil.getGroups(
+					companyId, GroupConstants.DEFAULT_PARENT_GROUP_ID,
+					true);
+
+				for (Group group : groups) {
+					jsonArray.put(
+						_createOption(
+							group.getDescriptiveName(),
+							group.getGroupId()));
+				}
+
+				break;
+			case "site-templates":
+				List<LayoutSetPrototype> layoutSetPrototypes =
+					LayoutSetPrototypeLocalServiceUtil.getLayoutSetPrototypes(
+						companyId);
+
+				for (LayoutSetPrototype prototype : layoutSetPrototypes) {
+					if (prototype.isActive()) {
+						jsonArray.put(
+							_createOption(
+								prototype.getName(LocaleUtil.getDefault()),
+								prototype.getLayoutSetPrototypeId()));
+					}
+				}
 
 				break;
 			default:

@@ -195,9 +195,98 @@ const ROLE_CONFIG: EntityFormConfig = {
 	label: 'roles',
 };
 
+const SITE_CONFIG: EntityFormConfig = {
+	actionURL: '/ldf/site',
+	entityType: ENTITY_TYPES.SITES,
+	fields: [
+		{
+			label: 'number-of-sites',
+			name: 'count',
+			required: true,
+			type: 'number',
+			validators: [
+				{message: 'please-enter-a-valid-number', type: 'digits'},
+				{message: 'value-must-be-greater-than-0', type: 'min', value: 1},
+			],
+		},
+		{
+			label: 'base-site-name',
+			name: 'baseName',
+			required: true,
+			type: 'text',
+		},
+		{
+			defaultValue: 'open',
+			label: 'membership-type',
+			name: 'membershipType',
+			options: [
+				{label: 'open', value: 'open'},
+				{label: 'restricted', value: 'restricted'},
+				{label: 'private', value: 'private'},
+			],
+			required: true,
+			type: 'select',
+		},
+		{
+			advanced: true,
+			dataSource: '/ldf/data/sites',
+			defaultValue: '0',
+			label: 'parent-site',
+			name: 'parentGroupId',
+			required: false,
+			type: 'select',
+		},
+		{
+			advanced: true,
+			dataSource: '/ldf/data/site-templates',
+			defaultValue: '0',
+			label: 'site-template',
+			name: 'siteTemplateId',
+			required: false,
+			type: 'select',
+		},
+		{
+			advanced: true,
+			defaultValue: true,
+			label: 'manual-membership',
+			name: 'manualMembership',
+			required: false,
+			type: 'toggle',
+		},
+		{
+			advanced: true,
+			defaultValue: false,
+			label: 'inherit-content',
+			name: 'inheritContent',
+			required: false,
+			type: 'toggle',
+		},
+		{
+			advanced: true,
+			defaultValue: true,
+			label: 'active',
+			name: 'active',
+			required: false,
+			type: 'toggle',
+		},
+		{
+			advanced: true,
+			defaultValue: '',
+			label: 'description',
+			name: 'description',
+			required: false,
+			type: 'textarea',
+		},
+	],
+	helpText: 'site-help-text',
+	icon: 'sites',
+	label: 'sites',
+};
+
 export const ENTITY_CONFIGS: Partial<Record<EntityType, EntityFormConfig>> = {
 	[ENTITY_TYPES.ORGANIZATION]: ORGANIZATION_CONFIG,
 	[ENTITY_TYPES.ROLES]: ROLE_CONFIG,
+	[ENTITY_TYPES.SITES]: SITE_CONFIG,
 	[ENTITY_TYPES.USERS]: USER_CONFIG,
 };
 
