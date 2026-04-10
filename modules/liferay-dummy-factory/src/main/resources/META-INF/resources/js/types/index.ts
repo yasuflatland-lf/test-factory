@@ -1,4 +1,4 @@
-export type FieldType = 'number' | 'text' | 'select' | 'toggle' | 'textarea';
+export type FieldType = 'number' | 'text' | 'select' | 'multiselect' | 'toggle' | 'textarea';
 
 export interface SelectOption {
 	label: string;
