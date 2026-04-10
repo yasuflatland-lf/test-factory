@@ -4,5 +4,5 @@ Bundle-Version: 1.0.0
 Web-ContextPath: /liferay-dummy-factory
 -dsannotations-options: inherit
 -includeresource:\
-	META-INF/resources/liferay-dummy-factory-1.0.0.jar=classes/META-INF/resources/liferay-dummy-factory-1.0.0.jar,\
+	META-INF/resources/__liferay__/=classes/META-INF/resources/__liferay__/,\
 	package.json
