@@ -30,11 +30,11 @@ export function useApiData(
 			type: dataSource.split('/').pop() || '',
 		});
 
-		if (result.success && result.data) {
+		if (result.success) {
 			setData(result.data);
 		}
 		else {
-			setError(result.error || 'Failed to load data');
+			setError(result.error);
 		}
 
 		setLoading(false);

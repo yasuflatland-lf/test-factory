@@ -68,7 +68,7 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 		}
 		else {
 			setResult({
-				message: response.error || Liferay.Language.get('an-error-occurred'),
+				message: response.error,
 				type: 'danger',
 			});
 		}
