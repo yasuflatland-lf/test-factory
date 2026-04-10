@@ -7,7 +7,7 @@
 
 	<logger name="org.testcontainers" level="INFO" />
 	<logger name="com.github.dockerjava" level="WARN" />
-	<logger name="com.liferay.test.factory.it" level="DEBUG" />
+	<logger name="com.liferay.support.tools.it" level="DEBUG" />
 
 	<root level="WARN">
 		<appender-ref ref="STDOUT" />

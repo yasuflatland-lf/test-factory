@@ -1,6 +1,6 @@
-package com.liferay.test.factory.it.spec
+package com.liferay.support.tools.it.spec
 
-import com.liferay.test.factory.it.util.GogoShellClient
+import com.liferay.support.tools.it.util.GogoShellClient
 
 import spock.lang.Stepwise
 
@@ -18,7 +18,7 @@ class DeploymentSpec extends BaseLiferaySpec {
 		responseCode == 200
 	}
 
-	def 'Calculator JAR deploys and bundle becomes ACTIVE'() {
+	def 'Liferay Dummy Factory JAR deploys and bundle becomes ACTIVE'() {
 		when:
 		ensureDeployed()
 
@@ -28,7 +28,7 @@ class DeploymentSpec extends BaseLiferaySpec {
 		new GogoShellClient(liferay.host, liferay.gogoPort).withCloseable { gogo ->
 			output = gogo.execute('lb')
 		}
-		def matchingLine = output.readLines().find { it.contains('Test Factory') }
+		def matchingLine = output.readLines().find { it.contains('Liferay Dummy Factory') }
 
 		then:
 		matchingLine != null
@@ -41,7 +41,7 @@ class DeploymentSpec extends BaseLiferaySpec {
 
 		when:
 		def responseCode = httpGet(
-			"${liferay.baseUrl}/o/test-factory-calculator/__liferay__/index.js"
+			"${liferay.baseUrl}/o/liferay-dummy-factory/__liferay__/index.js"
 		)
 
 		then:

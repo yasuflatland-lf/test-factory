@@ -1,7 +1,7 @@
-package com.liferay.test.factory.it.spec
+package com.liferay.support.tools.it.spec
 
-import com.liferay.test.factory.it.container.LiferayContainer
-import com.liferay.test.factory.it.util.PlaywrightLifecycle
+import com.liferay.support.tools.it.container.LiferayContainer
+import com.liferay.support.tools.it.util.PlaywrightLifecycle
 import com.microsoft.playwright.Locator
 import com.microsoft.playwright.Page
 import com.microsoft.playwright.options.RequestOptions
@@ -89,7 +89,7 @@ class CalculatorHappyPathSpec extends BaseLiferaySpec {
 	def 'Navigate to Calculator via direct URL'() {
 		given:
 		Page page = pw.page
-		def portletId = 'com_liferay_test_factory_TestFactoryPortlet'
+		def portletId = 'com_liferay_support_tools_portlet_LiferayDummyFactoryPortlet'
 
 		when:
 		// Navigate directly to the portlet using Control Panel URL pattern

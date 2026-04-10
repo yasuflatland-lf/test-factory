@@ -50,7 +50,7 @@ tasks.register('integrationTest', Test) {
 		showStandardStreams = true
 	}
 
-	dependsOn ':modules:test-factory-calculator:jar'
+	dependsOn ':modules:liferay-dummy-factory:jar'
 	dependsOn 'installPlaywrightBrowsers'
 }
 

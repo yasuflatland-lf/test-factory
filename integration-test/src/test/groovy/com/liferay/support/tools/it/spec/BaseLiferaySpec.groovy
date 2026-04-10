@@ -1,7 +1,7 @@
-package com.liferay.test.factory.it.spec
+package com.liferay.support.tools.it.spec
 
-import com.liferay.test.factory.it.container.LiferayContainer
-import com.liferay.test.factory.it.util.GogoShellClient
+import com.liferay.support.tools.it.container.LiferayContainer
+import com.liferay.support.tools.it.util.GogoShellClient
 
 import spock.lang.Shared
 import spock.lang.Specification
@@ -25,16 +25,16 @@ abstract class BaseLiferaySpec extends Specification {
 	static Path getCalculatorJarPath() {
 		Path workspaceRoot = Path.of(System.getProperty('user.dir')).parent
 		Path jarDir = workspaceRoot.resolve(
-			'modules/test-factory-calculator/build/libs'
+			'modules/liferay-dummy-factory/build/libs'
 		)
 		File[] jars = jarDir.toFile().listFiles({ File f ->
-			f.name.endsWith('.jar') && f.name.contains('test.factory')
+			f.name.endsWith('.jar') && f.name.contains('liferay.dummy.factory')
 		} as FileFilter)
 
 		if (jars == null || jars.length == 0) {
 			throw new IllegalStateException(
 				"Calculator JAR not found in ${jarDir}. " +
-				"Run './gradlew :modules:test-factory-calculator:jar' first."
+				"Run './gradlew :modules:liferay-dummy-factory:jar' first."
 			)
 		}
 
@@ -62,7 +62,7 @@ abstract class BaseLiferaySpec extends Specification {
 					def tail = allLines.takeRight(5)
 					log.info('GoGo Shell attempt {}: {} lines, last 5: {}', i + 1, lineCount, tail)
 					// Search with relaxed matching
-					def lines = allLines.findAll { it.toLowerCase().contains('test') && it.toLowerCase().contains('factory') }
+					def lines = allLines.findAll { it.toLowerCase().contains('liferay') && it.toLowerCase().contains('dummy') && it.toLowerCase().contains('factory') }
 					log.info('Matches: {}', lines ?: '(no match)')
 
 					if (lines.any { it.contains('Active') }) {
@@ -83,7 +83,7 @@ abstract class BaseLiferaySpec extends Specification {
 
 		if (!active) {
 			throw new IllegalStateException(
-				'Bundle com.liferay.test.factory did not reach ACTIVE ' +
+				'Bundle liferay.dummy.factory did not reach ACTIVE ' +
 				'state within timeout'
 			)
 		}

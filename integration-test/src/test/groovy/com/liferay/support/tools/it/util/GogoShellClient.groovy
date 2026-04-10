@@ -1,4 +1,4 @@
-package com.liferay.test.factory.it.util
+package com.liferay.support.tools.it.util
 
 import org.apache.commons.net.telnet.TelnetClient
 

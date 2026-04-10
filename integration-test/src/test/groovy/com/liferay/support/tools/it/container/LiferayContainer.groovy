@@ -1,4 +1,4 @@
-package com.liferay.test.factory.it.container
+package com.liferay.support.tools.it.container
 
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy

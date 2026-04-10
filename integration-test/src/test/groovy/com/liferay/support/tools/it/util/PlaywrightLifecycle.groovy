@@ -1,4 +1,4 @@
-package com.liferay.test.factory.it.util
+package com.liferay.support.tools.it.util
 
 import com.microsoft.playwright.Browser
 import com.microsoft.playwright.BrowserContext
