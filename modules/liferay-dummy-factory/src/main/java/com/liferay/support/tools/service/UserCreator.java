@@ -112,8 +112,14 @@ public class UserCreator {
 		}
 
 		result.put("count", created.length());
-		result.put("success", true);
+		result.put("success", created.length() > 0);
 		result.put("users", created);
+
+		if (created.length() == 0) {
+			result.put(
+				"error",
+				"No users were created (all screen names may already exist)");
+		}
 
 		return result;
 	}
