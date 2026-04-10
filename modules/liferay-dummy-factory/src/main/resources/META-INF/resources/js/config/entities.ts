@@ -121,14 +121,83 @@ const USER_CONFIG: EntityFormConfig = {
 			required: false,
 			type: 'multiselect',
 		},
+		{
+			advanced: true,
+			dataSource: '/ldf/data/site-roles',
+			defaultValue: '',
+			label: 'site-roles',
+			name: 'siteRoleIds',
+			required: false,
+			type: 'multiselect',
+		},
+		{
+			advanced: true,
+			dataSource: '/ldf/data/org-roles',
+			defaultValue: '',
+			label: 'organization-roles',
+			name: 'orgRoleIds',
+			required: false,
+			type: 'multiselect',
+		},
 	],
 	helpText: 'user-help-text',
 	icon: 'user',
 	label: 'users',
 };
 
+const ROLE_CONFIG: EntityFormConfig = {
+	actionURL: '/ldf/role',
+	entityType: ENTITY_TYPES.ROLES,
+	fields: [
+		{
+			label: 'number-of-roles',
+			name: 'count',
+			required: true,
+			type: 'number',
+			validators: [
+				{message: 'please-enter-a-valid-number', type: 'digits'},
+				{message: 'value-must-be-greater-than-0', type: 'min', value: 1},
+			],
+		},
+		{
+			label: 'base-role-name',
+			name: 'baseName',
+			required: true,
+			type: 'text',
+		},
+		{
+			defaultValue: 'regular',
+			label: 'role-type',
+			name: 'roleType',
+			options: [
+				{label: 'regular', value: 'regular'},
+				{label: 'site', value: 'site'},
+				{label: 'organization', value: 'organization'},
+				{label: 'asset-library', value: 'depot'},
+				{label: 'account', value: 'account'},
+				{label: 'publications', value: 'publications'},
+				{label: 'provider', value: 'provider'},
+			],
+			required: true,
+			type: 'select',
+		},
+		{
+			advanced: true,
+			defaultValue: '',
+			label: 'description',
+			name: 'description',
+			required: false,
+			type: 'textarea',
+		},
+	],
+	helpText: 'role-help-text',
+	icon: 'roles',
+	label: 'roles',
+};
+
 export const ENTITY_CONFIGS: Partial<Record<EntityType, EntityFormConfig>> = {
 	[ENTITY_TYPES.ORGANIZATION]: ORGANIZATION_CONFIG,
+	[ENTITY_TYPES.ROLES]: ROLE_CONFIG,
 	[ENTITY_TYPES.USERS]: USER_CONFIG,
 };
 

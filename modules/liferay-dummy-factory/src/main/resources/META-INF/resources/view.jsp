@@ -1,6 +1,7 @@
 <%@ include file="/init.jsp" %>
 
 <portlet:resourceURL id="/ldf/org" var="orgResourceURL" />
+<portlet:resourceURL id="/ldf/role" var="roleResourceURL" />
 <portlet:resourceURL id="/ldf/user" var="userResourceURL" />
 <portlet:resourceURL id="/ldf/data" var="dataResourceURL" />
 
@@ -10,6 +11,8 @@
 		HashMapBuilder.<String, Object>put(
 			"actionResourceURLs", HashMapBuilder.<String, Object>put(
 				"/ldf/org", orgResourceURL
+			).put(
+				"/ldf/role", roleResourceURL
 			).put(
 				"/ldf/user", userResourceURL
 			).build()
