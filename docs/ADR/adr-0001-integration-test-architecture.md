@@ -10,7 +10,7 @@ Accepted (partially implemented — PanelApp navigation on CE pending)
 
 ## Context
 
-The test-factory project needs to build E2E integration tests using Testcontainers for the calculator portlet (Service Builder + React).
+The liferay-dummy-factory project needs to build E2E integration tests using Testcontainers for the calculator portlet (Service Builder + React).
 
 ### Constraints
 
@@ -67,9 +67,9 @@ The test-factory project needs to build E2E integration tests using Testcontaine
 
 ### 5. GoGo Shell Bundle Verification: Full Output Retrieval + Java-Side Filtering
 
-**Decision**: Retrieve the full output of the `lb` command (approximately 1394 lines) and filter for lines containing `Test Factory` on the Java/Groovy side.
+**Decision**: Retrieve the full output of the `lb` command (approximately 1394 lines) and filter for lines containing `Liferay Dummy Factory` on the Java/Groovy side.
 
-**Rationale**: GoGo Shell is an OSGi console and does not support Unix shell pipes (`|`) or the `grep` command. Running `lb | grep test.factory` simply causes the `grep` command to return `false`.
+**Rationale**: GoGo Shell is an OSGi console and does not support Unix shell pipes (`|`) or the `grep` command. Running `lb | grep dummy.factory` simply causes the `grep` command to return `false`.
 
 ### 6. Container Configuration
 

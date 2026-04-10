@@ -1,14 +1,14 @@
-# Test Factory Calculator -- Architecture
+# Liferay Dummy Factory -- Architecture
 
 ## 1. Project Structure
 
 ```
-test-factory/
+liferay-dummy-factory/
   settings.gradle            # Liferay Workspace plugin + includes integration-test
   gradle.properties          # liferay.workspace.product=portal-7.4-ga132
   build.gradle
   modules/
-    test-factory-calculator/ # Single OSGi bundle (api + service + web)
+    liferay-dummy-factory/ # Single OSGi bundle (api + service + web)
       bnd.bnd
       service.xml
       src/main/java/         # Java: portlet, service builder, constants
@@ -21,7 +21,7 @@ test-factory/
 
 ## 2. Calculator Module
 
-**Single-JAR design** -- API, service, and web layers live in one bundle (`com.liferay.test.factory`). The `bnd.bnd` exports `model`, `service`, `service.persistence`, and `exception` packages so other bundles can consume the API, while the portlet and React UI ship in the same JAR.
+**Single-JAR design** -- API, service, and web layers live in one bundle (`com.liferay.support.tools`). The `bnd.bnd` exports `model`, `service`, `service.persistence`, and `exception` packages so other bundles can consume the API, while the portlet and React UI ship in the same JAR.
 
 **Service Builder entity -- `CalcEntry`**
 
@@ -35,7 +35,7 @@ test-factory/
 
 Standard audit columns (`companyId`, `userId`, `userName`, `createDate`, `modifiedDate`) are included. Results are ordered by `createDate` descending, with a finder on `userId`.
 
-**MVCPortlet + PanelApp** -- The portlet (`com_liferay_test_factory_TestFactoryPortlet`) is registered in the Control Panel under Configuration. The portlet uses `javax.portlet` namespace (Portlet API 3.0). The PanelApp's `@Reference` uses a target filter of `javax.portlet.name=...`. The view JSP renders the React component via the `<react:component>` tag.
+**MVCPortlet + PanelApp** -- The portlet (`com_liferay_support_tools_portlet_LiferayDummyFactoryPortlet`) is registered in the Control Panel under Configuration. The portlet uses `javax.portlet` namespace (Portlet API 3.0). The PanelApp's `@Reference` uses a target filter of `javax.portlet.name=...`. The view JSP renders the React component via the `<react:component>` tag.
 
 **React frontend** -- `Calculator.js` is a functional React component using `useState`. It renders a form with two number inputs, an operator dropdown (`+`, `-`, `*`, `/`), and a calculate button. Results and errors are shown inline.
 
@@ -46,7 +46,7 @@ React UI
   |  FormData: num1, num2, operator, serviceContext
   |  Header: x-csrf-token = Liferay.authToken
   v
-fetch POST /api/jsonws/TestFactory.CalcEntry/calculate
+fetch POST /api/jsonws/LDF.CalcEntry/calculate
   |
   v
 CalcEntryServiceImpl          (remote service -- permission checks)

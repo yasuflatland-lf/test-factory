@@ -18,7 +18,7 @@
 - Spock spec method names use the descriptive string form: `def 'description of behavior'()`.
 - Use `given:` / `when:` / `then:` / `expect:` blocks. Prefer `expect:` for single-expression assertions.
 - Groovy idioms: safe-navigation `?.`, `withCloseable { ... }` for auto-closing resources, GString interpolation `"${variable}"`.
-- All test classes live under package `com.liferay.test.factory.it.*` (e.g., `com.liferay.test.factory.it.spec`, `com.liferay.test.factory.it.container`, `com.liferay.test.factory.it.util`).
+- All test classes live under package `com.liferay.support.tools.it.*` (e.g., `com.liferay.support.tools.it.spec`, `com.liferay.support.tools.it.container`, `com.liferay.support.tools.it.util`).
 - Use `@Shared` for fields shared across feature methods. Use `@Stepwise` when test ordering matters.
 - Numeric literals use underscores for readability: `30_000`, `10_000`.
 

@@ -1,13 +1,13 @@
-# test-factory
+# liferay-dummy-factory
 
 A Liferay Portal 7.4 (CE GA132) workspace featuring a Calculator portlet built with Service Builder + React, along with Testcontainers-based integration tests.
 
 ## Project Structure
 
 ```
-test-factory/
+liferay-dummy-factory/
 ├── modules/
-│   └── test-factory-calculator/   # OSGi bundle (API + Service + Web)
+│   └── liferay-dummy-factory/   # OSGi bundle (API + Service + Web)
 │       ├── service.xml            # CalcEntry entity definition
 │       └── src/main/
 │           ├── java/              # MVCPortlet, Service Builder
@@ -75,34 +75,34 @@ docker start liferay && docker logs -f liferay
 
 ```bash
 # Build the module JAR
-./gradlew :modules:test-factory-calculator:jar
+./gradlew :modules:liferay-dummy-factory:jar
 
 # Deploy the JAR to the container
-docker cp modules/test-factory-calculator/build/libs/com.liferay.test.factory-1.0.0.jar liferay:/opt/liferay/deploy/
+docker cp modules/liferay-dummy-factory/build/libs/liferay.dummy.factory-1.0.0.jar liferay:/opt/liferay/deploy/
 
 # Verify deployment (if STARTED appears, deployment is successful)
-docker logs -f liferay 2>&1 | grep -i "test.factory"
+docker logs -f liferay 2>&1 | grep -i "dummy.factory"
 ```
 
 ### 3. Verify Operation
 
 Navigate to http://localhost:8080 and log in as admin (`test@liferay.com` / `test`).
-**Test Factory Calculator** will appear under Control Panel > Configuration.
+**Liferay Dummy Factory** will appear under Control Panel > Configuration.
 
 Check bundle status via GoGo Shell:
 
 ```bash
-docker exec liferay bash -c "(echo 'lb test.factory'; sleep 2) | telnet localhost 11311"
+docker exec liferay bash -c "(echo 'lb dummy.factory'; sleep 2) | telnet localhost 11311"
 ```
 
 ## Build
 
 ```bash
 # Service Builder code generation
-./gradlew :modules:test-factory-calculator:buildService
+./gradlew :modules:liferay-dummy-factory:buildService
 
 # Module build
-./gradlew :modules:test-factory-calculator:build
+./gradlew :modules:liferay-dummy-factory:build
 ```
 
 ## Testing
@@ -114,7 +114,7 @@ Requires Docker to be running.
 ./gradlew :integration-test:integrationTest
 
 # Run a specific spec
-./gradlew :integration-test:integrationTest --tests "com.liferay.test.factory.it.spec.DeploymentSpec"
+./gradlew :integration-test:integrationTest --tests "com.liferay.support.tools.it.spec.DeploymentSpec"
 ```
 
 Tests automatically start a Liferay container via Testcontainers and verify:
