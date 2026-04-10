@@ -19,16 +19,16 @@ function App({actionResourceURL, dataResourceURL, progressResourceURL}: AppProps
 	const entityConfig = getEntityConfig(selectedEntity);
 
 	return (
-		<div className="container-fluid">
+		<div className="container-fluid container-fluid-max-xl">
 			<div className="row">
-				<div className="col-md-2">
+				<div className="col-md-2 pr-0">
 					<EntitySelector
 						onSelect={setSelectedEntity}
 						selected={selectedEntity}
 					/>
 				</div>
 
-				<div className="col-md-10">
+				<div className="col-md-10 pl-0">
 					{entityConfig ? (
 						<EntityForm
 							actionResourceURL={actionResourceURL}

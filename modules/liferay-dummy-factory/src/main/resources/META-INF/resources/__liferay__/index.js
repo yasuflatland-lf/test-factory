@@ -510,13 +510,13 @@ function App({ actionResourceURL, dataResourceURL, progressResourceURL }) {
     ENTITY_TYPES.ORGANIZATION
   );
   const entityConfig = getEntityConfig(selectedEntity);
-  return /* @__PURE__ */ React.createElement("div", { className: "container-fluid" }, /* @__PURE__ */ React.createElement("div", { className: "row" }, /* @__PURE__ */ React.createElement("div", { className: "col-md-2" }, /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { className: "container-fluid container-fluid-max-xl" }, /* @__PURE__ */ React.createElement("div", { className: "row" }, /* @__PURE__ */ React.createElement("div", { className: "col-md-2 pr-0" }, /* @__PURE__ */ React.createElement(
     EntitySelector_default,
     {
       onSelect: setSelectedEntity,
       selected: selectedEntity
     }
-  )), /* @__PURE__ */ React.createElement("div", { className: "col-md-10" }, entityConfig ? /* @__PURE__ */ React.createElement(
+  )), /* @__PURE__ */ React.createElement("div", { className: "col-md-10 pl-0" }, entityConfig ? /* @__PURE__ */ React.createElement(
     EntityForm_default,
     {
       actionResourceURL,
