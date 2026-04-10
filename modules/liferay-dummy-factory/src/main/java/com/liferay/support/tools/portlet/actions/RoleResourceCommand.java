@@ -72,17 +72,13 @@ public class RoleResourceCommand extends BaseMVCResourceCommand {
 					roleType, description));
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
-			responseJson.put("error", illegalArgumentException.getMessage());
-			responseJson.put("success", false);
+			ResourceCommandUtil.setErrorResponse(
+				responseJson, illegalArgumentException);
 		}
 		catch (Throwable throwable) {
 			_log.error("Failed to create roles", throwable);
 
-			responseJson.put(
-				"error",
-				(throwable.getMessage() != null)
-					? throwable.getMessage() : "An unexpected error occurred");
-			responseJson.put("success", false);
+			ResourceCommandUtil.setErrorResponse(responseJson, throwable);
 		}
 
 		JSONPortletResponseUtil.writeJSON(

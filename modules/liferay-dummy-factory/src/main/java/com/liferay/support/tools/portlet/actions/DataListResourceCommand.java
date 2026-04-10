@@ -49,9 +49,12 @@ public class DataListResourceCommand extends BaseMVCResourceCommand {
 
 		DataListProvider provider = _providers.get(type);
 
-		JSONArray jsonArray;
+		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
 
-		if (provider != null) {
+		if (provider == null) {
+			_log.warn("Unknown data list type requested: " + type);
+		}
+		else {
 			try {
 				jsonArray = provider.getOptions(companyId, type);
 			}
@@ -59,14 +62,7 @@ public class DataListResourceCommand extends BaseMVCResourceCommand {
 				_log.error(
 					"Failed to load data list options for type: " + type,
 					exception);
-
-				jsonArray = JSONFactoryUtil.createJSONArray();
 			}
-		}
-		else {
-			_log.warn("Unknown data list type requested: " + type);
-
-			jsonArray = JSONFactoryUtil.createJSONArray();
 		}
 
 		JSONPortletResponseUtil.writeJSON(

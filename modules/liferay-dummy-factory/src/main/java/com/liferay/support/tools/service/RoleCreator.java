@@ -11,7 +11,7 @@ import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.util.LocaleUtil;
 
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 
@@ -38,13 +38,11 @@ public class RoleCreator {
 		for (int i = 0; i < count; i++) {
 			String name = (count == 1) ? baseName : baseName + (i + 1);
 
-			Map<Locale, String> titleMap = new HashMap<>();
+			Map<Locale, String> titleMap = Collections.singletonMap(
+				LocaleUtil.getDefault(), name);
 
-			titleMap.put(LocaleUtil.getDefault(), name);
-
-			Map<Locale, String> descriptionMap = new HashMap<>();
-
-			descriptionMap.put(LocaleUtil.getDefault(), description);
+			Map<Locale, String> descriptionMap = Collections.singletonMap(
+				LocaleUtil.getDefault(), description);
 
 			try {
 				Role role = _roleLocalService.addRole(
