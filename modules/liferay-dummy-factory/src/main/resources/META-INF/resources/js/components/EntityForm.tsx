@@ -78,7 +78,7 @@ function EntityForm({actionResourceURL, config, dataResourceURL, progressResourc
 	};
 
 	return (
-		<div className="sheet sheet-lg">
+		<div className="sheet">
 			<div className="sheet-header">
 				<h2>{Liferay.Language.get(config.label)}</h2>
 			</div>

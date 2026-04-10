@@ -19,16 +19,16 @@ function App({actionResourceURL, dataResourceURL, progressResourceURL}: AppProps
 	const entityConfig = getEntityConfig(selectedEntity);
 
 	return (
-		<div className="container-fluid container-fluid-max-xl">
+		<div className="container-fluid">
 			<div className="row">
-				<div className="col-md-3">
+				<div className="col-md-2">
 					<EntitySelector
 						onSelect={setSelectedEntity}
 						selected={selectedEntity}
 					/>
 				</div>
 
-				<div className="col-md-9">
+				<div className="col-md-10">
 					{entityConfig ? (
 						<EntityForm
 							actionResourceURL={actionResourceURL}
@@ -38,7 +38,7 @@ function App({actionResourceURL, dataResourceURL, progressResourceURL}: AppProps
 							progressResourceURL={progressResourceURL}
 						/>
 					) : (
-						<div className="sheet sheet-lg">
+						<div className="sheet">
 							<div className="sheet-section">
 								<div className="alert alert-info">
 									{Liferay.Language.get(

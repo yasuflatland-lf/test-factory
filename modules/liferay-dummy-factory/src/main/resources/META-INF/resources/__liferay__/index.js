@@ -469,7 +469,7 @@ function EntityForm({ actionResourceURL, config, dataResourceURL, progressResour
       }
     );
   };
-  return /* @__PURE__ */ React.createElement("div", { className: "sheet sheet-lg" }, /* @__PURE__ */ React.createElement("div", { className: "sheet-header" }, /* @__PURE__ */ React.createElement("h2", null, Liferay.Language.get(config.label))), /* @__PURE__ */ React.createElement("div", { className: "sheet-section" }, requiredFields.map(renderField), advancedFields.length > 0 && /* @__PURE__ */ React.createElement(AdvancedOptions_default, null, advancedFields.map(renderField))), /* @__PURE__ */ React.createElement(ProgressBar_default, { percent, running }), /* @__PURE__ */ React.createElement("div", { className: "sheet-footer" }, /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { className: "sheet" }, /* @__PURE__ */ React.createElement("div", { className: "sheet-header" }, /* @__PURE__ */ React.createElement("h2", null, Liferay.Language.get(config.label))), /* @__PURE__ */ React.createElement("div", { className: "sheet-section" }, requiredFields.map(renderField), advancedFields.length > 0 && /* @__PURE__ */ React.createElement(AdvancedOptions_default, null, advancedFields.map(renderField))), /* @__PURE__ */ React.createElement(ProgressBar_default, { percent, running }), /* @__PURE__ */ React.createElement("div", { className: "sheet-footer" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       className: "btn btn-primary",
@@ -510,13 +510,13 @@ function App({ actionResourceURL, dataResourceURL, progressResourceURL }) {
     ENTITY_TYPES.ORGANIZATION
   );
   const entityConfig = getEntityConfig(selectedEntity);
-  return /* @__PURE__ */ React.createElement("div", { className: "container-fluid container-fluid-max-xl" }, /* @__PURE__ */ React.createElement("div", { className: "row" }, /* @__PURE__ */ React.createElement("div", { className: "col-md-3" }, /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { className: "container-fluid" }, /* @__PURE__ */ React.createElement("div", { className: "row" }, /* @__PURE__ */ React.createElement("div", { className: "col-md-2" }, /* @__PURE__ */ React.createElement(
     EntitySelector_default,
     {
       onSelect: setSelectedEntity,
       selected: selectedEntity
     }
-  )), /* @__PURE__ */ React.createElement("div", { className: "col-md-9" }, entityConfig ? /* @__PURE__ */ React.createElement(
+  )), /* @__PURE__ */ React.createElement("div", { className: "col-md-10" }, entityConfig ? /* @__PURE__ */ React.createElement(
     EntityForm_default,
     {
       actionResourceURL,
@@ -525,7 +525,7 @@ function App({ actionResourceURL, dataResourceURL, progressResourceURL }) {
       key: selectedEntity,
       progressResourceURL
     }
-  ) : /* @__PURE__ */ React.createElement("div", { className: "sheet sheet-lg" }, /* @__PURE__ */ React.createElement("div", { className: "sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "alert alert-info" }, Liferay.Language.get(
+  ) : /* @__PURE__ */ React.createElement("div", { className: "sheet" }, /* @__PURE__ */ React.createElement("div", { className: "sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "alert alert-info" }, Liferay.Language.get(
     "this-entity-type-is-not-yet-available"
   )))))));
 }
