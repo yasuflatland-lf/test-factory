@@ -120,10 +120,17 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 		page.locator('#baseName').fill(BASE_ORG_NAME)
 		page.locator('.sheet-footer button.btn-primary').click()
 
-		then: 'alert appears (success with 0 created or info message)'
+		then: 'alert appears'
 		page.locator('.alert-success, .alert-danger').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
+
+		and: 'organization count has not increased'
+		def result = headlessGet('/o/headless-admin-user/v1.0/organizations?pageSize=100')
+		def matchingItems = result.items.findAll { item ->
+			(item.name as String).startsWith(BASE_ORG_NAME)
+		}
+		matchingItems.size() == ORG_COUNT
 	}
 
 	def 'Test organizations are cleaned up via headless REST API'() {
