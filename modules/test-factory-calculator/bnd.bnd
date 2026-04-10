@@ -8,5 +8,8 @@ Export-Package:\
 	com.liferay.test.factory.service.persistence
 Liferay-Require-SchemaVersion: 1.0.0
 Liferay-Service: true
-Web-ContextPath: /test-factory
+Web-ContextPath: /test-factory-calculator
 -dsannotations-options: inherit
+-includeresource:\
+	META-INF/resources/test-factory-calculator-1.0.0.jar=classes/META-INF/resources/test-factory-calculator-1.0.0.jar,\
+	package.json
