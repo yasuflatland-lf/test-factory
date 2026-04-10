@@ -29,7 +29,7 @@ public class TestFactoryPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(jakarta.portlet.name=" +
+		target = "(javax.portlet.name=" +
 			TestFactoryPortletKeys.TEST_FACTORY + ")"
 	)
 	private Portlet _portlet;
