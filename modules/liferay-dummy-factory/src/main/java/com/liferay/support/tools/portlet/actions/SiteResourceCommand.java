@@ -12,7 +12,9 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.support.tools.constants.LDFPortletKeys;
+import com.liferay.support.tools.service.BatchSpec;
 import com.liferay.support.tools.service.SiteCreator;
+import com.liferay.support.tools.service.SiteMembershipType;
 
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
@@ -52,21 +54,14 @@ public class SiteResourceCommand extends BaseMVCResourceCommand {
 				data.getString("count"));
 			String baseName = data.getString("baseName");
 
-			String validationError = ResourceCommandUtil.validate(
-				count, baseName);
+			BatchSpec batchSpec = new BatchSpec(count, baseName);
 
-			if (validationError != null) {
-				responseJson.put("error", validationError);
-				responseJson.put("success", false);
-
-				JSONPortletResponseUtil.writeJSON(
-					resourceRequest, resourceResponse, responseJson);
-
-				return;
-			}
-
-			String membershipType = GetterUtil.getString(
+			String membershipTypeString = GetterUtil.getString(
 				data.getString("membershipType"), "open");
+
+			SiteMembershipType membershipType =
+				_parseMembershipType(membershipTypeString);
+
 			long parentGroupId = GetterUtil.getLong(
 				data.getString("parentGroupId"));
 			long siteTemplateId = GetterUtil.getLong(
@@ -85,7 +80,7 @@ public class SiteResourceCommand extends BaseMVCResourceCommand {
 			responseJson = TransactionInvokerUtil.invoke(
 				ResourceCommandUtil.TRANSACTION_CONFIG,
 				() -> _siteCreator.create(
-					userId, companyId, count, baseName,
+					userId, companyId, batchSpec,
 					membershipType, parentGroupId,
 					siteTemplateId, manualMembership,
 					inheritContent, active, description));
@@ -102,6 +97,15 @@ public class SiteResourceCommand extends BaseMVCResourceCommand {
 
 		JSONPortletResponseUtil.writeJSON(
 			resourceRequest, resourceResponse, responseJson);
+	}
+
+	private SiteMembershipType _parseMembershipType(String value) {
+		try {
+			return SiteMembershipType.fromString(value);
+		}
+		catch (IllegalArgumentException e) {
+			return SiteMembershipType.OPEN;
+		}
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

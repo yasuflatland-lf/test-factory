@@ -13,6 +13,7 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.support.tools.constants.LDFPortletKeys;
+import com.liferay.support.tools.service.BatchSpec;
 import com.liferay.support.tools.service.UserCreator;
 
 import javax.portlet.ResourceRequest;
@@ -53,18 +54,7 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 				data.getString("count"));
 			String baseName = data.getString("baseName");
 
-			String validationError = ResourceCommandUtil.validate(
-				count, baseName);
-
-			if (validationError != null) {
-				responseJson.put("error", validationError);
-				responseJson.put("success", false);
-
-				JSONPortletResponseUtil.writeJSON(
-					resourceRequest, resourceResponse, responseJson);
-
-				return;
-			}
+			BatchSpec batchSpec = new BatchSpec(count, baseName);
 
 			String emailDomain = GetterUtil.getString(
 				data.getString("emailDomain"), "liferay.com");
@@ -91,7 +81,7 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 			responseJson = TransactionInvokerUtil.invoke(
 				ResourceCommandUtil.TRANSACTION_CONFIG,
 				() -> _userCreator.create(
-					userId, companyId, count, baseName,
+					userId, companyId, batchSpec,
 					emailDomain, password, male, jobTitle,
 					organizationIds, roleIds, userGroupIds,
 					siteRoleIds, orgRoleIds));

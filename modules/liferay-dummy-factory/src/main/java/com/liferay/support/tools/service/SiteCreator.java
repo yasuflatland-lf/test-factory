@@ -26,16 +26,19 @@ import org.osgi.service.component.annotations.Reference;
 public class SiteCreator {
 
 	public JSONObject create(
-			long userId, long companyId, int count, String baseName,
-			String membershipType, long parentGroupId,
+			long userId, long companyId, BatchSpec batchSpec,
+			SiteMembershipType membershipType, long parentGroupId,
 			long siteTemplateId, boolean manualMembership,
 			boolean inheritContent, boolean active, String description)
 		throws Exception {
 
+		int count = batchSpec.count();
+		String baseName = batchSpec.baseName();
+
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		JSONArray created = JSONFactoryUtil.createJSONArray();
 
-		int type = _toGroupType(membershipType);
+		int type = membershipType.toLiferayConstant();
 
 		Map<Locale, String> descriptionMap = Collections.singletonMap(
 			LocaleUtil.getDefault(), description);
@@ -107,17 +110,6 @@ public class SiteCreator {
 		}
 
 		return result;
-	}
-
-	private int _toGroupType(String membershipType) {
-		switch (membershipType) {
-			case "restricted":
-				return GroupConstants.TYPE_SITE_RESTRICTED;
-			case "private":
-				return GroupConstants.TYPE_SITE_PRIVATE;
-			default:
-				return GroupConstants.TYPE_SITE_OPEN;
-		}
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

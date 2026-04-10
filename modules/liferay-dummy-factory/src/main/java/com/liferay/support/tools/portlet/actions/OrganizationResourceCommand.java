@@ -12,6 +12,7 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.support.tools.constants.LDFPortletKeys;
+import com.liferay.support.tools.service.BatchSpec;
 import com.liferay.support.tools.service.OrganizationCreator;
 
 import javax.portlet.ResourceRequest;
@@ -51,30 +52,20 @@ public class OrganizationResourceCommand extends BaseMVCResourceCommand {
 			int count = GetterUtil.getInteger(
 				data.getString("count"));
 			String baseName = data.getString("baseName");
+
+			BatchSpec batchSpec = new BatchSpec(count, baseName);
+
 			long parentOrganizationId = GetterUtil.getLong(
 				data.getString("parentOrganizationId"));
 			boolean site = GetterUtil.getBoolean(
 				data.getString("site"));
-
-			String validationError = ResourceCommandUtil.validate(
-				count, baseName);
-
-			if (validationError != null) {
-				responseJson.put("error", validationError);
-				responseJson.put("success", false);
-
-				JSONPortletResponseUtil.writeJSON(
-					resourceRequest, resourceResponse, responseJson);
-
-				return;
-			}
 
 			long userId = _portal.getUserId(resourceRequest);
 
 			responseJson = TransactionInvokerUtil.invoke(
 				ResourceCommandUtil.TRANSACTION_CONFIG,
 				() -> _organizationCreator.create(
-					userId, count, baseName,
+					userId, batchSpec,
 					parentOrganizationId, site));
 		}
 		catch (Throwable throwable) {
