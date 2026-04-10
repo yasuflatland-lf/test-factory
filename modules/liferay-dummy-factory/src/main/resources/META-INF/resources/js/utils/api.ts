@@ -48,7 +48,7 @@ export async function fetchResource<T>(
 
 export async function postResource<T>(
 	resourceURL: string,
-	values: Record<string, unknown>
+	values: Record<string, string | number | boolean | number[]>
 ): Promise<ApiResponse<T>> {
 	try {
 		const body = new URLSearchParams();
