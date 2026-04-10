@@ -13,9 +13,12 @@ import org.osgi.service.component.annotations.Reference;
 public class OrganizationCreator {
 
 	public JSONObject create(
-			long userId, int count, String baseName,
+			long userId, BatchSpec batchSpec,
 			long parentOrganizationId, boolean site)
 		throws Exception {
+
+		int count = batchSpec.count();
+		String baseName = batchSpec.baseName();
 
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		JSONArray created = JSONFactoryUtil.createJSONArray();

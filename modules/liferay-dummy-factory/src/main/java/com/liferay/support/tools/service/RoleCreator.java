@@ -8,11 +8,10 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Role;
-import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.util.LocaleUtil;
 
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 
@@ -23,11 +22,14 @@ import org.osgi.service.component.annotations.Reference;
 public class RoleCreator {
 
 	public JSONObject create(
-			long userId, int count, String baseName,
-			String roleType, String description)
+			long userId, BatchSpec batchSpec,
+			RoleType roleType, String description)
 		throws Exception {
 
-		int type = _getRoleType(roleType);
+		int count = batchSpec.count();
+		String baseName = batchSpec.baseName();
+
+		int type = roleType.toLiferayConstant();
 
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		JSONArray created = JSONFactoryUtil.createJSONArray();
@@ -36,13 +38,11 @@ public class RoleCreator {
 		for (int i = 0; i < count; i++) {
 			String name = (count == 1) ? baseName : baseName + (i + 1);
 
-			Map<Locale, String> titleMap = new HashMap<>();
+			Map<Locale, String> titleMap = Collections.singletonMap(
+				LocaleUtil.getDefault(), name);
 
-			titleMap.put(LocaleUtil.getDefault(), name);
-
-			Map<Locale, String> descriptionMap = new HashMap<>();
-
-			descriptionMap.put(LocaleUtil.getDefault(), description);
+			Map<Locale, String> descriptionMap = Collections.singletonMap(
+				LocaleUtil.getDefault(), description);
 
 			try {
 				Role role = _roleLocalService.addRole(
@@ -76,25 +76,6 @@ public class RoleCreator {
 		}
 
 		return result;
-	}
-
-	private int _getRoleType(String roleType) {
-		switch (roleType) {
-			case "site":
-				return RoleConstants.TYPE_SITE;
-			case "organization":
-				return RoleConstants.TYPE_ORGANIZATION;
-			case "provider":
-				return RoleConstants.TYPE_PROVIDER;
-			case "depot":
-				return RoleConstants.TYPE_DEPOT;
-			case "account":
-				return RoleConstants.TYPE_ACCOUNT;
-			case "publications":
-				return RoleConstants.TYPE_PUBLICATIONS;
-			default:
-				return RoleConstants.TYPE_REGULAR;
-		}
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

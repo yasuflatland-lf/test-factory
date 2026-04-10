@@ -7,12 +7,14 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
+import com.liferay.portal.kernel.transaction.TransactionInvoker;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.support.tools.constants.LDFPortletKeys;
+import com.liferay.support.tools.service.BatchSpec;
 import com.liferay.support.tools.service.RoleCreator;
+import com.liferay.support.tools.service.RoleType;
 
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
@@ -51,40 +53,32 @@ public class RoleResourceCommand extends BaseMVCResourceCommand {
 			int count = GetterUtil.getInteger(
 				data.getString("count"));
 			String baseName = data.getString("baseName");
-			String roleType = GetterUtil.getString(
+
+			BatchSpec batchSpec = new BatchSpec(count, baseName);
+
+			String roleTypeString = GetterUtil.getString(
 				data.getString("roleType"), "regular");
 			String description = GetterUtil.getString(
 				data.getString("description"), "");
 
-			String validationError = ResourceCommandUtil.validate(
-				count, baseName);
-
-			if (validationError != null) {
-				responseJson.put("error", validationError);
-				responseJson.put("success", false);
-
-				JSONPortletResponseUtil.writeJSON(
-					resourceRequest, resourceResponse, responseJson);
-
-				return;
-			}
+			RoleType roleType = RoleType.fromString(roleTypeString);
 
 			long userId = _portal.getUserId(resourceRequest);
 
-			responseJson = TransactionInvokerUtil.invoke(
+			responseJson = _transactionInvoker.invoke(
 				ResourceCommandUtil.TRANSACTION_CONFIG,
 				() -> _roleCreator.create(
-					userId, count, baseName,
+					userId, batchSpec,
 					roleType, description));
+		}
+		catch (IllegalArgumentException illegalArgumentException) {
+			ResourceCommandUtil.setErrorResponse(
+				responseJson, illegalArgumentException);
 		}
 		catch (Throwable throwable) {
 			_log.error("Failed to create roles", throwable);
 
-			responseJson.put(
-				"error",
-				(throwable.getMessage() != null)
-					? throwable.getMessage() : "An unexpected error occurred");
-			responseJson.put("success", false);
+			ResourceCommandUtil.setErrorResponse(responseJson, throwable);
 		}
 
 		JSONPortletResponseUtil.writeJSON(
@@ -99,5 +93,8 @@ public class RoleResourceCommand extends BaseMVCResourceCommand {
 
 	@Reference
 	private RoleCreator _roleCreator;
+
+	@Reference
+	private TransactionInvoker _transactionInvoker;
 
 }

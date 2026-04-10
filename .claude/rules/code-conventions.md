@@ -3,6 +3,7 @@
 ## Java (Liferay Portal CE 7.4)
 
 - Use **tab indentation** (not spaces).
+- Prefer `@Reference` injection over static `*Util` classes (e.g., `TransactionInvoker` over `TransactionInvokerUtil`, `RoleLocalService` over `RoleLocalServiceUtil`). If a Liferay service is available as an OSGi service, inject it via `@Reference` for testability and consistency.
 - Prefix private fields and methods with underscore: `_privateField`, `_doSomething(...)`.
 - `@Component` annotations use array-style `property = { ... }` with one property per line, each as a quoted string. The `service` attribute goes on its own line after the closing brace.
 - Use **javax.portlet** imports (`javax.portlet.Portlet`, `javax.portlet.version=3.0`), not `jakarta.portlet`. This project targets `release.portal.api:7.4.3.132` (Portal CE 7.4 GA132), which uses Portlet API 3.0. The `jakarta.portlet` namespace is for DXP 2024+ only and must NOT be used with `release.portal.api` / CE 7.4 Docker images.

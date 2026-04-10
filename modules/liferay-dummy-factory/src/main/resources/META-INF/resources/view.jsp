@@ -2,6 +2,7 @@
 
 <portlet:resourceURL id="/ldf/org" var="orgResourceURL" />
 <portlet:resourceURL id="/ldf/role" var="roleResourceURL" />
+<portlet:resourceURL id="/ldf/site" var="siteResourceURL" />
 <portlet:resourceURL id="/ldf/user" var="userResourceURL" />
 <portlet:resourceURL id="/ldf/data" var="dataResourceURL" />
 
@@ -13,6 +14,8 @@
 				"/ldf/org", orgResourceURL
 			).put(
 				"/ldf/role", roleResourceURL
+			).put(
+				"/ldf/site", siteResourceURL
 			).put(
 				"/ldf/user", userResourceURL
 			).build()

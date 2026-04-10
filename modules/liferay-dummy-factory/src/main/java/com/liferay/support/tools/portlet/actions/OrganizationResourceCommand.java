@@ -7,11 +7,12 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
+import com.liferay.portal.kernel.transaction.TransactionInvoker;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.support.tools.constants.LDFPortletKeys;
+import com.liferay.support.tools.service.BatchSpec;
 import com.liferay.support.tools.service.OrganizationCreator;
 
 import javax.portlet.ResourceRequest;
@@ -51,40 +52,30 @@ public class OrganizationResourceCommand extends BaseMVCResourceCommand {
 			int count = GetterUtil.getInteger(
 				data.getString("count"));
 			String baseName = data.getString("baseName");
+
+			BatchSpec batchSpec = new BatchSpec(count, baseName);
+
 			long parentOrganizationId = GetterUtil.getLong(
 				data.getString("parentOrganizationId"));
 			boolean site = GetterUtil.getBoolean(
 				data.getString("site"));
 
-			String validationError = ResourceCommandUtil.validate(
-				count, baseName);
-
-			if (validationError != null) {
-				responseJson.put("error", validationError);
-				responseJson.put("success", false);
-
-				JSONPortletResponseUtil.writeJSON(
-					resourceRequest, resourceResponse, responseJson);
-
-				return;
-			}
-
 			long userId = _portal.getUserId(resourceRequest);
 
-			responseJson = TransactionInvokerUtil.invoke(
+			responseJson = _transactionInvoker.invoke(
 				ResourceCommandUtil.TRANSACTION_CONFIG,
 				() -> _organizationCreator.create(
-					userId, count, baseName,
+					userId, batchSpec,
 					parentOrganizationId, site));
+		}
+		catch (IllegalArgumentException illegalArgumentException) {
+			ResourceCommandUtil.setErrorResponse(
+				responseJson, illegalArgumentException);
 		}
 		catch (Throwable throwable) {
 			_log.error("Failed to create organizations", throwable);
 
-			responseJson.put(
-				"error",
-				(throwable.getMessage() != null)
-					? throwable.getMessage() : "An unexpected error occurred");
-			responseJson.put("success", false);
+			ResourceCommandUtil.setErrorResponse(responseJson, throwable);
 		}
 
 		JSONPortletResponseUtil.writeJSON(
@@ -99,5 +90,8 @@ public class OrganizationResourceCommand extends BaseMVCResourceCommand {
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private TransactionInvoker _transactionInvoker;
 
 }

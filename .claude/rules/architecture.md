@@ -11,11 +11,6 @@ liferay-dummy-factory/
     liferay-dummy-factory/ # Single OSGi bundle (portlet + web)
       bnd.bnd
       src/main/java/         # Java: portlet, resource commands, services, constants
-        com/liferay/support/tools/
-          portlet/actions/
-            UserResourceCommand.java
-          service/
-            UserCreator.java
       src/main/resources/
         META-INF/resources/
           js/               # React frontend components
@@ -29,7 +24,11 @@ liferay-dummy-factory/
 
 **MVCPortlet + PanelApp** -- The portlet (`com_liferay_support_tools_portlet_LiferayDummyFactoryPortlet`) is registered in the Control Panel under Configuration. The portlet uses `javax.portlet` namespace (Portlet API 3.0). The PanelApp's `@Reference` uses a target filter of `javax.portlet.name=...`. The view JSP renders the React component via the `<react:component>` tag.
 
-**MVCResourceCommands** -- `/ldf/user` (`UserResourceCommand`) handles User creation, and `/ldf/data` now serves organizations, roles, and user-groups dropdown data.
+**MVCResourceCommands** -- Entity creation is handled by per-entity resource commands: `/ldf/org` (Organization), `/ldf/user` (User), `/ldf/role` (Role), `/ldf/site` (Site). `/ldf/data` (`DataListResourceCommand`) serves dropdown data for organizations, roles, user-groups, site-roles, org-roles, sites, and site-templates.
+
+**Value Objects** -- `BatchSpec` (Java record) encapsulates batch-creation parameters (count + baseName) with constructor validation, replacing scattered primitive validation. `RoleType` and `SiteMembershipType` are type-safe enums mapping frontend string values to Liferay integer constants, preventing silent fallback on invalid input. All resource commands construct these value objects from JSON input before passing them to Creator services.
+
+**DataListProvider SPI** -- Dropdown data sources (organizations, roles, user-groups, sites, site-templates, etc.) are served by `DataListProvider` implementations discovered dynamically via OSGi `@Reference(cardinality=MULTIPLE, policy=DYNAMIC)`. New data types are added by creating a `@Component(service=DataListProvider.class)` class in `service/datalist/` — no changes to `DataListResourceCommand` needed.
 
 **React frontend** -- React components live under `META-INF/resources/js/`. The view JSP passes server-side data (such as resource URLs) to the React component as props. The frontend uses `credentials: 'include'` so Liferay session cookies are sent automatically.
 
@@ -55,3 +54,4 @@ Key components:
 | **Singleton container** | `getInstance()` with `synchronized` guarantees all test classes share a single Liferay instance, preventing resource waste and port conflicts. |
 | **`release.portal.api` instead of `release.dxp.api`** | `release.dxp.api:default` resolves to 2026.q1.2 which provides `jakarta.portlet` (Portlet API 4.0). This is incompatible with the CE 7.4 GA132 Docker image, which uses `javax.portlet` (Portlet API 3.0). Using `release.portal.api` ensures the compile-time API matches the runtime. |
 | **`actionResourceURLs` map** | The JSP generates per-entity action URLs as a map keyed by `mvc.command.name`, enabling the single React app to dispatch to multiple MVCResourceCommands. New entity types require adding a `<portlet:resourceURL>` entry in `view.jsp`. |
+| **DataListProvider SPI** | Dropdown data sources are pluggable via an OSGi service interface with dynamic references, avoiding a growing switch statement in DataListResourceCommand. |

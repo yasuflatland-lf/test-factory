@@ -32,8 +32,6 @@ export interface EntityFormConfig {
 	label: string;
 }
 
-export interface ApiResponse<T = unknown> {
-	data?: T;
-	error?: string;
-	success: boolean;
-}
+export type ApiResponse<T = unknown> =
+	| {success: true; data: T}
+	| {success: false; error: string};
