@@ -3,6 +3,8 @@ package com.liferay.support.tools.service.datalist;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.service.GroupLocalService;
@@ -30,9 +32,16 @@ public class SiteDataListProvider implements DataListProvider {
 						group.getDescriptiveName(), group.getGroupId()));
 			}
 			catch (PortalException portalException) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(
+						"Unable to get descriptive name for group " +
+							group.getGroupId() +
+							", using name as fallback",
+						portalException);
+				}
+
 				jsonArray.put(
-					createOption(
-						group.getName(), group.getGroupId()));
+					createOption(group.getName(), group.getGroupId()));
 			}
 		}
 
@@ -43,6 +52,9 @@ public class SiteDataListProvider implements DataListProvider {
 	public String[] getSupportedTypes() {
 		return new String[] {"sites"};
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		SiteDataListProvider.class);
 
 	@Reference
 	private GroupLocalService _groupLocalService;
