@@ -86,6 +86,10 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 					organizationIds, roleIds, userGroupIds,
 					siteRoleIds, orgRoleIds));
 		}
+		catch (IllegalArgumentException illegalArgumentException) {
+			responseJson.put("error", illegalArgumentException.getMessage());
+			responseJson.put("success", false);
+		}
 		catch (Throwable throwable) {
 			_log.error("Failed to create users", throwable);
 

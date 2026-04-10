@@ -68,6 +68,10 @@ public class OrganizationResourceCommand extends BaseMVCResourceCommand {
 					userId, batchSpec,
 					parentOrganizationId, site));
 		}
+		catch (IllegalArgumentException illegalArgumentException) {
+			responseJson.put("error", illegalArgumentException.getMessage());
+			responseJson.put("success", false);
+		}
 		catch (Throwable throwable) {
 			_log.error("Failed to create organizations", throwable);
 

@@ -71,6 +71,10 @@ public class RoleResourceCommand extends BaseMVCResourceCommand {
 					userId, batchSpec,
 					roleType, description));
 		}
+		catch (IllegalArgumentException illegalArgumentException) {
+			responseJson.put("error", illegalArgumentException.getMessage());
+			responseJson.put("success", false);
+		}
 		catch (Throwable throwable) {
 			_log.error("Failed to create roles", throwable);
 

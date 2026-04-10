@@ -60,7 +60,7 @@ public class SiteResourceCommand extends BaseMVCResourceCommand {
 				data.getString("membershipType"), "open");
 
 			SiteMembershipType membershipType =
-				_parseMembershipType(membershipTypeString);
+				SiteMembershipType.fromString(membershipTypeString);
 
 			long parentGroupId = GetterUtil.getLong(
 				data.getString("parentGroupId"));
@@ -85,6 +85,10 @@ public class SiteResourceCommand extends BaseMVCResourceCommand {
 					siteTemplateId, manualMembership,
 					inheritContent, active, description));
 		}
+		catch (IllegalArgumentException illegalArgumentException) {
+			responseJson.put("error", illegalArgumentException.getMessage());
+			responseJson.put("success", false);
+		}
 		catch (Throwable throwable) {
 			_log.error("Failed to create sites", throwable);
 
@@ -97,15 +101,6 @@ public class SiteResourceCommand extends BaseMVCResourceCommand {
 
 		JSONPortletResponseUtil.writeJSON(
 			resourceRequest, resourceResponse, responseJson);
-	}
-
-	private SiteMembershipType _parseMembershipType(String value) {
-		try {
-			return SiteMembershipType.fromString(value);
-		}
-		catch (IllegalArgumentException e) {
-			return SiteMembershipType.OPEN;
-		}
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
