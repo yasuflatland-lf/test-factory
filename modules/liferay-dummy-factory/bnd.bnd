@@ -5,4 +5,6 @@ Web-ContextPath: /liferay-dummy-factory
 -dsannotations-options: inherit
 -includeresource:\
 	META-INF/resources/__liferay__/=classes/META-INF/resources/__liferay__/,\
+	META-INF/resources/index.js=classes/META-INF/resources/index.js,\
+	META-INF/resources/manifest.json=classes/META-INF/resources/manifest.json,\
 	package.json

@@ -11,17 +11,16 @@
 		"@types/jest": "26.0.14",
 		"@types/react": "18.2.0",
 		"esbuild": "0.24.2",
-		"esbuild-jest": "0.5.0",
 		"jest": "27.5.1",
 		"jest-environment-jsdom": "27.5.1",
 		"jest-fetch-mock": "3.0.3",
 		"typescript": "5.9.2"
 	},
-	"main": "js/index.js",
+	"main": "js/index.ts",
 	"name": "liferay-dummy-factory",
 	"private": true,
 	"scripts": {
-		"build": "esbuild src/main/resources/META-INF/resources/js/index.ts --bundle --format=esm --outfile=classes/META-INF/resources/__liferay__/index.js --external:react --external:react-dom --loader:.tsx=tsx --jsx=transform --banner:js=\"import * as React from 'react';\" --target=es2020",
+		"build": "node scripts/build.mjs",
 		"checkFormat": "liferay-npm-scripts format --check",
 		"format": "liferay-npm-scripts format",
 		"test": "jest"
