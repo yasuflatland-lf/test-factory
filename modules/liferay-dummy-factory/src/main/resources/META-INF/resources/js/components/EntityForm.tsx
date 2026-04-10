@@ -11,13 +11,13 @@ import ProgressBar from './ProgressBar';
 import ResultAlert from './ResultAlert';
 
 interface EntityFormProps {
-	actionResourceURL: string;
+	actionResourceURLs: Record<string, string>;
 	config: EntityFormConfig;
 	dataResourceURL: string;
 	progressResourceURL: string;
 }
 
-function EntityForm({actionResourceURL, config, dataResourceURL, progressResourceURL}: EntityFormProps) {
+function EntityForm({actionResourceURLs, config, dataResourceURL, progressResourceURL}: EntityFormProps) {
 	const {endSubmit, errors, setValue, startSubmit, submitting, validate, values} =
 		useFormState(config.fields);
 	const [result, setResult] = useState<{message: string; type: 'success' | 'danger'} | null>(null);
@@ -34,7 +34,20 @@ function EntityForm({actionResourceURL, config, dataResourceURL, progressResourc
 		startSubmit();
 		setResult(null);
 
-		const response = await postResource(actionResourceURL, values);
+		const actionURL = actionResourceURLs[config.actionURL];
+
+		const submitValues: Record<string, unknown> = {...values};
+
+		for (const field of config.fields) {
+			if (field.type === 'multiselect' && submitValues[field.name]) {
+				submitValues[field.name] = String(submitValues[field.name])
+					.split(',')
+					.filter(Boolean)
+					.map(Number);
+			}
+		}
+
+		const response = await postResource(actionURL, submitValues as Record<string, string>);
 
 		endSubmit();
 

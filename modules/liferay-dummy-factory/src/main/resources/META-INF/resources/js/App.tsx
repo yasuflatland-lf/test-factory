@@ -6,12 +6,12 @@ import EntityForm from './components/EntityForm';
 import EntitySelector from './components/EntitySelector';
 
 interface AppProps {
-	actionResourceURL: string;
+	actionResourceURLs: Record<string, string>;
 	dataResourceURL: string;
 	progressResourceURL: string;
 }
 
-function App({actionResourceURL, dataResourceURL, progressResourceURL}: AppProps) {
+function App({actionResourceURLs, dataResourceURL, progressResourceURL}: AppProps) {
 	const [selectedEntity, setSelectedEntity] = useState<EntityType>(
 		ENTITY_TYPES.ORGANIZATION
 	);
@@ -31,7 +31,7 @@ function App({actionResourceURL, dataResourceURL, progressResourceURL}: AppProps
 				<div className="col-md-10 pl-0">
 					{entityConfig ? (
 						<EntityForm
-							actionResourceURL={actionResourceURL}
+							actionResourceURLs={actionResourceURLs}
 							config={entityConfig}
 							dataResourceURL={dataResourceURL}
 							key={selectedEntity}

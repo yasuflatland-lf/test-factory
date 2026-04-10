@@ -1,13 +1,18 @@
 <%@ include file="/init.jsp" %>
 
-<portlet:resourceURL id="/ldf/org" var="actionResourceURL" />
+<portlet:resourceURL id="/ldf/org" var="orgResourceURL" />
+<portlet:resourceURL id="/ldf/user" var="userResourceURL" />
 <portlet:resourceURL id="/ldf/data" var="dataResourceURL" />
 
 <react:component
 	module="{App} from liferay-dummy-factory"
 	props='<%=
 		HashMapBuilder.<String, Object>put(
-			"actionResourceURL", actionResourceURL
+			"actionResourceURLs", HashMapBuilder.<String, Object>put(
+				"/ldf/org", orgResourceURL
+			).put(
+				"/ldf/user", userResourceURL
+			).build()
 		).put(
 			"dataResourceURL", dataResourceURL
 		).put(
