@@ -22,7 +22,7 @@ class PortletRenderSpec extends BaseLiferaySpec {
 	List<String> jsErrors = []
 
 	def setupSpec() {
-		ensureDeployed()
+		ensureBundleActive()
 		pw = new PlaywrightLifecycle()
 	}
 

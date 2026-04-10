@@ -39,7 +39,7 @@ class DeploymentSpec extends BaseLiferaySpec {
 
 	def 'Liferay Dummy Factory JAR deploys and bundle becomes ACTIVE'() {
 		when:
-		ensureDeployed()
+		ensureBundleActive()
 
 		and:
 		String output = ''
@@ -56,7 +56,7 @@ class DeploymentSpec extends BaseLiferaySpec {
 
 	def 'Portlet web resources are accessible after deployment'() {
 		given:
-		ensureDeployed()
+		ensureBundleActive()
 
 		when:
 		def responseCode = httpGet(

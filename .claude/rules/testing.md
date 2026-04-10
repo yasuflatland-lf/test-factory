@@ -23,7 +23,7 @@
 1. The module JAR is copied into the container at `/opt/liferay/deploy/` using `liferay.deployJar(path)`.
 2. The JAR must be pre-built: run `./gradlew :modules:liferay-dummy-factory:jar` before running tests.
 3. Bundle activation is verified via GoGo Shell: `lb | grep dummy.factory` must show `Active` or `ACTIVE`.
-4. The `ensureDeployed()` method in `BaseLiferaySpec` polls GoGo Shell every 5 seconds for up to 5 minutes until the bundle is active. It is synchronized and runs only once per test suite.
+4. The `ensureBundleActive()` method in `BaseLiferaySpec` polls GoGo Shell every 5 seconds for up to 5 minutes until the bundle is active. It is synchronized and runs only once per test suite.
 
 ## PortletTracker and jakarta.portlet Compatibility (CE GA132)
 
@@ -63,7 +63,7 @@ The PortletTracker in CE 7.4 GA132 tracks `javax.portlet.Portlet` services, **no
 ## Adding New Tests
 
 1. Create a new Groovy class under `integration-test/src/test/groovy/com/liferay/support/tools/it/spec/`.
-2. **Extend `BaseLiferaySpec`** -- this gives you the shared `liferay` container instance and `ensureDeployed()`.
-3. Call `ensureDeployed()` in `setupSpec()` (or in the first test) to guarantee the bundle is deployed and active before your tests run.
+2. **Extend `BaseLiferaySpec`** -- this gives you the shared `liferay` container instance and `ensureBundleActive()`.
+3. Call `ensureBundleActive()` in `setupSpec()` (or in the first test) to guarantee the bundle is deployed and active before your tests run.
 4. Use `@Stepwise` if your tests must execute in declaration order (e.g., login then interact).
 5. For browser tests, instantiate `PlaywrightLifecycle` as a `@Shared` field in `setupSpec()` and close it in `cleanupSpec()`.

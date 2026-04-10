@@ -35,7 +35,7 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 	List<Long> createdOrganizationIds = []
 
 	def setupSpec() {
-		ensureDeployed()
+		ensureBundleActive()
 		pw = new PlaywrightLifecycle()
 	}
 

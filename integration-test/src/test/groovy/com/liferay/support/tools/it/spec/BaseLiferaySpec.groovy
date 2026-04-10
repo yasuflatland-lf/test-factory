@@ -41,7 +41,7 @@ abstract class BaseLiferaySpec extends Specification {
 		return jars[0].toPath()
 	}
 
-	static synchronized void ensureDeployed() {
+	static synchronized void ensureBundleActive() {
 		if (bundleVerified) {
 			return
 		}
