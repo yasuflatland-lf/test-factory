@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 // src/main/resources/META-INF/resources/js/App.tsx
-import { useState as useState4 } from "react";
+import { useState as useState5 } from "react";
 
 // src/main/resources/META-INF/resources/js/config/constants.ts
 var ENTITY_TYPES = {
@@ -63,7 +63,6 @@ var ORGANIZATION_CONFIG = {
       type: "text"
     },
     {
-      advanced: false,
       dataSource: "/ldf/data/organizations",
       defaultValue: "0",
       label: "parent-organization",
@@ -72,7 +71,6 @@ var ORGANIZATION_CONFIG = {
       type: "select"
     },
     {
-      advanced: false,
       defaultValue: false,
       label: "create-organization-site",
       name: "organizationSiteCreate",
@@ -90,6 +88,9 @@ var ENTITY_CONFIGS = {
 function getEntityConfig(entityType) {
   return ENTITY_CONFIGS[entityType];
 }
+
+// src/main/resources/META-INF/resources/js/components/EntityForm.tsx
+import { useState as useState4 } from "react";
 
 // src/main/resources/META-INF/resources/js/hooks/useFormState.ts
 import { useCallback, useReducer } from "react";
@@ -205,36 +206,66 @@ function useFormState(fields) {
   };
 }
 
+// src/main/resources/META-INF/resources/js/hooks/useProgress.ts
+import { useCallback as useCallback2, useEffect, useRef, useState } from "react";
+function useProgress(resourceURL) {
+  const [percent, setPercent] = useState(0);
+  const [running, setRunning] = useState(false);
+  const intervalRef = useRef(null);
+  const stop = useCallback2(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setRunning(false);
+  }, []);
+  const start = useCallback2(
+    (progressId) => {
+      if (!resourceURL) {
+        return;
+      }
+      setPercent(0);
+      setRunning(true);
+      intervalRef.current = window.setInterval(async () => {
+        try {
+          const response = await fetch(
+            `${resourceURL}&progressId=${encodeURIComponent(progressId)}`,
+            { credentials: "include" }
+          );
+          const data = await response.json();
+          setPercent(data.percent || 0);
+          if (data.percent >= 100) {
+            stop();
+          }
+        } catch {
+          stop();
+        }
+      }, 1e3);
+    },
+    [resourceURL, stop]
+  );
+  const reset = useCallback2(() => {
+    stop();
+    setPercent(0);
+  }, [stop]);
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
+  return { percent, reset, running, start };
+}
+
 // src/main/resources/META-INF/resources/js/utils/api.ts
 async function fetchResource(resourceURL, params) {
   const url = new URL(resourceURL, window.location.origin);
   if (params) {
-    Object.entries(params).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(params)) {
       url.searchParams.append(key, value);
-    });
-  }
-  try {
-    const response = await fetch(url.toString(), {
-      credentials: "include",
-      method: "GET"
-    });
-    const data = await response.json();
-    if (data.error) {
-      return { error: data.error, success: false };
     }
-    return { data, success: true };
-  } catch (error) {
-    return {
-      error: error instanceof Error ? error.message : "Unknown error",
-      success: false
-    };
   }
-}
-async function submitResource(resourceURL, params) {
-  const url = new URL(resourceURL, window.location.origin);
-  Object.entries(params).forEach(([key, value]) => {
-    url.searchParams.append(key, value);
-  });
   try {
     const response = await fetch(url.toString(), {
       credentials: "include",
@@ -254,9 +285,9 @@ async function submitResource(resourceURL, params) {
 }
 
 // src/main/resources/META-INF/resources/js/components/AdvancedOptions.tsx
-import { useState } from "react";
+import { useState as useState2 } from "react";
 function AdvancedOptions({ children }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState2(false);
   return /* @__PURE__ */ React.createElement("div", { className: "sheet-section" }, /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -271,12 +302,12 @@ function AdvancedOptions({ children }) {
 var AdvancedOptions_default = AdvancedOptions;
 
 // src/main/resources/META-INF/resources/js/hooks/useApiData.ts
-import { useCallback as useCallback2, useEffect, useState as useState2 } from "react";
+import { useCallback as useCallback3, useEffect as useEffect2, useState as useState3 } from "react";
 function useApiData(resourceURL, dataSource) {
-  const [data, setData] = useState2([]);
-  const [loading, setLoading] = useState2(false);
-  const [error, setError] = useState2(null);
-  const load = useCallback2(async () => {
+  const [data, setData] = useState3([]);
+  const [loading, setLoading] = useState3(false);
+  const [error, setError] = useState3(null);
+  const load = useCallback3(async () => {
     if (!resourceURL || !dataSource) {
       return;
     }
@@ -292,7 +323,7 @@ function useApiData(resourceURL, dataSource) {
     }
     setLoading(false);
   }, [resourceURL, dataSource]);
-  useEffect(() => {
+  useEffect2(() => {
     load();
   }, [load]);
   return { data, error, loading, reload: load };
@@ -375,9 +406,9 @@ function ProgressBar({ percent, running }) {
 var ProgressBar_default = ProgressBar;
 
 // src/main/resources/META-INF/resources/js/components/ResultAlert.tsx
-import { useEffect as useEffect2 } from "react";
+import { useEffect as useEffect3 } from "react";
 function ResultAlert({ message, onDismiss, type }) {
-  useEffect2(() => {
+  useEffect3(() => {
     if (message && type === "success") {
       const timer = setTimeout(onDismiss, 5e3);
       return () => clearTimeout(timer);
@@ -399,11 +430,10 @@ function ResultAlert({ message, onDismiss, type }) {
 var ResultAlert_default = ResultAlert;
 
 // src/main/resources/META-INF/resources/js/components/EntityForm.tsx
-import { useState as useState3 } from "react";
 function EntityForm({ actionResourceURL, config, dataResourceURL, progressResourceURL }) {
-  const { endSubmit, errors, reset, setValue, startSubmit, submitting, validate, values } = useFormState(config.fields);
-  const [result, setResult] = useState3(null);
-  const [progress, setProgress] = useState3({ percent: 0, running: false });
+  const { endSubmit, errors, setValue, startSubmit, submitting, validate, values } = useFormState(config.fields);
+  const [result, setResult] = useState4(null);
+  const { percent, running } = useProgress(progressResourceURL);
   const requiredFields = config.fields.filter((f) => !f.advanced);
   const advancedFields = config.fields.filter((f) => f.advanced);
   const handleSubmit = async () => {
@@ -412,7 +442,7 @@ function EntityForm({ actionResourceURL, config, dataResourceURL, progressResour
     }
     startSubmit();
     setResult(null);
-    const response = await submitResource(actionResourceURL, values);
+    const response = await fetchResource(actionResourceURL, values);
     endSubmit();
     if (response.success) {
       setResult({
@@ -451,7 +481,7 @@ function EntityForm({ actionResourceURL, config, dataResourceURL, progressResour
       }
     );
   };
-  return /* @__PURE__ */ React.createElement("div", { className: "sheet sheet-lg" }, /* @__PURE__ */ React.createElement("div", { className: "sheet-header" }, /* @__PURE__ */ React.createElement("h2", null, Liferay.Language.get(config.label))), /* @__PURE__ */ React.createElement("div", { className: "sheet-section" }, requiredFields.map(renderField), advancedFields.length > 0 && /* @__PURE__ */ React.createElement(AdvancedOptions_default, null, advancedFields.map(renderField))), /* @__PURE__ */ React.createElement(ProgressBar_default, { percent: progress.percent, running: progress.running }), /* @__PURE__ */ React.createElement("div", { className: "sheet-footer" }, /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { className: "sheet sheet-lg" }, /* @__PURE__ */ React.createElement("div", { className: "sheet-header" }, /* @__PURE__ */ React.createElement("h2", null, Liferay.Language.get(config.label))), /* @__PURE__ */ React.createElement("div", { className: "sheet-section" }, requiredFields.map(renderField), advancedFields.length > 0 && /* @__PURE__ */ React.createElement(AdvancedOptions_default, null, advancedFields.map(renderField))), /* @__PURE__ */ React.createElement(ProgressBar_default, { percent, running }), /* @__PURE__ */ React.createElement("div", { className: "sheet-footer" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       className: "btn btn-primary",
@@ -485,7 +515,7 @@ function EntitySelector({ onSelect, selected }) {
     /* @__PURE__ */ React.createElement("div", { className: "card-body" }, /* @__PURE__ */ React.createElement("div", { className: "card-row" }, /* @__PURE__ */ React.createElement("div", { className: "autofit-col" }, /* @__PURE__ */ React.createElement("span", { className: "sticker sticker-primary" }, /* @__PURE__ */ React.createElement("svg", { className: "lexicon-icon" }, /* @__PURE__ */ React.createElement(
       "use",
       {
-        xlinkHref: `${Liferay.ThemeDisplay.getPathThemeImages?.() || ""}/clay/icons.svg#${ENTITY_ICONS[entityType]}`
+        xlinkHref: `${Liferay.ThemeDisplay.getPathThemeImages()}/clay/icons.svg#${ENTITY_ICONS[entityType]}`
       }
     )))), /* @__PURE__ */ React.createElement("div", { className: "autofit-col autofit-col-expand" }, /* @__PURE__ */ React.createElement("div", { className: "card-title" }, Liferay.Language.get(ENTITY_LABELS[entityType])))))
   ))));
@@ -494,7 +524,7 @@ var EntitySelector_default = EntitySelector;
 
 // src/main/resources/META-INF/resources/js/App.tsx
 function App({ actionResourceURL, dataResourceURL, progressResourceURL }) {
-  const [selectedEntity, setSelectedEntity] = useState4(
+  const [selectedEntity, setSelectedEntity] = useState5(
     ENTITY_TYPES.ORGANIZATION
   );
   const entityConfig = getEntityConfig(selectedEntity);
@@ -518,14 +548,14 @@ function App({ actionResourceURL, dataResourceURL, progressResourceURL }) {
 var App_default = App;
 
 // src/main/resources/META-INF/resources/js/Calculator.tsx
-import { useState as useState5 } from "react";
+import { useState as useState6 } from "react";
 function Calculator({ calculateURL }) {
-  const [num1, setNum1] = useState5("");
-  const [num2, setNum2] = useState5("");
-  const [operator, setOperator] = useState5("+");
-  const [result, setResult] = useState5(null);
-  const [error, setError] = useState5(null);
-  const [loading, setLoading] = useState5(false);
+  const [num1, setNum1] = useState6("");
+  const [num2, setNum2] = useState6("");
+  const [operator, setOperator] = useState6("+");
+  const [result, setResult] = useState6(null);
+  const [error, setError] = useState6(null);
+  const [loading, setLoading] = useState6(false);
   const handleCalculate = () => {
     setLoading(true);
     setError(null);

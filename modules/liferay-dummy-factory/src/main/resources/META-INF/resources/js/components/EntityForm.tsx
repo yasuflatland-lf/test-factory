@@ -1,12 +1,14 @@
-import {EntityFormConfig} from '../types';
+import {useState} from 'react';
+
+import {EntityFormConfig, FieldDefinition} from '../types';
 import {useFormState} from '../hooks/useFormState';
-import {submitResource} from '../utils/api';
+import {useProgress} from '../hooks/useProgress';
+import {fetchResource} from '../utils/api';
 import AdvancedOptions from './AdvancedOptions';
 import DynamicSelect from './DynamicSelect';
 import FormField from './FormField';
 import ProgressBar from './ProgressBar';
 import ResultAlert from './ResultAlert';
-import {useState} from 'react';
 
 interface EntityFormProps {
 	actionResourceURL: string;
@@ -16,10 +18,10 @@ interface EntityFormProps {
 }
 
 function EntityForm({actionResourceURL, config, dataResourceURL, progressResourceURL}: EntityFormProps) {
-	const {endSubmit, errors, reset, setValue, startSubmit, submitting, validate, values} =
+	const {endSubmit, errors, setValue, startSubmit, submitting, validate, values} =
 		useFormState(config.fields);
 	const [result, setResult] = useState<{message: string; type: 'success' | 'danger'} | null>(null);
-	const [progress, setProgress] = useState({percent: 0, running: false});
+	const {percent, running} = useProgress(progressResourceURL);
 
 	const requiredFields = config.fields.filter((f) => !f.advanced);
 	const advancedFields = config.fields.filter((f) => f.advanced);
@@ -32,7 +34,7 @@ function EntityForm({actionResourceURL, config, dataResourceURL, progressResourc
 		startSubmit();
 		setResult(null);
 
-		const response = await submitResource(actionResourceURL, values);
+		const response = await fetchResource(actionResourceURL, values);
 
 		endSubmit();
 
@@ -50,7 +52,7 @@ function EntityForm({actionResourceURL, config, dataResourceURL, progressResourc
 		}
 	};
 
-	const renderField = (field: typeof config.fields[0]) => {
+	const renderField = (field: FieldDefinition) => {
 		if (field.dataSource) {
 			return (
 				<DynamicSelect
@@ -91,7 +93,7 @@ function EntityForm({actionResourceURL, config, dataResourceURL, progressResourc
 				)}
 			</div>
 
-			<ProgressBar percent={progress.percent} running={progress.running} />
+			<ProgressBar percent={percent} running={running} />
 
 			<div className="sheet-footer">
 				<button

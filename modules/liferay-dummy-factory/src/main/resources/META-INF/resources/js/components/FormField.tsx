@@ -1,10 +1,10 @@
-import {FieldDefinition} from '../types';
+import {FieldDefinition, SelectOption} from '../types';
 
 interface FormFieldProps {
 	error?: string;
 	field: FieldDefinition;
 	onChange: (name: string, value: string) => void;
-	options?: Array<{label: string; value: string}>;
+	options?: SelectOption[];
 	value: string;
 }
 

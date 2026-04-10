@@ -2,7 +2,6 @@
 
 <portlet:resourceURL id="/ldf/org" var="actionResourceURL" />
 <portlet:resourceURL id="/ldf/data" var="dataResourceURL" />
-<portlet:resourceURL id="/ldf/calculate" var="calculateURL" />
 
 <react:component
 	module="{App} from liferay-dummy-factory"

@@ -1,5 +1,3 @@
-import {useState} from 'react';
-
 import {ENTITY_ICONS, ENTITY_LABELS, ENTITY_TYPES, EntityType} from '../config/constants';
 
 interface EntitySelectorProps {
@@ -28,7 +26,7 @@ function EntitySelector({onSelect, selected}: EntitySelectorProps) {
 									<span className="sticker sticker-primary">
 										<svg className="lexicon-icon">
 											<use
-												xlinkHref={`${Liferay.ThemeDisplay.getPathThemeImages?.() || ''}/clay/icons.svg#${ENTITY_ICONS[entityType]}`}
+												xlinkHref={`${Liferay.ThemeDisplay.getPathThemeImages()}/clay/icons.svg#${ENTITY_ICONS[entityType]}`}
 											/>
 										</svg>
 									</span>

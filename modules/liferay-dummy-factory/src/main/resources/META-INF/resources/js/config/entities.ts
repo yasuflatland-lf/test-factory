@@ -22,7 +22,6 @@ const ORGANIZATION_CONFIG: EntityFormConfig = {
 			type: 'text',
 		},
 		{
-			advanced: false,
 			dataSource: '/ldf/data/organizations',
 			defaultValue: '0',
 			label: 'parent-organization',
@@ -31,7 +30,6 @@ const ORGANIZATION_CONFIG: EntityFormConfig = {
 			type: 'select',
 		},
 		{
-			advanced: false,
 			defaultValue: false,
 			label: 'create-organization-site',
 			name: 'organizationSiteCreate',
