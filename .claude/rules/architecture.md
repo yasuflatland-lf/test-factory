@@ -35,7 +35,7 @@ test-factory/
 
 Standard audit columns (`companyId`, `userId`, `userName`, `createDate`, `modifiedDate`) are included. Results are ordered by `createDate` descending, with a finder on `userId`.
 
-**MVCPortlet + PanelApp** -- The portlet (`com_liferay_test_factory_TestFactoryPortlet`) is registered in the Control Panel under Configuration. The view JSP renders the React component via the `<react:component>` tag.
+**MVCPortlet + PanelApp** -- The portlet (`com_liferay_test_factory_TestFactoryPortlet`) is registered in the Control Panel under Configuration. The portlet uses `javax.portlet` namespace (Portlet API 3.0). The PanelApp's `@Reference` uses a target filter of `javax.portlet.name=...`. The view JSP renders the React component via the `<react:component>` tag.
 
 **React frontend** -- `Calculator.js` is a functional React component using `useState`. It renders a form with two number inputs, an operator dropdown (`+`, `-`, `*`, `/`), and a calculate button. Results and errors are shown inline.
 
@@ -83,3 +83,4 @@ Key components:
 | **`liferay/portal` CE image for tests** | Uses the free Community Edition Docker image (`liferay/portal:7.4.3.132-ga132`) so integration tests run without a DXP license. The workspace targets `portal-7.4-ga132` (Portal CE) for development. |
 | **Container reuse (`withReuse(true)`)** | Liferay startup is slow (~8 min). Reusing the container across test runs drastically shortens feedback loops during development. |
 | **Singleton container** | `getInstance()` with `synchronized` guarantees all test classes share a single Liferay instance, preventing resource waste and port conflicts. |
+| **`release.portal.api` instead of `release.dxp.api`** | `release.dxp.api:default` resolves to 2026.q1.2 which provides `jakarta.portlet` (Portlet API 4.0). This is incompatible with the CE 7.4 GA132 Docker image, which uses `javax.portlet` (Portlet API 3.0). Using `release.portal.api` ensures the compile-time API matches the runtime. |

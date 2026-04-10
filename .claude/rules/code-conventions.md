@@ -1,16 +1,17 @@
 # Code Conventions
 
-## Java (Liferay DXP 2024+)
+## Java (Liferay Portal CE 7.4)
 
 - Use **tab indentation** (not spaces).
 - Prefix private fields and methods with underscore: `_privateField`, `_calculate(...)`.
 - `@Component` annotations use array-style `property = { ... }` with one property per line, each as a quoted string. The `service` attribute goes on its own line after the closing brace.
-- Use **jakarta.portlet** imports (`jakarta.portlet.Portlet`, `jakarta.portlet.version=4.0`), not the legacy `javax.portlet` namespace. This applies to all portlet-related code on DXP 2024+ / CE 7.4 GA120+.
-- Organize imports in this order: `com.liferay.*`, third-party, `jakarta.*` / `java.*`, `org.*`. Separate each group with a blank line.
+- Use **javax.portlet** imports (`javax.portlet.Portlet`, `javax.portlet.version=3.0`), not `jakarta.portlet`. This project targets `release.portal.api:7.4.3.132` (Portal CE 7.4 GA132), which uses Portlet API 3.0. The `jakarta.portlet` namespace is for DXP 2024+ only and must NOT be used with `release.portal.api` / CE 7.4 Docker images.
+- Organize imports in this order: `com.liferay.*`, third-party, `javax.*` / `java.*`, `org.*`. Separate each group with a blank line.
 - Service Builder implementation: only edit `*Impl.java` files (e.g., `CalcEntryLocalServiceImpl`). Never hand-edit generated base classes, model classes, or persistence classes.
 - Service Builder `*Impl` classes extend the generated `*BaseImpl` and are annotated with `@Component(property = "model.class.name=...", service = AopService.class)`.
 - Method parameters that span multiple lines use Liferay's continuation-indent style: second line indented two extra tabs, `throws` clause indented one extra tab.
 - Use `counterLocalService.increment()` for new primary keys and `*Persistence.create(id)` / `*Persistence.update(entity)` for CRUD.
+- In `init.jsp`, always include both `<liferay-theme:defineObjects />` and `<portlet:defineObjects />`. The `<portlet:defineObjects />` tag is required for portlet implicit objects (`renderRequest`, `renderResponse`, etc.) to be available in JSPs.
 
 ## Groovy (Integration Tests)
 

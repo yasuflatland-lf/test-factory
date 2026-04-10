@@ -1,6 +1,6 @@
 # test-factory
 
-Liferay DXP Workspace: calculator portlet (Service Builder + React) with Testcontainers integration tests.
+Liferay Portal CE Workspace: calculator portlet (Service Builder + React) with Testcontainers integration tests.
 
 ## Commands
 
