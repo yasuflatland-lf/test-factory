@@ -101,6 +101,31 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 		matchingItems.collect { it.name }.sort() == (1..ORG_COUNT).collect { "${BASE_ORG_NAME} ${it}" }
 	}
 
+	def 'Re-creating same organizations is handled gracefully'() {
+		given:
+		Page page = pw.page
+
+		when: 'navigate to portlet and submit same names again'
+		page.navigate(
+			"${liferay.baseUrl}/group/control_panel/manage" +
+			"?p_p_id=${PORTLET_ID}" +
+			'&p_p_lifecycle=0' +
+			'&p_p_state=maximized'
+		)
+		page.waitForLoadState()
+		page.locator('#count').waitFor(
+			new Locator.WaitForOptions().setTimeout(15_000)
+		)
+		page.locator('#count').fill("${ORG_COUNT}")
+		page.locator('#baseName').fill(BASE_ORG_NAME)
+		page.locator('.sheet-footer button.btn-primary').click()
+
+		then: 'alert appears (success with 0 created or info message)'
+		page.locator('.alert-success, .alert-danger').waitFor(
+			new Locator.WaitForOptions().setTimeout(30_000)
+		)
+	}
+
 	def 'Test organizations are cleaned up via headless REST API'() {
 		when:
 		def deleteResults = createdOrganizationIds.collect { id ->

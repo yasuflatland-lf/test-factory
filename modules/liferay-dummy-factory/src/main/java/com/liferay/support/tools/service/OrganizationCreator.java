@@ -1,8 +1,11 @@
 package com.liferay.support.tools.service;
 
+import com.liferay.portal.kernel.exception.DuplicateOrganizationException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.service.OrganizationLocalService;
 
@@ -22,29 +25,56 @@ public class OrganizationCreator {
 
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		JSONArray created = JSONFactoryUtil.createJSONArray();
+		int skipped = 0;
 
 		for (int i = 0; i < count; i++) {
 			String name = BatchNaming.resolve(baseName, count, i, " ");
 
-			Organization organization =
-				_organizationLocalService.addOrganization(
-					userId, parentOrganizationId, name, site);
+			try {
+				Organization organization =
+					_organizationLocalService.addOrganization(
+						userId, parentOrganizationId, name, site);
 
-			JSONObject orgJson = JSONFactoryUtil.createJSONObject();
+				JSONObject orgJson = JSONFactoryUtil.createJSONObject();
 
-			orgJson.put("name", organization.getName());
-			orgJson.put(
-				"organizationId", organization.getOrganizationId());
+				orgJson.put("name", organization.getName());
+				orgJson.put(
+					"organizationId", organization.getOrganizationId());
 
-			created.put(orgJson);
+				created.put(orgJson);
+			}
+			catch (DuplicateOrganizationException e) {
+				_log.warn(
+					"Organization '" + name + "' already exists, skipping");
+
+				skipped++;
+			}
 		}
 
 		result.put("count", created.length());
 		result.put("organizations", created);
-		result.put("success", true);
+		result.put("skipped", skipped);
+		result.put("success", created.length() > 0);
+
+		if (created.length() == 0) {
+			result.put(
+				"error",
+				"No organizations were created (all names may already " +
+				"exist)");
+		}
+
+		if (skipped > 0) {
+			result.put(
+				"message",
+				skipped + " organization(s) already existed and were " +
+				"skipped");
+		}
 
 		return result;
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		OrganizationCreator.class);
 
 	@Reference
 	private OrganizationLocalService _organizationLocalService;
