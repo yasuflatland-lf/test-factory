@@ -36,7 +36,16 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 
 		const actionURL = actionResourceURLs[config.actionURL];
 
-		const submitValues: Record<string, unknown> = {...values};
+		if (!actionURL) {
+			setResult({
+				message: `Missing resource URL for ${config.actionURL}`,
+				type: 'danger',
+			});
+			endSubmit();
+			return;
+		}
+
+		const submitValues: Record<string, string | number | boolean | number[]> = {...values};
 
 		for (const field of config.fields) {
 			if (field.type === 'multiselect' && submitValues[field.name]) {
