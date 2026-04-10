@@ -62,15 +62,10 @@ public class DataListResourceCommand extends BaseMVCResourceCommand {
 						QueryUtil.ALL_POS, QueryUtil.ALL_POS);
 
 				for (Organization organization : organizations) {
-					JSONObject jsonObject =
-						JSONFactoryUtil.createJSONObject();
-
-					jsonObject.put("label", organization.getName());
-					jsonObject.put(
-						"value",
-						String.valueOf(organization.getOrganizationId()));
-
-					jsonArray.put(jsonObject);
+					jsonArray.put(
+						_createOption(
+							organization.getName(),
+							organization.getOrganizationId()));
 				}
 
 				break;
@@ -80,15 +75,8 @@ public class DataListResourceCommand extends BaseMVCResourceCommand {
 					new int[] {RoleConstants.TYPE_REGULAR});
 
 				for (Role role : roles) {
-					JSONObject jsonObject =
-						JSONFactoryUtil.createJSONObject();
-
-					jsonObject.put("label", role.getName());
-					jsonObject.put(
-						"value",
-						String.valueOf(role.getRoleId()));
-
-					jsonArray.put(jsonObject);
+					jsonArray.put(
+						_createOption(role.getName(), role.getRoleId()));
 				}
 
 				break;
@@ -97,16 +85,10 @@ public class DataListResourceCommand extends BaseMVCResourceCommand {
 					UserGroupLocalServiceUtil.getUserGroups(companyId);
 
 				for (UserGroup userGroup : userGroups) {
-					JSONObject jsonObject =
-						JSONFactoryUtil.createJSONObject();
-
-					jsonObject.put("label", userGroup.getName());
-					jsonObject.put(
-						"value",
-						String.valueOf(
+					jsonArray.put(
+						_createOption(
+							userGroup.getName(),
 							userGroup.getUserGroupId()));
-
-					jsonArray.put(jsonObject);
 				}
 
 				break;
@@ -116,6 +98,15 @@ public class DataListResourceCommand extends BaseMVCResourceCommand {
 
 		JSONPortletResponseUtil.writeJSON(
 			resourceRequest, resourceResponse, jsonArray);
+	}
+
+	private static JSONObject _createOption(String label, long value) {
+		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+
+		jsonObject.put("label", label);
+		jsonObject.put("value", String.valueOf(value));
+
+		return jsonObject;
 	}
 
 	@Reference

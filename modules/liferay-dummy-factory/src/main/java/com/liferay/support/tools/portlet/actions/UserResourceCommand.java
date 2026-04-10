@@ -56,18 +56,10 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 				data.getString("count"));
 			String baseName = data.getString("baseName");
 
-			if (count <= 0) {
-				responseJson.put("error", "count must be greater than 0");
-				responseJson.put("success", false);
+			String validationError = _validate(count, baseName);
 
-				JSONPortletResponseUtil.writeJSON(
-					resourceRequest, resourceResponse, responseJson);
-
-				return;
-			}
-
-			if (Validator.isNull(baseName)) {
-				responseJson.put("error", "baseName is required");
+			if (validationError != null) {
+				responseJson.put("error", validationError);
 				responseJson.put("success", false);
 
 				JSONPortletResponseUtil.writeJSON(
@@ -113,6 +105,18 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 
 		JSONPortletResponseUtil.writeJSON(
 			resourceRequest, resourceResponse, responseJson);
+	}
+
+	private static String _validate(int count, String baseName) {
+		if (count <= 0) {
+			return "count must be greater than 0";
+		}
+
+		if (Validator.isNull(baseName)) {
+			return "baseName is required";
+		}
+
+		return null;
 	}
 
 	private long[] _toLongArray(JSONArray jsonArray) {
