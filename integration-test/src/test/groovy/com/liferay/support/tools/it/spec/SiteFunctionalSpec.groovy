@@ -23,7 +23,7 @@ class SiteFunctionalSpec extends BaseLiferaySpec {
 	PlaywrightLifecycle pw
 
 	@Shared
-	String apiResponseBody = ''
+	List<Long> createdSiteIds = []
 
 	def setupSpec() {
 		ensureBundleActive()
@@ -31,6 +31,15 @@ class SiteFunctionalSpec extends BaseLiferaySpec {
 	}
 
 	def cleanupSpec() {
+		createdSiteIds.each { id ->
+			try {
+				headlessDelete("/o/headless-admin-user/v1.0/sites/${id}")
+			}
+			catch (Exception e) {
+				log.warn('Failed to clean up site {}: {}', id, e.message)
+			}
+		}
+
 		pw?.close()
 	}
 
@@ -67,36 +76,52 @@ class SiteFunctionalSpec extends BaseLiferaySpec {
 		page.locator('#count').fill("${SITE_COUNT}")
 		page.locator('#baseName').fill(BASE_SITE_NAME)
 
-		and: 'capture API response and click Run'
-		page.onResponse(response -> {
-			try {
-				String body = response.text()
-
-				if (body?.contains('"sites"')) {
-					apiResponseBody = body
-				}
-			}
-			catch (ignored) {}
-		})
-
+		and: 'click Run button'
 		page.locator('.sheet-footer button.btn-primary').click()
 
 		then: 'success alert appears'
-		page.locator('.alert-success, .alert-danger').waitFor(
+		page.locator('.alert-success').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
 		page.locator('.alert-success').isVisible()
 	}
 
-	def 'API response confirms sites were created'() {
-		expect:
-		log.info('API response: {}', apiResponseBody)
-		apiResponseBody.contains('"success":true')
-		apiResponseBody.contains("\"count\":${SITE_COUNT}")
+	def 'Created sites are visible via headless REST API'() {
+		when:
+		def result = headlessGet('/o/headless-admin-user/v1.0/sites?page=1&pageSize=200')
 
-		and: 'response contains expected site names'
-		(1..SITE_COUNT).every { i ->
-			apiResponseBody.contains("\"name\":\"${BASE_SITE_NAME}${i}\"")
+		then:
+		result.items != null
+
+		when:
+		def matchingItems = result.items.findAll { item ->
+			(item.name as String).startsWith(BASE_SITE_NAME)
+		}
+
+		createdSiteIds.addAll(
+			matchingItems.collect { it.id as Long }
+		)
+
+		then: 'all created sites exist with expected names'
+		matchingItems.size() == SITE_COUNT
+		matchingItems.collect { it.name }.sort() == (1..SITE_COUNT).collect { "${BASE_SITE_NAME}${it}" }
+	}
+
+	def 'Test sites are cleaned up via headless REST API'() {
+		when:
+		def deleteResults = createdSiteIds.collect { id ->
+			headlessDelete("/o/headless-admin-user/v1.0/sites/${id}")
+		}
+
+		then: 'all deletes succeed'
+		deleteResults.every { it in [200, 204] }
+
+		when:
+		def result = headlessGet('/o/headless-admin-user/v1.0/sites?page=1&pageSize=200')
+
+		then: 'none of the test sites remain'
+		!result.items?.any { item ->
+			(item.name as String).startsWith(BASE_SITE_NAME)
 		}
 	}
 
