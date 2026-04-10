@@ -39,9 +39,15 @@ class SiteMembershipTypeTest {
 
 	@Test
 	void toLiferayConstant() {
-		assertEquals(GroupConstants.TYPE_SITE_OPEN, SiteMembershipType.OPEN.toLiferayConstant());
-		assertEquals(GroupConstants.TYPE_SITE_RESTRICTED, SiteMembershipType.RESTRICTED.toLiferayConstant());
-		assertEquals(GroupConstants.TYPE_SITE_PRIVATE, SiteMembershipType.PRIVATE.toLiferayConstant());
+		assertEquals(
+			GroupConstants.TYPE_SITE_OPEN,
+			SiteMembershipType.OPEN.toLiferayConstant());
+		assertEquals(
+			GroupConstants.TYPE_SITE_RESTRICTED,
+			SiteMembershipType.RESTRICTED.toLiferayConstant());
+		assertEquals(
+			GroupConstants.TYPE_SITE_PRIVATE,
+			SiteMembershipType.PRIVATE.toLiferayConstant());
 	}
 
 }

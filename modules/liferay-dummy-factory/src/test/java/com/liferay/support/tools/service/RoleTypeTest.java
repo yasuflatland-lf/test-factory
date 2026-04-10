@@ -28,9 +28,15 @@ class RoleTypeTest {
 
 	@Test
 	void toLiferayConstant() {
-		assertEquals(RoleConstants.TYPE_REGULAR, RoleType.REGULAR.toLiferayConstant());
-		assertEquals(RoleConstants.TYPE_SITE, RoleType.SITE.toLiferayConstant());
-		assertEquals(RoleConstants.TYPE_ORGANIZATION, RoleType.ORGANIZATION.toLiferayConstant());
+		assertEquals(
+			RoleConstants.TYPE_REGULAR,
+			RoleType.REGULAR.toLiferayConstant());
+		assertEquals(
+			RoleConstants.TYPE_SITE,
+			RoleType.SITE.toLiferayConstant());
+		assertEquals(
+			RoleConstants.TYPE_ORGANIZATION,
+			RoleType.ORGANIZATION.toLiferayConstant());
 	}
 
 }
