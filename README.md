@@ -41,6 +41,7 @@ docker run -it -m 8g -p 8080:8080 -p 11311:11311 \
   -e LIFERAY_SETUP_PERIOD_WIZARD_PERIOD_ENABLED=false \
   -e LIFERAY_TERMS_PERIOD_OF_PERIOD_USE_PERIOD_REQUIRED=false \
   -e LIFERAY_USERS_PERIOD_REMINDER_PERIOD_QUERIES_PERIOD_ENABLED=false \
+  -e LIFERAY_PASSWORDS_PERIOD_DEFAULT_PERIOD_POLICY_PERIOD_CHANGE_PERIOD_REQUIRED=false \
   liferay/portal:7.4.3.132-ga132
 
 # Background mode (with a named container)
@@ -48,6 +49,7 @@ docker run -d --name liferay -m 8g -p 8080:8080 -p 11311:11311 \
   -e LIFERAY_SETUP_PERIOD_WIZARD_PERIOD_ENABLED=false \
   -e LIFERAY_TERMS_PERIOD_OF_PERIOD_USE_PERIOD_REQUIRED=false \
   -e LIFERAY_USERS_PERIOD_REMINDER_PERIOD_QUERIES_PERIOD_ENABLED=false \
+  -e LIFERAY_PASSWORDS_PERIOD_DEFAULT_PERIOD_POLICY_PERIOD_CHANGE_PERIOD_REQUIRED=false \
   liferay/portal:7.4.3.132-ga132
 ```
 
@@ -56,7 +58,7 @@ docker run -d --name liferay -m 8g -p 8080:8080 -p 11311:11311 \
 | `-m 8g` | Memory limit 8GB |
 | `-p 8080:8080` | HTTP port |
 | `-p 11311:11311` | GoGo Shell port (for checking bundle status) |
-| Environment variables | Disable setup wizard, terms of use, and reminder queries |
+| Environment variables | Disable setup wizard, terms of use, reminder queries, and forced password change |
 
 Startup takes approximately 5-8 minutes. If running in background mode, check with:
 
