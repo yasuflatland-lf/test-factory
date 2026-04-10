@@ -1,33 +1,19 @@
 package com.liferay.support.tools.portlet.actions;
 
-import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
-import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Group;
-import com.liferay.portal.kernel.model.GroupConstants;
-import com.liferay.portal.kernel.model.LayoutSetPrototype;
-import com.liferay.portal.kernel.model.Organization;
-import com.liferay.portal.kernel.model.OrganizationConstants;
-import com.liferay.portal.kernel.model.Role;
-import com.liferay.portal.kernel.model.UserGroup;
-import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
-import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
-import com.liferay.portal.kernel.service.LayoutSetPrototypeLocalServiceUtil;
-import com.liferay.portal.kernel.service.OrganizationLocalServiceUtil;
-import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
-import com.liferay.portal.kernel.service.UserGroupLocalServiceUtil;
-import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.support.tools.constants.LDFPortletKeys;
+import com.liferay.support.tools.service.DataListProvider;
 
-import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
@@ -36,6 +22,8 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 
 @Component(
 	property = {
@@ -59,107 +47,38 @@ public class DataListResourceCommand extends BaseMVCResourceCommand {
 
 		long companyId = _portal.getCompanyId(httpServletRequest);
 
-		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
+		DataListProvider provider = _providers.get(type);
 
-		switch (type) {
-			case "organizations":
-				List<Organization> organizations =
-					OrganizationLocalServiceUtil.getOrganizations(
-						companyId,
-						OrganizationConstants.DEFAULT_PARENT_ORGANIZATION_ID,
-						QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+		JSONArray jsonArray;
 
-				for (Organization organization : organizations) {
-					jsonArray.put(
-						_createOption(
-							organization.getName(),
-							organization.getOrganizationId()));
-				}
+		if (provider != null) {
+			jsonArray = provider.getOptions(companyId, type);
+		}
+		else {
+			_log.warn("Unknown data list type requested: " + type);
 
-				break;
-			case "roles":
-				_addRoleOptions(
-					jsonArray, companyId, RoleConstants.TYPE_REGULAR);
-
-				break;
-			case "user-groups":
-				List<UserGroup> userGroups =
-					UserGroupLocalServiceUtil.getUserGroups(companyId);
-
-				for (UserGroup userGroup : userGroups) {
-					jsonArray.put(
-						_createOption(
-							userGroup.getName(),
-							userGroup.getUserGroupId()));
-				}
-
-				break;
-			case "site-roles":
-				_addRoleOptions(
-					jsonArray, companyId, RoleConstants.TYPE_SITE);
-
-				break;
-			case "org-roles":
-				_addRoleOptions(
-					jsonArray, companyId, RoleConstants.TYPE_ORGANIZATION);
-
-				break;
-			case "sites":
-				List<Group> groups = GroupLocalServiceUtil.getGroups(
-					companyId, GroupConstants.DEFAULT_PARENT_GROUP_ID,
-					true);
-
-				for (Group group : groups) {
-					jsonArray.put(
-						_createOption(
-							group.getDescriptiveName(),
-							group.getGroupId()));
-				}
-
-				break;
-			case "site-templates":
-				List<LayoutSetPrototype> layoutSetPrototypes =
-					LayoutSetPrototypeLocalServiceUtil.getLayoutSetPrototypes(
-						companyId);
-
-				for (LayoutSetPrototype prototype : layoutSetPrototypes) {
-					if (prototype.isActive()) {
-						jsonArray.put(
-							_createOption(
-								prototype.getName(LocaleUtil.getDefault()),
-								prototype.getLayoutSetPrototypeId()));
-					}
-				}
-
-				break;
-			default:
-				_log.warn("Unknown data list type requested: " + type);
-
-				break;
+			jsonArray = JSONFactoryUtil.createJSONArray();
 		}
 
 		JSONPortletResponseUtil.writeJSON(
 			resourceRequest, resourceResponse, jsonArray);
 	}
 
-	private static void _addRoleOptions(
-			JSONArray jsonArray, long companyId, int roleType) {
-
-		List<Role> roles = RoleLocalServiceUtil.getRoles(
-			companyId, new int[] {roleType});
-
-		for (Role role : roles) {
-			jsonArray.put(_createOption(role.getName(), role.getRoleId()));
+	@Reference(
+		cardinality = ReferenceCardinality.MULTIPLE,
+		policy = ReferencePolicy.DYNAMIC,
+		unbind = "_removeProvider"
+	)
+	private void _addProvider(DataListProvider provider) {
+		for (String type : provider.getSupportedTypes()) {
+			_providers.put(type, provider);
 		}
 	}
 
-	private static JSONObject _createOption(String label, long value) {
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
-
-		jsonObject.put("label", label);
-		jsonObject.put("value", String.valueOf(value));
-
-		return jsonObject;
+	private void _removeProvider(DataListProvider provider) {
+		for (String type : provider.getSupportedTypes()) {
+			_providers.remove(type);
+		}
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -167,5 +86,8 @@ public class DataListResourceCommand extends BaseMVCResourceCommand {
 
 	@Reference
 	private Portal _portal;
+
+	private final Map<String, DataListProvider> _providers =
+		new ConcurrentHashMap<>();
 
 }
