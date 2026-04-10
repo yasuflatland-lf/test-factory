@@ -21,7 +21,7 @@
 	"name": "liferay-dummy-factory",
 	"private": true,
 	"scripts": {
-		"build": "liferay-npm-scripts build && esbuild src/main/resources/META-INF/resources/js/index.ts --bundle --format=esm --outfile=src/main/resources/META-INF/resources/__liferay__/index.js --external:react --external:react-dom --loader:.tsx=tsx --jsx=transform --banner:js=\"import * as React from 'react';\" --target=es2020",
+		"build": "esbuild src/main/resources/META-INF/resources/js/index.ts --bundle --format=esm --outfile=src/main/resources/META-INF/resources/__liferay__/index.js --external:react --external:react-dom --loader:.tsx=tsx --jsx=transform --banner:js=\"import * as React from 'react';\" --target=es2020",
 		"checkFormat": "liferay-npm-scripts format --check",
 		"format": "liferay-npm-scripts format",
 		"test": "jest"
