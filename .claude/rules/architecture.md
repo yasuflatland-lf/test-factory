@@ -11,6 +11,11 @@ liferay-dummy-factory/
     liferay-dummy-factory/ # Single OSGi bundle (portlet + web)
       bnd.bnd
       src/main/java/         # Java: portlet, resource commands, services, constants
+        com/liferay/support/tools/
+          portlet/actions/
+            UserResourceCommand.java
+          service/
+            UserCreator.java
       src/main/resources/
         META-INF/resources/
           js/               # React frontend components
@@ -23,6 +28,8 @@ liferay-dummy-factory/
 **Single-JAR design** -- MVCPortlet, MVCResourceCommand, and React frontend live in one bundle (`liferay.dummy.factory`). The portlet and React UI ship in a single JAR.
 
 **MVCPortlet + PanelApp** -- The portlet (`com_liferay_support_tools_portlet_LiferayDummyFactoryPortlet`) is registered in the Control Panel under Configuration. The portlet uses `javax.portlet` namespace (Portlet API 3.0). The PanelApp's `@Reference` uses a target filter of `javax.portlet.name=...`. The view JSP renders the React component via the `<react:component>` tag.
+
+**MVCResourceCommands** -- `/ldf/user` (`UserResourceCommand`) handles User creation, and `/ldf/data` now serves organizations, roles, and user-groups dropdown data.
 
 **React frontend** -- React components live under `META-INF/resources/js/`. The view JSP passes server-side data (such as resource URLs) to the React component as props. The frontend uses `credentials: 'include'` so Liferay session cookies are sent automatically.
 
@@ -47,3 +54,4 @@ Key components:
 | **Container reuse (`withReuse(true)`)** | Liferay startup is slow (~8 min). Reusing the container across test runs drastically shortens feedback loops during development. |
 | **Singleton container** | `getInstance()` with `synchronized` guarantees all test classes share a single Liferay instance, preventing resource waste and port conflicts. |
 | **`release.portal.api` instead of `release.dxp.api`** | `release.dxp.api:default` resolves to 2026.q1.2 which provides `jakarta.portlet` (Portlet API 4.0). This is incompatible with the CE 7.4 GA132 Docker image, which uses `javax.portlet` (Portlet API 3.0). Using `release.portal.api` ensures the compile-time API matches the runtime. |
+| **`actionResourceURLs` map** | The JSP generates per-entity action URLs as a map keyed by `mvc.command.name`, enabling the single React app to dispatch to multiple MVCResourceCommands. New entity types require adding a `<portlet:resourceURL>` entry in `view.jsp`. |
