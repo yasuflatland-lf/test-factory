@@ -4,7 +4,9 @@ import type {Mock} from 'vitest';
 
 import FileUploadArea from '../../../src/main/resources/META-INF/resources/js/components/FileUploadArea';
 
-type MockFetch = Mock<Promise<Partial<Response>>, [RequestInfo, RequestInit?]>;
+type MockFetch = Mock<
+	(input: RequestInfo, init?: RequestInit) => Promise<Partial<Response>>
+>;
 
 const mockFetch: MockFetch = vi.fn();
 
