@@ -38,13 +38,15 @@ class JsonwsSetupHelper {
 		Map response = _post(
 			'/api/jsonws/role/add-role',
 			[
+				'externalReferenceCode': '',
 				'className': 'com.liferay.portal.kernel.model.Role',
 				'classPK': '0',
 				'name': name,
-				'titleMap': '',
-				'descriptionMap': '',
+				'titleMap': '{}',
+				'descriptionMap': '{}',
 				'type': type,
-				'subtype': ''
+				'subtype': '',
+				'serviceContext': '{}'
 			]) as Map
 
 		_tracked << new Tracked(
@@ -58,9 +60,16 @@ class JsonwsSetupHelper {
 		Map response = _post(
 			'/api/jsonws/organization/add-organization',
 			[
+				'externalReferenceCode': '',
 				'parentOrganizationId': '0',
 				'name': name,
-				'site': 'false'
+				'type': 'organization',
+				'regionId': '0',
+				'countryId': '0',
+				'statusListTypeId': '0',
+				'comments': '',
+				'site': 'false',
+				'serviceContext': '{}'
 			]) as Map
 
 		_tracked << new Tracked(
@@ -106,7 +115,8 @@ class JsonwsSetupHelper {
 				'nameMap': _localizedJson(name),
 				'descriptionMap': _localizedJson(''),
 				'active': 'true',
-				'readyForImport': 'true'
+				'layoutsUpdateable': 'true',
+				'serviceContext': '{}'
 			]) as Map
 
 		_tracked << new Tracked(
