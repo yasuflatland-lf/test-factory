@@ -608,6 +608,36 @@ const CATEGORY_CONFIG: EntityFormConfig = {
 	label: 'categories',
 };
 
+const COMPANY_CONFIG: EntityFormConfig = {
+	actionURL: '/ldf/company',
+	entityType: ENTITY_TYPES.COMPANY,
+	fields: [
+		createCountField('number-of-companies'),
+		{label: 'web-id', name: 'webId', required: true, type: 'text'},
+		{label: 'virtual-hostname', name: 'virtualHostname', required: true, type: 'text'},
+		{label: 'mail-domain', name: 'mx', required: true, type: 'text'},
+		{
+			advanced: true,
+			defaultValue: '0',
+			label: 'max-users',
+			name: 'maxUsers',
+			required: false,
+			type: 'number',
+		},
+		{
+			advanced: true,
+			defaultValue: true,
+			label: 'active',
+			name: 'active',
+			required: false,
+			type: 'toggle',
+		},
+	],
+	helpText: 'company-help-text',
+	icon: 'briefcase',
+	label: 'company',
+};
+
 const WCM_CONFIG: EntityFormConfig = {
 	actionURL: '/ldf/wcm',
 	entityType: ENTITY_TYPES.WCM,
@@ -747,6 +777,7 @@ const WCM_CONFIG: EntityFormConfig = {
 
 export const ENTITY_CONFIGS: Partial<Record<EntityType, EntityFormConfig>> = {
 	[ENTITY_TYPES.CATEGORY]: CATEGORY_CONFIG,
+	[ENTITY_TYPES.COMPANY]: COMPANY_CONFIG,
 	[ENTITY_TYPES.DOCUMENTS]: DOCUMENTS_CONFIG,
 	[ENTITY_TYPES.MB_CATEGORY]: MB_CATEGORY_CONFIG,
 	[ENTITY_TYPES.MB_REPLY]: MB_REPLY_CONFIG,
