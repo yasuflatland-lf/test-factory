@@ -70,17 +70,8 @@ public class SiteCreator {
 							serviceContext);
 
 						if (siteTemplateId > 0) {
-							try {
-								_sites.updateLayoutSetPrototypesLinks(
-									newGroup, siteTemplateId, 0, true, false);
-							}
-							catch (Exception e) {
-								_log.error(
-									"Failed to apply site template " +
-										siteTemplateId + " to site '" +
-										siteName + "'",
-									e);
-							}
+							_sites.updateLayoutSetPrototypesLinks(
+								newGroup, siteTemplateId, 0, true, false);
 						}
 
 						return newGroup;
