@@ -53,30 +53,27 @@ class CompanyFunctionalSpec extends BaseLiferaySpec {
 		page.waitForLoadState()
 
 		and: 'select Company entity type'
-		page.locator('.nav-link:text-is("company")').click()
+		page.locator('[data-testid="entity-selector-COMPANY"]').click()
 
 		and: 'wait for Company form to render'
-		page.locator('.sheet-header h2:text-is("company")').waitFor(
-			new Locator.WaitForOptions().setTimeout(15_000)
-		)
-		page.locator('#count').waitFor(
+		page.locator('[data-testid="company-count-input"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
 
 		and: 'fill in the company form'
-		page.locator('#count').fill("${COMPANY_COUNT}")
-		page.locator('#webId').fill(COMPANY_WEB_ID)
-		page.locator('#virtualHostname').fill(COMPANY_VIRTUAL_HOSTNAME)
-		page.locator('#mx').fill(COMPANY_MX)
+		page.locator('[data-testid="company-count-input"]').fill("${COMPANY_COUNT}")
+		page.locator('[data-testid="company-web-id-input"]').fill(COMPANY_WEB_ID)
+		page.locator('[data-testid="company-virtual-hostname-input"]').fill(COMPANY_VIRTUAL_HOSTNAME)
+		page.locator('[data-testid="company-mx-input"]').fill(COMPANY_MX)
 
 		and: 'click Run button'
-		page.locator('.sheet-footer button.btn-primary').click()
+		page.locator('[data-testid="company-submit"]').click()
 
 		then: 'success alert appears'
-		page.locator('.alert-success, .alert-danger').waitFor(
+		page.locator('[data-testid="company-result"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
-		page.locator('.alert-success').isVisible()
+		page.locator('[data-testid="company-result"].alert-success').isVisible()
 	}
 
 	def 'Created company is visible via JSON-WS'() {

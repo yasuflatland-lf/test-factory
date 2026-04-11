@@ -63,23 +63,26 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 		)
 		page.waitForLoadState()
 
+		and: 'select Organization entity type'
+		page.locator('[data-testid="entity-selector-ORG"]').click()
+
 		and: 'wait for the form to render'
-		page.locator('#count').waitFor(
+		page.locator('[data-testid="org-count-input"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
 
 		and: 'fill in the organization form'
-		page.locator('#count').fill("${ORG_COUNT}")
-		page.locator('#baseName').fill(BASE_ORG_NAME)
+		page.locator('[data-testid="org-count-input"]').fill("${ORG_COUNT}")
+		page.locator('[data-testid="org-base-name-input"]').fill(BASE_ORG_NAME)
 
 		and: 'click Run button'
-		page.locator('.sheet-footer button.btn-primary').click()
+		page.locator('[data-testid="org-submit"]').click()
 
 		then: 'success alert appears'
-		page.locator('.alert-success').waitFor(
+		page.locator('[data-testid="org-result"].alert-success').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
-		page.locator('.alert-success').isVisible()
+		page.locator('[data-testid="org-result"].alert-success').isVisible()
 	}
 
 	def 'Created organizations are visible via JSONWS OrganizationService'() {
@@ -118,15 +121,16 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 			'&p_p_state=maximized'
 		)
 		page.waitForLoadState()
-		page.locator('#count').waitFor(
+		page.locator('[data-testid="entity-selector-ORG"]').click()
+		page.locator('[data-testid="org-count-input"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
-		page.locator('#count').fill("${ORG_COUNT}")
-		page.locator('#baseName').fill(BASE_ORG_NAME)
-		page.locator('.sheet-footer button.btn-primary').click()
+		page.locator('[data-testid="org-count-input"]').fill("${ORG_COUNT}")
+		page.locator('[data-testid="org-base-name-input"]').fill(BASE_ORG_NAME)
+		page.locator('[data-testid="org-submit"]').click()
 
 		then: 'alert appears'
-		page.locator('.alert-success, .alert-danger').waitFor(
+		page.locator('[data-testid="org-result"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
 
