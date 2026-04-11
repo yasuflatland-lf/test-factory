@@ -6,6 +6,7 @@ Liferay Portal CE Workspace: MVCPortlet + React portlet with Testcontainers inte
 
 ```bash
 ./gradlew :modules:liferay-dummy-factory:build           # Full module build
+./gradlew :modules:liferay-dummy-factory:test            # Unit tests + JaCoCo coverage report
 ./gradlew :integration-test:integrationTest                # Integration tests (requires Docker)
 # Single spec:
 ./gradlew :integration-test:integrationTest --tests "com.liferay.support.tools.it.spec.DeploymentSpec"
