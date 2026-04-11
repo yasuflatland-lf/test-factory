@@ -1,6 +1,8 @@
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+
 import {fetchResource, postResource} from '../../src/main/resources/META-INF/resources/js/utils/api';
 
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 
 beforeEach(() => {
 	global.fetch = mockFetch;

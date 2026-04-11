@@ -1,21 +1,23 @@
 import {render, screen} from '@testing-library/react';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import type {MockedFunction} from 'vitest';
 
 import EntityForm from '../../../src/main/resources/META-INF/resources/js/components/EntityForm';
 import {useFormState} from '../../../src/main/resources/META-INF/resources/js/hooks/useFormState';
 import {useProgress} from '../../../src/main/resources/META-INF/resources/js/hooks/useProgress';
 import {EntityFormConfig} from '../../../src/main/resources/META-INF/resources/js/types';
 
-jest.mock(
+vi.mock(
 	'../../../src/main/resources/META-INF/resources/js/hooks/useFormState'
 );
-jest.mock(
+vi.mock(
 	'../../../src/main/resources/META-INF/resources/js/hooks/useProgress'
 );
 
-const mockedUseFormState = useFormState as jest.MockedFunction<
+const mockedUseFormState = useFormState as MockedFunction<
 	typeof useFormState
 >;
-const mockedUseProgress = useProgress as jest.MockedFunction<typeof useProgress>;
+const mockedUseProgress = useProgress as MockedFunction<typeof useProgress>;
 
 const config: EntityFormConfig = {
 	actionURL: '/ldf/user',
@@ -29,7 +31,7 @@ const config: EntityFormConfig = {
 function mockFormStateSubmitting(submitting: boolean) {
 	mockedUseFormState.mockReturnValue({
 		submitting,
-		validate: jest.fn().mockReturnValue(true),
+		validate: vi.fn().mockReturnValue(true),
 	} as unknown as ReturnType<typeof useFormState>);
 }
 

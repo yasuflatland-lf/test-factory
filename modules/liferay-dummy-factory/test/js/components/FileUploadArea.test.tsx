@@ -1,10 +1,14 @@
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import type {Mock} from 'vitest';
 
 import FileUploadArea from '../../../src/main/resources/META-INF/resources/js/components/FileUploadArea';
 
-type MockFetch = jest.Mock<Promise<Partial<Response>>, [RequestInfo, RequestInit?]>;
+type MockFetch = Mock<
+	(input: RequestInfo, init?: RequestInit) => Promise<Partial<Response>>
+>;
 
-const mockFetch: MockFetch = jest.fn();
+const mockFetch: MockFetch = vi.fn();
 
 beforeEach(() => {
 	(global as unknown as {fetch: MockFetch}).fetch = mockFetch;
@@ -16,7 +20,7 @@ function renderComponent(
 ) {
 	const props: React.ComponentProps<typeof FileUploadArea> = {
 		groupId: '20121',
-		onChange: jest.fn(),
+		onChange: vi.fn(),
 		testId: 'file-upload',
 		uploadURL: '/o/ldf/upload',
 		value: '',
@@ -86,14 +90,13 @@ describe('FileUploadArea i18n', () => {
 
 		uploadFile(container, 'broken.txt', 'fail');
 
-		let errorNode: HTMLElement | null = null;
-
-		await waitFor(() => {
-			errorNode = container.querySelector('li.text-danger');
-			expect(errorNode).not.toBeNull();
+		const errorNode = await waitFor(() => {
+			const node = container.querySelector('li.text-danger');
+			expect(node).not.toBeNull();
+			return node as HTMLElement;
 		});
 
-		const errorText = (errorNode as unknown as HTMLElement).textContent ?? '';
+		const errorText = errorNode.textContent ?? '';
 
 		expect(errorText).toContain('broken.txt');
 		expect(errorText).toContain('Server error: 500');
@@ -111,14 +114,13 @@ describe('FileUploadArea i18n', () => {
 
 		const uploadFailedText = Liferay.Language.get('upload-failed');
 
-		let errorNode: HTMLElement | null = null;
-
-		await waitFor(() => {
-			errorNode = container.querySelector('li.text-danger');
-			expect(errorNode).not.toBeNull();
+		const errorNode = await waitFor(() => {
+			const node = container.querySelector('li.text-danger');
+			expect(node).not.toBeNull();
+			return node as HTMLElement;
 		});
 
-		const errorText = (errorNode as unknown as HTMLElement).textContent ?? '';
+		const errorText = errorNode.textContent ?? '';
 
 		expect(errorText).toContain('noerror.txt');
 		expect(errorText).toContain(uploadFailedText);

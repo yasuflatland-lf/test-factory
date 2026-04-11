@@ -1,4 +1,5 @@
 import {render, screen} from '@testing-library/react';
+import {describe, expect, it} from 'vitest';
 
 import FormField from '../../../src/main/resources/META-INF/resources/js/components/FormField';
 import {FieldDefinition} from '../../../src/main/resources/META-INF/resources/js/types';
