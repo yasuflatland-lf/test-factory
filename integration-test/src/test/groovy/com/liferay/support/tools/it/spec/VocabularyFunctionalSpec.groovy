@@ -73,29 +73,29 @@ class VocabularyFunctionalSpec extends BaseLiferaySpec {
 		page.waitForLoadState()
 
 		and: 'select Vocabularies entity type'
-		page.locator('.nav-link:has-text("vocabularies")').click()
+		page.locator('[data-testid="entity-selector-VOCABULARY"]').click()
 
 		and: 'wait for Vocabularies form to render'
-		page.locator('.sheet-header h2:has-text("vocabularies")').waitFor(
+		page.locator('[data-testid="vocabulary-submit"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
-		page.locator('#count').waitFor(
+		page.locator('[data-testid="vocabulary-count-input"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
 
 		and: 'fill in the vocabularies form'
-		page.locator('#count').fill("${VOCAB_COUNT}")
-		page.locator('#baseName').fill(BASE_VOCAB_NAME)
-		page.locator('#groupId').selectOption("${guestGroupId}")
+		page.locator('[data-testid="vocabulary-count-input"]').fill("${VOCAB_COUNT}")
+		page.locator('[data-testid="vocabulary-base-name-input"]').fill(BASE_VOCAB_NAME)
+		page.locator('[data-testid="vocabulary-group-id-select"]').selectOption("${guestGroupId}")
 
 		and: 'click Run button'
-		page.locator('.sheet-footer button.btn-primary').click()
+		page.locator('[data-testid="vocabulary-submit"]').click()
 
 		then: 'success alert appears'
-		page.locator('.alert-success').waitFor(
+		page.locator('[data-testid="vocabulary-result"].alert-success').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
-		page.locator('.alert-success').isVisible()
+		page.locator('[data-testid="vocabulary-result"].alert-success').isVisible()
 	}
 
 	def 'Created vocabularies are visible via headless taxonomy API'() {
