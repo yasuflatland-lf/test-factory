@@ -1,8 +1,5 @@
 package com.liferay.support.tools.service;
 
-import com.liferay.document.library.kernel.exception.DuplicateFileEntryException;
-import com.liferay.document.library.kernel.exception.FileNameException;
-import com.liferay.document.library.kernel.exception.FileSizeException;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -22,8 +19,8 @@ import com.liferay.support.tools.portlet.actions.DocumentUploadResourceCommand;
 import java.nio.charset.StandardCharsets;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -104,21 +101,11 @@ public class DocumentCreator {
 
 					created.put(docJson);
 				}
-				catch (DuplicateFileEntryException | FileNameException |
-						FileSizeException e) {
-
+				catch (PortalException portalException) {
 					_log.warn(
 						"Document '" + title + "' could not be created: " +
-							e.getMessage(),
-						e);
-
-					skipped++;
-				}
-				catch (PortalException e) {
-					_log.warn(
-						"Document '" + title + "' could not be created: " +
-							e.getMessage(),
-						e);
+							portalException.getMessage(),
+						portalException);
 
 					skipped++;
 				}
@@ -160,11 +147,9 @@ public class DocumentCreator {
 	}
 
 	private FileEntry _getRandomFileEntry(List<FileEntry> entries) {
-		List<FileEntry> shuffled = new ArrayList<>(entries);
+		int index = ThreadLocalRandom.current().nextInt(entries.size());
 
-		Collections.shuffle(shuffled);
-
-		return shuffled.get(0);
+		return entries.get(index);
 	}
 
 	private List<FileEntry> _loadTempFiles(
