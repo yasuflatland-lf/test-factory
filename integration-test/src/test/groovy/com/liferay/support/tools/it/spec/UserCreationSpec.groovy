@@ -128,6 +128,9 @@ class UserCreationSpec extends BaseLiferaySpec {
 		dbUsers.every { Map u ->
 			!(u.screenName as String).startsWith(fallbackPrefix)
 		}
+
+		and: 'firstName is Datafaker-derived, not the baseName fallback'
+		dbUsers.every { Map u -> (u.firstName as String) != FAKER_BASE_NAME }
 	}
 
 	def 'assigns users to organizations and roles'() {
