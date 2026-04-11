@@ -31,21 +31,21 @@ class RoleFunctionalSpec extends BaseLiferaySpec {
 	}
 
 	def cleanupSpec() {
-		try {
-			def result = headlessGet('/o/headless-admin-user/v1.0/roles?pageSize=200')
+		(1..ROLE_COUNT).each { i ->
+			try {
+				def role = jsonwsGet(
+					"/api/jsonws/role/get-role/company-id/${companyId}" +
+					"/name/${URLEncoder.encode(BASE_ROLE_NAME + i, 'UTF-8')}") as Map
 
-			result.items?.findAll { (it.name as String).startsWith(BASE_ROLE_NAME) }
-				?.each { item ->
-					try {
-						headlessDelete("/o/headless-admin-user/v1.0/roles/${item.id}")
-					}
-					catch (Exception e) {
-						log.warn('Failed to clean up role {}: {}', item.id, e.message)
-					}
+				if (role?.roleId != null) {
+					jsonwsPost(
+						'/api/jsonws/role/delete-role',
+						['roleId': role.roleId as Long])
 				}
-		}
-		catch (Exception e) {
-			log.warn('Fallback cleanup failed: {}', e.message)
+			}
+			catch (Exception e) {
+				log.warn('Failed to clean up role {}: {}', BASE_ROLE_NAME + i, e.message)
+			}
 		}
 
 		pw?.close()
@@ -89,44 +89,44 @@ class RoleFunctionalSpec extends BaseLiferaySpec {
 		page.locator('.alert-success').isVisible()
 	}
 
-	def 'Created roles are visible via headless REST API'() {
-		when:
-		def result = headlessGet('/o/headless-admin-user/v1.0/roles?pageSize=200')
-
-		then:
-		result.items != null
-
-		when:
-		def matchingItems = result.items.findAll { item ->
-			(item.name as String).startsWith(BASE_ROLE_NAME)
+	def 'Created roles are visible via JSONWS RoleService'() {
+		when: 'look up each expected role by name'
+		def roles = (1..ROLE_COUNT).collect { i ->
+			jsonwsGet(
+				"/api/jsonws/role/get-role/company-id/${companyId}" +
+				"/name/${URLEncoder.encode(BASE_ROLE_NAME + i, 'UTF-8')}") as Map
 		}
 
-		createdRoleIds.addAll(
-			matchingItems.collect { it.id as Long }
-		)
+		createdRoleIds.addAll(roles.collect { it.roleId as Long })
 
-		then: 'all created roles exist'
-		matchingItems.size() == ROLE_COUNT
-		matchingItems.collect { it.name }.sort() ==
-			(1..ROLE_COUNT).collect { "${BASE_ROLE_NAME}${it}" }
+		then: 'all created roles exist with expected names'
+		roles.every { it?.roleId != null }
+		roles.collect { it.name as String } ==
+			(1..ROLE_COUNT).collect { "${BASE_ROLE_NAME}${it}" as String }
 	}
 
-	def 'Test roles are cleaned up via headless REST API'() {
+	def 'Test roles are cleaned up via JSONWS RoleService'() {
 		when:
-		def deleteResults = createdRoleIds.collect { id ->
-			headlessDelete("/o/headless-admin-user/v1.0/roles/${id}")
+		createdRoleIds.each { id ->
+			jsonwsPost('/api/jsonws/role/delete-role', ['roleId': id])
 		}
 
-		then: 'all deletes succeed'
-		deleteResults.every { it in [200, 204] }
+		and: 'look up each role again'
+		def stillPresent = (1..ROLE_COUNT).findAll { i ->
+			try {
+				def r = jsonwsGet(
+					"/api/jsonws/role/get-role/company-id/${companyId}" +
+					"/name/${URLEncoder.encode(BASE_ROLE_NAME + i, 'UTF-8')}") as Map
 
-		when:
-		def result = headlessGet('/o/headless-admin-user/v1.0/roles?pageSize=200')
+				return r?.roleId != null
+			}
+			catch (IllegalStateException ignored) {
+				return false
+			}
+		}
 
 		then: 'none of the test roles remain'
-		!result.items?.any { item ->
-			(item.name as String).startsWith(BASE_ROLE_NAME)
-		}
+		stillPresent.isEmpty()
 	}
 
 }

@@ -69,8 +69,9 @@ class TransactionalBatchFailureSpec extends BaseLiferaySpec {
 	def cleanupSpec() {
 		createdOrganizationIds.each { id ->
 			try {
-				headlessDelete(
-					"/o/headless-admin-user/v1.0/organizations/${id}")
+				jsonwsPost(
+					'/api/jsonws/organization/delete-organization',
+					['organizationId': id])
 			}
 			catch (Exception e) {
 				log.warn(
@@ -80,9 +81,9 @@ class TransactionalBatchFailureSpec extends BaseLiferaySpec {
 
 		if (preExistingOrgId) {
 			try {
-				headlessDelete(
-					"/o/headless-admin-user/v1.0/organizations/" +
-						"${preExistingOrgId}")
+				jsonwsPost(
+					'/api/jsonws/organization/delete-organization',
+					['organizationId': preExistingOrgId])
 			}
 			catch (Exception e) {
 				log.warn(
@@ -150,25 +151,26 @@ class TransactionalBatchFailureSpec extends BaseLiferaySpec {
 	}
 
 	def 'Iteration 1 committed independently of iteration 2 rollback'() {
-		when: 'query organizations by name prefix'
-		def result = headlessGet(
-			'/o/headless-admin-user/v1.0/organizations?pageSize=100')
+		when: 'query organizations via JSONWS'
+		def orgs = jsonwsGet(
+			"/api/jsonws/organization/get-organizations/company-id/${companyId}" +
+			'/parent-organization-id/0/start/-1/end/-1') as List
 
 		then:
-		result.items != null
+		orgs != null
 
 		when:
-		def matchingItems = result.items.findAll { item ->
-			(item.name as String).startsWith(BASE_ORG_NAME)
+		def matchingItems = orgs.findAll { org ->
+			(org.name as String).startsWith(BASE_ORG_NAME)
 		}
 		def matchingNames = matchingItems.collect { it.name as String }.sort()
 
-		def newlyCreated = matchingItems.findAll { item ->
-			(item.id as Long) != preExistingOrgId
+		def newlyCreated = matchingItems.findAll { org ->
+			(org.organizationId as Long) != preExistingOrgId
 		}
 
 		createdOrganizationIds.addAll(
-			newlyCreated.collect { it.id as Long }
+			newlyCreated.collect { it.organizationId as Long }
 		)
 
 		log.info('Matching organizations after batch: {}', matchingNames)
@@ -180,11 +182,11 @@ class TransactionalBatchFailureSpec extends BaseLiferaySpec {
 		matchingNames.contains("${BASE_ORG_NAME} 3" as String)
 
 		and: 'the pre-existing iteration 2 row is still the original one'
-		def collision = matchingItems.find { item ->
-			(item.name as String) == "${BASE_ORG_NAME} 2"
+		def collision = matchingItems.find { org ->
+			(org.name as String) == "${BASE_ORG_NAME} 2"
 		}
 		collision != null
-		(collision.id as Long) == preExistingOrgId
+		(collision.organizationId as Long) == preExistingOrgId
 
 		and: 'exactly two new organizations were committed by the batch'
 		newlyCreated.size() == 2

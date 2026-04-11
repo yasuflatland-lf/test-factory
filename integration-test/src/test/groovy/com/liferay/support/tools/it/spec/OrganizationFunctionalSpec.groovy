@@ -33,7 +33,9 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 	def cleanupSpec() {
 		createdOrganizationIds.each { id ->
 			try {
-				headlessDelete("/o/headless-admin-user/v1.0/organizations/${id}")
+				jsonwsPost(
+					'/api/jsonws/organization/delete-organization',
+					['organizationId': id])
 			}
 			catch (Exception e) {
 				log.warn('Failed to clean up organization {}: {}', id, e.message)
@@ -80,25 +82,28 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 		page.locator('.alert-success').isVisible()
 	}
 
-	def 'Created organizations are visible via headless REST API'() {
+	def 'Created organizations are visible via JSONWS OrganizationService'() {
 		when:
-		def result = headlessGet('/o/headless-admin-user/v1.0/organizations?pageSize=100')
+		def orgs = jsonwsGet(
+			"/api/jsonws/organization/get-organizations/company-id/${companyId}" +
+			'/parent-organization-id/0/start/-1/end/-1') as List
 
 		then:
-		result.items != null
+		orgs != null
 
 		when:
-		def matchingItems = result.items.findAll { item ->
-			(item.name as String).startsWith(BASE_ORG_NAME)
+		def matchingItems = orgs.findAll { org ->
+			(org.name as String).startsWith(BASE_ORG_NAME)
 		}
 
 		createdOrganizationIds.addAll(
-			matchingItems.collect { it.id as Long }
+			matchingItems.collect { it.organizationId as Long }
 		)
 
 		then: 'all created organizations exist with expected names'
 		matchingItems.size() == ORG_COUNT
-		matchingItems.collect { it.name }.sort() == (1..ORG_COUNT).collect { "${BASE_ORG_NAME} ${it}" }
+		matchingItems.collect { it.name as String }.sort() ==
+			(1..ORG_COUNT).collect { "${BASE_ORG_NAME} ${it}" }
 	}
 
 	def 'Re-creating same organizations is handled gracefully'() {
@@ -126,28 +131,31 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 		)
 
 		and: 'organization count has not increased'
-		def result = headlessGet('/o/headless-admin-user/v1.0/organizations?pageSize=100')
-		def matchingItems = result.items.findAll { item ->
-			(item.name as String).startsWith(BASE_ORG_NAME)
+		def orgs = jsonwsGet(
+			"/api/jsonws/organization/get-organizations/company-id/${companyId}" +
+			'/parent-organization-id/0/start/-1/end/-1') as List
+		def matchingItems = orgs.findAll { org ->
+			(org.name as String).startsWith(BASE_ORG_NAME)
 		}
 		matchingItems.size() == ORG_COUNT
 	}
 
-	def 'Test organizations are cleaned up via headless REST API'() {
+	def 'Test organizations are cleaned up via JSONWS OrganizationService'() {
 		when:
-		def deleteResults = createdOrganizationIds.collect { id ->
-			headlessDelete("/o/headless-admin-user/v1.0/organizations/${id}")
+		createdOrganizationIds.each { id ->
+			jsonwsPost(
+				'/api/jsonws/organization/delete-organization',
+				['organizationId': id])
 		}
 
-		then: 'all deletes succeed'
-		deleteResults.every { it in [200, 204] }
-
-		when:
-		def result = headlessGet('/o/headless-admin-user/v1.0/organizations?pageSize=100')
+		and: 'list organizations again'
+		def orgs = jsonwsGet(
+			"/api/jsonws/organization/get-organizations/company-id/${companyId}" +
+			'/parent-organization-id/0/start/-1/end/-1') as List
 
 		then: 'none of the test organizations remain'
-		!result.items?.any { item ->
-			(item.name as String).startsWith(BASE_ORG_NAME)
+		!orgs.any { org ->
+			(org.name as String).startsWith(BASE_ORG_NAME)
 		}
 	}
 
