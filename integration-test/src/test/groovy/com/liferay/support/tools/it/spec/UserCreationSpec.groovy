@@ -1,0 +1,293 @@
+package com.liferay.support.tools.it.spec
+
+import com.liferay.support.tools.it.util.JsonwsSetupHelper
+import com.liferay.support.tools.it.util.LdfResourceClient
+
+import spock.lang.Shared
+import spock.lang.Stepwise
+
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
+@Stepwise
+class UserCreationSpec extends BaseLiferaySpec {
+
+	private static final Logger log = LoggerFactory.getLogger(UserCreationSpec)
+
+	private static final String RUN_SUFFIX =
+		String.valueOf(System.currentTimeMillis())
+
+	private static final String BASIC_BASE_NAME = "basicUser${RUN_SUFFIX}"
+	private static final String FAKER_BASE_NAME = "fakerUser${RUN_SUFFIX}"
+	private static final String ASSIGN_BASE_NAME = "assignUser${RUN_SUFFIX}"
+	private static final String GROUP_BASE_NAME = "groupUser${RUN_SUFFIX}"
+	private static final String LAYOUT_BASE_NAME = "layoutUser${RUN_SUFFIX}"
+	private static final String PROTO_BASE_NAME = "protoUser${RUN_SUFFIX}"
+
+	@Shared
+	LdfResourceClient ldf
+
+	@Shared
+	JsonwsSetupHelper jsonws
+
+	@Shared
+	List<Long> createdUserIds = []
+
+	def setupSpec() {
+		ensureBundleActive()
+
+		ldf = new LdfResourceClient(liferay.baseUrl)
+		jsonws = new JsonwsSetupHelper(liferay.baseUrl)
+	}
+
+	def cleanupSpec() {
+		createdUserIds.each { id ->
+			try {
+				jsonwsPost(
+					'/api/jsonws/user/delete-user',
+					['userId': id])
+			}
+			catch (Exception e) {
+				log.warn('Failed to clean up user {}: {}', id, e.message)
+			}
+		}
+
+		jsonws?.cleanupAll()
+	}
+
+	def 'creates users with basic fields'() {
+		given:
+		int count = 3
+
+		when: 'POST /ldf/user with basic fields'
+		Map response = ldf.createUser([
+			count   : count,
+			baseName: BASIC_BASE_NAME
+		])
+
+		then: 'response reports success'
+		response.success == true
+		(response.users as List).size() == count
+
+		and: 'each user is discoverable via JSONWS get-user-by-screen-name'
+		String prefix = BASIC_BASE_NAME.toLowerCase()
+
+		(1..count).each { i ->
+			String screenName = "${prefix}${i}"
+
+			Map user = jsonwsGet(
+				"/api/jsonws/user/get-user-by-screen-name" +
+				"/company-id/${companyId}" +
+				"/screen-name/${URLEncoder.encode(screenName, 'UTF-8')}"
+			) as Map
+
+			assert user != null
+			assert (user.screenName as String) == screenName
+
+			createdUserIds << (user.userId as Long)
+		}
+	}
+
+	def 'creates users with Datafaker-generated names when fakerEnable and locale set'() {
+		given:
+		int count = 2
+
+		when: 'POST /ldf/user with fakerEnable=true and locale=ja_JP'
+		Map response = ldf.createUser([
+			count       : count,
+			baseName    : FAKER_BASE_NAME,
+			fakerEnable : true,
+			locale      : 'ja_JP'
+		])
+
+		then: 'response reports success'
+		response.success == true
+		(response.users as List).size() == count
+
+		when: 'fetch each generated user by screen name and inspect firstName'
+		List<Map> createdUsers = (response.users as List).collect { it as Map }
+
+		List<Map> dbUsers = createdUsers.collect { Map created ->
+			String screenName = created.screenName as String
+
+			Map user = jsonwsGet(
+				"/api/jsonws/user/get-user-by-screen-name" +
+				"/company-id/${companyId}" +
+				"/screen-name/${URLEncoder.encode(screenName, 'UTF-8')}"
+			) as Map
+
+			createdUserIds << (user.userId as Long)
+
+			return user
+		}
+
+		then: 'firstName diverges from the base name'
+		dbUsers.every { Map u ->
+			(u.firstName as String) != FAKER_BASE_NAME
+		}
+
+		and: 'at least one firstName contains non-ASCII characters (ja_JP)'
+		dbUsers.any { Map u ->
+			(u.firstName as String) ==~ /.*[^\p{ASCII}].*/
+		}
+	}
+
+	def 'assigns users to organizations and roles'() {
+		given:
+		String orgName = "ITUserCreateOrg${RUN_SUFFIX}"
+		String roleName = "ITUserCreateRole${RUN_SUFFIX}"
+
+		Map org = jsonws.createOrganization(orgName)
+		long orgId = org.organizationId as Long
+
+		Map role = jsonws.createRole(roleName)
+		long roleId = role.roleId as Long
+
+		when: 'POST /ldf/user with organizationIds and roleIds'
+		Map response = ldf.createUser([
+			count          : 1,
+			baseName       : ASSIGN_BASE_NAME,
+			organizationIds: [orgId],
+			roleIds        : [roleId]
+		])
+
+		then:
+		response.success == true
+
+		when:
+		Map createdUser = (response.users as List).first() as Map
+		long userId = createdUser.userId as Long
+		createdUserIds << userId
+
+		and: 'organization membership via JSONWS get-organization-users'
+		List orgUsers = jsonwsGet(
+			"/api/jsonws/user/get-organization-users" +
+			"/organization-id/${orgId}"
+		) as List
+
+		then:
+		orgUsers?.any { (it.userId as Long) == userId }
+
+		when: 'role membership via JSONWS has-role-user'
+		Object hasRole = jsonwsGet(
+			"/api/jsonws/user/has-role-user" +
+			"/role-id/${roleId}" +
+			"/user-id/${userId}"
+		)
+
+		then:
+		hasRole == true
+	}
+
+	def 'assigns users to sites via groupIds (regression for old port)'() {
+		given:
+		String siteName = "ITUserCreateSite${RUN_SUFFIX}"
+
+		Map site = jsonws.createSite(siteName, 'open')
+		long groupId = site.groupId as Long
+
+		when: 'POST /ldf/user with groupIds'
+		Map response = ldf.createUser([
+			count   : 1,
+			baseName: GROUP_BASE_NAME,
+			groupIds: [groupId]
+		])
+
+		then:
+		response.success == true
+
+		when:
+		Map createdUser = (response.users as List).first() as Map
+		long userId = createdUser.userId as Long
+		createdUserIds << userId
+
+		and: 'the user appears in the site group via JSONWS get-user-sites-groups'
+		List siteGroups = jsonwsGet(
+			"/api/jsonws/group/get-user-sites-groups" +
+			"/user-id/${userId}/start/-1/end/-1"
+		) as List
+
+		then:
+		siteGroups?.any { (it.groupId as Long) == groupId }
+	}
+
+	def 'generates personal site layouts when toggle is on'() {
+		when: 'POST /ldf/user with generatePersonalSiteLayouts=true'
+		Map response = ldf.createUser([
+			count                      : 1,
+			baseName                   : LAYOUT_BASE_NAME,
+			generatePersonalSiteLayouts: true
+		])
+
+		then:
+		response.success == true
+
+		when:
+		Map createdUser = (response.users as List).first() as Map
+		long userId = createdUser.userId as Long
+		createdUserIds << userId
+
+		and: 'fetch the user to obtain the personal site groupId'
+		Map user = jsonwsGet(
+			"/api/jsonws/user/get-user-by-id/user-id/${userId}") as Map
+		long userGroupId = user.groupId as Long
+
+		and: 'query public and private layouts via JSONWS'
+		List publicLayouts = jsonwsGet(
+			"/api/jsonws/layout/get-layouts" +
+			"/group-id/${userGroupId}/private-layout/false"
+		) as List
+
+		List privateLayouts = jsonwsGet(
+			"/api/jsonws/layout/get-layouts" +
+			"/group-id/${userGroupId}/private-layout/true"
+		) as List
+
+		then: 'personal site has at least one public and one private layout'
+		publicLayouts != null
+		!publicLayouts.isEmpty()
+		privateLayouts != null
+		!privateLayouts.isEmpty()
+	}
+
+	def 'links public layout set prototype when specified'() {
+		given:
+		String protoName = "ITUserCreateProto${RUN_SUFFIX}"
+
+		Map proto = jsonws.createLayoutSetPrototype(protoName, false)
+		long prototypeId = proto.layoutSetPrototypeId as Long
+		String prototypeUuid = proto.uuid as String
+
+		when: 'POST /ldf/user with publicLayoutSetPrototypeId'
+		Map response = ldf.createUser([
+			count                      : 1,
+			baseName                   : PROTO_BASE_NAME,
+			generatePersonalSiteLayouts: true,
+			publicLayoutSetPrototypeId : prototypeId
+		])
+
+		then:
+		response.success == true
+
+		when:
+		Map createdUser = (response.users as List).first() as Map
+		long userId = createdUser.userId as Long
+		createdUserIds << userId
+
+		and: 'fetch user to get personal site groupId'
+		Map user = jsonwsGet(
+			"/api/jsonws/user/get-user-by-id/user-id/${userId}") as Map
+		long userGroupId = user.groupId as Long
+
+		and: 'fetch the public layout set via JSONWS'
+		Map layoutSet = jsonwsGet(
+			"/api/jsonws/layoutset/get-layout-set" +
+			"/group-id/${userGroupId}/private-layout/false"
+		) as Map
+
+		then: 'layoutSetPrototypeUuid matches the prototype uuid'
+		layoutSet != null
+		(layoutSet.layoutSetPrototypeUuid as String) == prototypeUuid
+	}
+
+}
