@@ -73,18 +73,31 @@ public class DocumentResourceCommand extends BaseMVCResourceCommand {
 
 			long userId = _portal.getUserId(resourceRequest);
 
-			responseJson = _documentCreator.create(
-				userId, groupId, batchSpec, folderId, description,
-				uploadedFiles);
+			try {
+				responseJson = _documentCreator.create(
+					userId, groupId, batchSpec, folderId, description,
+					uploadedFiles);
+			}
+			catch (Throwable throwable) {
+				if (throwable instanceof Error) {
+					throw (Error)throwable;
+				}
+
+				if (throwable instanceof Exception) {
+					throw (Exception)throwable;
+				}
+
+				throw new Exception(throwable);
+			}
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(
 				responseJson, illegalArgumentException);
 		}
-		catch (Throwable throwable) {
-			_log.error("Failed to create documents", throwable);
+		catch (Exception exception) {
+			_log.error("Failed to create documents", exception);
 
-			ResourceCommandUtil.setErrorResponse(responseJson, throwable);
+			ResourceCommandUtil.setErrorResponse(responseJson, exception);
 		}
 
 		JSONPortletResponseUtil.writeJSON(
