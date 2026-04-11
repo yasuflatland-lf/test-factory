@@ -76,7 +76,8 @@ class JsonwsSetupHelper {
 				'countryId': '0',
 				'statusListTypeId': '0',
 				'comments': '',
-				'site': 'false'
+				'site': 'false',
+				'serviceContext': '{}'
 			]) as Map
 
 		_tracked << new Tracked(

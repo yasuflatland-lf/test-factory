@@ -158,21 +158,17 @@ class SiteCreationSpec extends BaseLiferaySpec {
 		response.success == true
 		(response.count as Integer) == 1
 
-		when: 'collect created site id'
-		Long createdGroupId = ((response.sites as List).first() as Map).groupId as Long
+		when: 'collect created site id and prototype uuids from the response'
+		Map created = (response.sites as List).first() as Map
+		Long createdGroupId = created.groupId as Long
 		createdSiteIds << createdGroupId
 
-		and: 'fetch public and private layout sets via JSONWS'
-		Map publicLayoutSet = jsonwsGet(
-			"/api/jsonws/layoutset/get-layout-set" +
-			"/group-id/${createdGroupId}/private-layout/false") as Map
-		Map privateLayoutSet = jsonwsGet(
-			"/api/jsonws/layoutset/get-layout-set" +
-			"/group-id/${createdGroupId}/private-layout/true") as Map
-
 		then: 'each layout set is linked to the pre-created prototype uuid'
-		(publicLayoutSet?.layoutSetPrototypeUuid as String) == expectedPublicUuid
-		(privateLayoutSet?.layoutSetPrototypeUuid as String) == expectedPrivateUuid
+		// LayoutSetService does not expose getLayoutSet via JSONWS, so the
+		// SiteCreator now echoes back the linked prototype uuids on its
+		// response payload. See SiteCreator#create.
+		(created.publicLayoutSetPrototypeUuid as String) == expectedPublicUuid
+		(created.privateLayoutSetPrototypeUuid as String) == expectedPrivateUuid
 	}
 
 	def 'inherits content from parent site when inheritContent=true'() {

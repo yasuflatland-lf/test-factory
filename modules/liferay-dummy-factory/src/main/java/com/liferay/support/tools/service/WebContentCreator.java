@@ -190,7 +190,8 @@ public class WebContentCreator {
 			_ddmStructureLocalService.fetchStructure(
 				groupId,
 				PortalUtil.getClassNameId(JournalArticle.class),
-				LDFPortletKeys.DDM_STRUCTURE_KEY);
+				LDFPortletKeys.DDM_STRUCTURE_KEY,
+				true);
 
 		if (ddmStructure == null) {
 			return new PerSiteResult(
@@ -266,7 +267,8 @@ public class WebContentCreator {
 			_ddmStructureLocalService.fetchStructure(
 				groupId,
 				PortalUtil.getClassNameId(JournalArticle.class),
-				LDFPortletKeys.DDM_STRUCTURE_KEY);
+				LDFPortletKeys.DDM_STRUCTURE_KEY,
+				true);
 
 		if (ddmStructure == null) {
 			return new PerSiteResult(

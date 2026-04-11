@@ -10,7 +10,9 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.TransactionConfig;
@@ -94,6 +96,29 @@ public class SiteCreator {
 				siteJson.put("groupId", group.getGroupId());
 				siteJson.put("name", siteName);
 
+				LayoutSet publicLayoutSet =
+					_layoutSetLocalService.fetchLayoutSet(
+						group.getGroupId(), false);
+				LayoutSet privateLayoutSet =
+					_layoutSetLocalService.fetchLayoutSet(
+						group.getGroupId(), true);
+
+				if (publicLayoutSet != null) {
+					siteJson.put(
+						"publicLayoutSetPrototypeUuid",
+						publicLayoutSet.getLayoutSetPrototypeUuid());
+				}
+
+				if (privateLayoutSet != null) {
+					siteJson.put(
+						"privateLayoutSetPrototypeUuid",
+						privateLayoutSet.getLayoutSetPrototypeUuid());
+				}
+
+				siteJson.put(
+					"inheritContent", group.isInheritContent());
+				siteJson.put("parentGroupId", group.getParentGroupId());
+
 				created.put(siteJson);
 			}
 			catch (DuplicateGroupException e) {
@@ -128,6 +153,9 @@ public class SiteCreator {
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private LayoutSetLocalService _layoutSetLocalService;
 
 	@Reference
 	private Sites _sites;
