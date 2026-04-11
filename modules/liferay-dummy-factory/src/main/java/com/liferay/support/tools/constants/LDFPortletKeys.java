@@ -9,6 +9,8 @@ public class LDFPortletKeys {
 
 	public static final String DDM_STRUCTURE_KEY = "BASIC-WEB-CONTENT";
 
+	public static final String COMMON_PROGRESS_ID = "COMMON_PROGRESS_ID";
+
 	public static final String EOL = "\n";
 
 }
