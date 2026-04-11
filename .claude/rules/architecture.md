@@ -97,3 +97,10 @@ addCompany(Long companyId, String webId, String virtualHostname, String mx,
 ```
 
 No simpler 6-arg overload exists on `CompanyLocalService` in CE 7.4 GA132 (the 6-arg version lives on `CompanyService`, which is the blacklisted remote interface — see above). For dummy company creation, pass `addDefaultAdminUser=false` and all remaining admin fields as `null`. Reference implementation: `CompanyCreator.java`.
+
+## 6. Liferay Workspace Frontend Traps
+
+Non-obvious pitfalls hit while wiring the React frontend and its unit-test stack into a Liferay Workspace module.
+
+- **J25: `@liferay/npm-scripts` bundles its own `@testing-library/react@14`.** Even when the module's `package.json` pins `@testing-library/react@16.3.0` at the top level, npm emits an `incorrect peer dependency "react@^18.0.0"` warning because `@liferay/npm-scripts` brings in a transitive copy of v14 along with its own React 18 testing stack. The warning is harmless and can be ignored — the top-level v16 wins for the module's own Vitest runs, and the bundled v14 copy is only used by `@liferay/npm-scripts` internals.
+- **J26: `esbuild` build path is independent of Vite/Vitest.** `scripts/build.mjs` uses `esbuild` plus an AMD Loader bridge to produce the Liferay-compatible bundle, while unit tests run under Vitest. These two toolchains do not need to be unified — shipping a production build via esbuild while running tests via Vitest is a supported split. Do not attempt to collapse them onto a single bundler just for consistency.
