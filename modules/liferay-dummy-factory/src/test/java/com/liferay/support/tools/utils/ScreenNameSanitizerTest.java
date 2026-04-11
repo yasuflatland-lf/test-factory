@@ -81,4 +81,21 @@ class ScreenNameSanitizerTest {
 		assertEquals("ab.com", ScreenNameSanitizer.sanitize("a@b.com"));
 	}
 
+	@Test
+	void whitespaceIsStripped() {
+		assertEquals("foobar", ScreenNameSanitizer.sanitize("foo bar"));
+	}
+
+	@Test
+	void allWhitespaceFallsBackToUser() {
+		assertEquals("user", ScreenNameSanitizer.sanitize("  "));
+	}
+
+	@Test
+	void mixedCaseIsPreserved() {
+		assertEquals(
+			"MixedCase.Name1",
+			ScreenNameSanitizer.sanitize("MixedCase.Name1"));
+	}
+
 }
