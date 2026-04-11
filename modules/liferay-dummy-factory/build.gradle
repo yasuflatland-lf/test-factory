@@ -1,6 +1,23 @@
 dependencies {
 	compileOnly group: "com.liferay.portal", name: "release.portal.api", version: "default"
 
+	compileOnly group: "com.liferay", name: "com.liferay.journal.api"
+	compileOnly group: "com.liferay", name: "com.liferay.dynamic.data.mapping.api"
+
+	compileOnly("com.goikosoft.crawler4j:crawler4j:4.5.10") {
+		exclude module: "tika-bundle"
+		exclude module: "tika-core"
+		exclude module: "tika-parsers"
+	}
+	compileOnly group: "io.reactivex.rxjava2", name: "rxjava", version: "2.2.+"
+	compileOnly group: "com.google.guava", name: "guava", version: "32.1.3-jre"
+	compileOnly group: "org.reactivestreams", name: "reactive-streams", version: "1.0.+"
+	compileOnly group: "com.sleepycat", name: "je", version: "18.3.12"
+	compileOnly group: "org.apache.httpcomponents", name: "httpcore-osgi", version: "4.4.+"
+	compileOnly group: "org.apache.httpcomponents", name: "httpclient", version: "4.5.+"
+
+	compileOnly group: "com.github.javafaker", name: "javafaker", version: "1.0.2"
+
 	testImplementation group: "com.liferay.portal", name: "release.portal.api", version: "default"
 	testImplementation group: "org.junit.jupiter", name: "junit-jupiter", version: "5.10.2"
 }
