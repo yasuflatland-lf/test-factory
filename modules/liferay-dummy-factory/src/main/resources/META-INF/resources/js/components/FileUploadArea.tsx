@@ -3,19 +3,20 @@ import {useState} from 'react';
 interface FileUploadAreaProps {
 	groupId: string;
 	onChange: (name: string, value: string) => void;
+	testId?: string;
 	uploadURL: string;
 	value: string;
 }
 
 const FIELD_NAME = 'uploadedFiles';
 
-function FileUploadArea({groupId, onChange, uploadURL, value}: FileUploadAreaProps) {
+function FileUploadArea({groupId, onChange, testId, uploadURL, value}: FileUploadAreaProps) {
 	const [uploadingNames, setUploadingNames] = useState<string[]>([]);
 	const [errors, setErrors] = useState<Record<string, string>>({});
 
 	const fileNames = value ? value.split(',').filter(Boolean) : [];
 
-	const _uploadFile = async (file: File) => {
+	const uploadFile = async (file: File) => {
 		const formData = new FormData();
 
 		formData.append('cmd', 'add_temp');
@@ -60,9 +61,7 @@ function FileUploadArea({groupId, onChange, uploadURL, value}: FileUploadAreaPro
 		}
 	};
 
-	const _handleFileChange = async (
-		target: HTMLInputElement
-	) => {
+	const handleFileChange = async (target: HTMLInputElement) => {
 		const fileList = target.files;
 
 		if (!fileList || fileList.length === 0) {
@@ -86,7 +85,7 @@ function FileUploadArea({groupId, onChange, uploadURL, value}: FileUploadAreaPro
 		let accumulated = fileNames.slice();
 
 		for (const file of files) {
-			const result = await _uploadFile(file);
+			const result = await uploadFile(file);
 
 			if (result) {
 				accumulated = [...accumulated, result.fileName];
@@ -101,7 +100,7 @@ function FileUploadArea({groupId, onChange, uploadURL, value}: FileUploadAreaPro
 		target.value = '';
 	};
 
-	const _handleRemove = async (fileName: string) => {
+	const handleRemove = async (fileName: string) => {
 		try {
 			const formData = new FormData();
 
@@ -153,9 +152,10 @@ function FileUploadArea({groupId, onChange, uploadURL, value}: FileUploadAreaPro
 
 			<input
 				className="form-control"
+				data-testid={testId ? `${testId}-input` : undefined}
 				id="ldf-file-upload-area"
 				multiple
-				onChange={(e) => _handleFileChange(e.target)}
+				onChange={(e) => handleFileChange(e.target)}
 				type="file"
 			/>
 
@@ -168,8 +168,13 @@ function FileUploadArea({groupId, onChange, uploadURL, value}: FileUploadAreaPro
 			)}
 
 			{fileNames.length > 0 && (
-				<ul className="list-inline mt-2">
-					{fileNames.map((fileName) => (
+				<ul
+					className="list-inline mt-2"
+					data-testid={
+						testId ? `${testId}-uploaded-list` : undefined
+					}
+				>
+					{fileNames.map((fileName, index) => (
 						<li className="list-inline-item" key={fileName}>
 							<span className="label label-secondary">
 								<span className="label-item label-item-expand">
@@ -182,7 +187,12 @@ function FileUploadArea({groupId, onChange, uploadURL, value}: FileUploadAreaPro
 											'remove'
 										)}
 										className="btn btn-unstyled"
-										onClick={() => _handleRemove(fileName)}
+										data-testid={
+											testId
+												? `${testId}-remove-${index}`
+												: undefined
+										}
+										onClick={() => handleRemove(fileName)}
 										type="button"
 									>
 										<span aria-hidden="true">&times;</span>

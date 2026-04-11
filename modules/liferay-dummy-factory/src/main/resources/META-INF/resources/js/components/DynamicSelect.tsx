@@ -9,10 +9,11 @@ interface DynamicSelectProps {
 	error?: string;
 	field: FieldDefinition;
 	onChange: (name: string, value: string) => void;
+	testId?: string;
 	value: string;
 }
 
-function DynamicSelect({dataResourceURL, dependsOnValue, error, field, onChange, value}: DynamicSelectProps) {
+function DynamicSelect({dataResourceURL, dependsOnValue, error, field, onChange, testId, value}: DynamicSelectProps) {
 	const extraParams = field.dependsOn
 		? {[field.dependsOn.paramName]: dependsOnValue ?? ''}
 		: undefined;
@@ -28,6 +29,7 @@ function DynamicSelect({dataResourceURL, dependsOnValue, error, field, onChange,
 
 				<select
 					className="form-control"
+					data-testid={testId}
 					disabled
 					id={field.name}
 				>
@@ -57,6 +59,7 @@ function DynamicSelect({dataResourceURL, dependsOnValue, error, field, onChange,
 			field={field}
 			onChange={onChange}
 			options={data}
+			testId={testId}
 			value={value}
 		/>
 	);

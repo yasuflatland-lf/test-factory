@@ -4,6 +4,7 @@ import com.liferay.support.tools.it.util.PlaywrightLifecycle
 
 import com.microsoft.playwright.Locator
 import com.microsoft.playwright.Page
+import com.microsoft.playwright.options.WaitForSelectorState
 
 import spock.lang.Shared
 import spock.lang.Stepwise
@@ -106,46 +107,45 @@ class MBThreadFunctionalSpec extends BaseLiferaySpec {
 		page.waitForLoadState()
 
 		and: 'select MB Threads entity type'
-		page.locator('.nav-link:has-text("mb-threads")').click()
+		page.locator('[data-testid="entity-selector-MB_THREAD"]').click()
 
 		and: 'wait for MB Threads form to render'
-		page.locator('.sheet-header h2:has-text("mb-threads")').waitFor(
-			new Locator.WaitForOptions().setTimeout(15_000)
-		)
-		page.locator('#count').waitFor(
+		page.locator('[data-testid="mb-thread-count-input"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
 
 		and: 'fill count and baseName'
-		page.locator('#count').fill("${THREAD_COUNT}")
-		page.locator('#baseName').fill(BASE_THREAD_NAME)
+		page.locator('[data-testid="mb-thread-count-input"]').fill("${THREAD_COUNT}")
+		page.locator('[data-testid="mb-thread-base-name-input"]').fill(BASE_THREAD_NAME)
 
 		and: 'select Guest site which triggers category dropdown load'
-		page.locator('#groupId').selectOption("${guestGroupId}")
+		page.locator('[data-testid="mb-thread-group-id-select"]').selectOption("${guestGroupId}")
 
-		and: 'wait for the prereq category option to be attached to #categoryId'
+		and: 'wait for the prereq category option to be attached to the category select'
 		// Options inside a collapsed <select> are considered hidden by
 		// default, so waiting with the default "visible" state fails.
-		page.locator("#categoryId option[value=\"${prereqCategoryId}\"]").waitFor(
+		page.locator(
+			"[data-testid=\"mb-thread-category-id-select\"] option[value=\"${prereqCategoryId}\"]"
+		).waitFor(
 			new Locator.WaitForOptions()
-				.setState(com.microsoft.playwright.options.WaitForSelectorState.ATTACHED)
+				.setState(WaitForSelectorState.ATTACHED)
 				.setTimeout(15_000)
 		)
 
 		and: 'select prereq category'
-		page.locator('#categoryId').selectOption("${prereqCategoryId}")
+		page.locator('[data-testid="mb-thread-category-id-select"]').selectOption("${prereqCategoryId}")
 
 		and: 'ensure body textarea has a non-empty value'
-		page.locator('#body').fill('This is a test message.')
+		page.locator('[data-testid="mb-thread-body-textarea"]').fill('This is a test message.')
 
 		and: 'click Run button'
-		page.locator('.sheet-footer button.btn-primary').click()
+		page.locator('[data-testid="mb-thread-submit"]').click()
 
 		then: 'success alert appears'
-		page.locator('.alert-success').waitFor(
+		page.locator('[data-testid="mb-thread-result"].alert-success').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
-		page.locator('.alert-success').isVisible()
+		page.locator('[data-testid="mb-thread-result"].alert-success').isVisible()
 
 		when: 'query headless delivery API for created threads'
 		def response = headlessGet(

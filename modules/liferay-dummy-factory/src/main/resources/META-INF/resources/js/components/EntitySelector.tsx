@@ -3,13 +3,17 @@ import {ENTITY_LABELS, ENTITY_TYPES, EntityType} from '../config/constants';
 interface EntitySelectorProps {
 	onSelect: (entityType: EntityType) => void;
 	selected: EntityType;
+	testId?: string;
 }
 
 const ENTITY_LIST = Object.values(ENTITY_TYPES);
 
-function EntitySelector({onSelect, selected}: EntitySelectorProps) {
+function EntitySelector({onSelect, selected, testId}: EntitySelectorProps) {
 	return (
-		<nav className="menubar menubar-transparent menubar-vertical-expand-md">
+		<nav
+			className="menubar menubar-transparent menubar-vertical-expand-md"
+			data-testid={testId}
+		>
 			<ul className="nav nav-nested">
 				{ENTITY_LIST.map((entityType) => (
 					<li className="nav-item" key={entityType}>
@@ -17,6 +21,7 @@ function EntitySelector({onSelect, selected}: EntitySelectorProps) {
 							className={`btn btn-unstyled nav-link ${
 								selected === entityType ? 'active' : ''
 							}`}
+							data-testid={`entity-selector-${entityType}`}
 							onClick={() => onSelect(entityType)}
 							type="button"
 						>

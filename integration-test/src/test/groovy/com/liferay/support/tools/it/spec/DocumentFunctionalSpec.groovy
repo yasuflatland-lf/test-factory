@@ -4,6 +4,7 @@ import com.liferay.support.tools.it.util.PlaywrightLifecycle
 
 import com.microsoft.playwright.Locator
 import com.microsoft.playwright.Page
+import com.microsoft.playwright.options.WaitForSelectorState
 
 import spock.lang.Shared
 import spock.lang.Stepwise
@@ -84,29 +85,33 @@ class DocumentFunctionalSpec extends BaseLiferaySpec {
 		page.waitForLoadState()
 
 		and: 'select Documents entity type'
-		page.locator('.nav-link:has-text("documents")').click()
+		page.locator('[data-testid="entity-selector-DOC"]').click()
 
 		and: 'wait for Documents form to render'
-		page.locator('.sheet-header h2:has-text("documents")').waitFor(
-			new Locator.WaitForOptions().setTimeout(15_000)
-		)
-		page.locator('#count').waitFor(
+		page.locator('[data-testid="doc-count-input"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
 
 		and: 'fill in the documents form'
-		page.locator('#count').fill("${DOC_COUNT}")
-		page.locator('#baseName').fill(BASE_DOC_NAME)
-		page.locator('#groupId').selectOption("${guestGroupId}")
+		page.locator('[data-testid="doc-count-input"]').fill("${DOC_COUNT}")
+		page.locator('[data-testid="doc-base-name-input"]').fill(BASE_DOC_NAME)
+		page.locator(
+			"[data-testid=\"doc-group-id-select\"] option[value=\"${guestGroupId}\"]"
+		).waitFor(
+			new Locator.WaitForOptions()
+				.setState(WaitForSelectorState.ATTACHED)
+				.setTimeout(15_000)
+		)
+		page.locator('[data-testid="doc-group-id-select"]').selectOption("${guestGroupId}")
 
 		and: 'click Run button'
-		page.locator('.sheet-footer button.btn-primary').click()
+		page.locator('[data-testid="doc-submit"]').click()
 
 		then: 'success alert appears'
-		page.locator('.alert-success').waitFor(
+		page.locator('[data-testid="doc-result"].alert-success').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
-		page.locator('.alert-success').isVisible()
+		page.locator('[data-testid="doc-result"].alert-success').isVisible()
 	}
 
 	def 'Created documents are visible via JSONWS DLAppService'() {

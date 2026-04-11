@@ -109,19 +109,19 @@ class TransactionalBatchFailureSpec extends BaseLiferaySpec {
 		page.waitForLoadState()
 
 		and: 'wait for the form to render'
-		page.locator('#count').waitFor(
+		page.locator('[data-testid="org-count-input"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
 
 		and: 'fill in the organization batch form'
-		page.locator('#count').fill("${ORG_COUNT}")
-		page.locator('#baseName').fill(BASE_ORG_NAME)
+		page.locator('[data-testid="org-count-input"]').fill("${ORG_COUNT}")
+		page.locator('[data-testid="org-base-name-input"]').fill(BASE_ORG_NAME)
 
 		and: 'submit the batch'
-		page.locator('.sheet-footer button.btn-primary').click()
+		page.locator('[data-testid="org-submit"]').click()
 
-		then: 'portlet finishes with an alert (success or partial)'
-		page.locator('.alert-success, .alert-danger').waitFor(
+		then: 'portlet finishes with an alert (success or partial rollback)'
+		page.locator('[data-testid="org-result"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
 	}

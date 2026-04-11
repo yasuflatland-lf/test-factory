@@ -41,7 +41,29 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 
 	const requiredFields = config.fields.filter((f) => !f.advanced);
 	const advancedFields = config.fields.filter((f) => f.advanced);
+	const visibleAdvanced = advancedFields.filter(isFieldVisible);
 	const uploadURL = actionResourceURLs['/ldf/doc/upload'] ?? '';
+
+	const entityKey = config.entityType.toLowerCase().replace(/_/g, '-');
+
+	const toKebab = (value: string) =>
+		value.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+
+	const getFieldTestId = (field: FieldDefinition) => {
+		const fieldKey = toKebab(field.name);
+		const suffixByType: Record<string, string> = {
+			file: 'file',
+			multiselect: 'select',
+			number: 'input',
+			select: 'select',
+			text: 'input',
+			textarea: 'textarea',
+			toggle: 'toggle',
+		};
+		const suffix = suffixByType[field.type] ?? 'input';
+
+		return `${entityKey}-${fieldKey}-${suffix}`;
+	};
 
 	const handleSubmit = async () => {
 		const visibleFields = config.fields.filter(isFieldVisible);
@@ -136,6 +158,7 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 					field={field}
 					key={field.name + (dependsOnValue || '')}
 					onChange={setValue}
+					testId={getFieldTestId(field)}
 					value={values[field.name] || ''}
 				/>
 			);
@@ -148,8 +171,9 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 				formValues={values}
 				key={field.name}
 				onChange={setValue}
-				value={values[field.name] || ''}
+				testId={getFieldTestId(field)}
 				uploadURL={uploadURL}
+				value={values[field.name] || ''}
 			/>
 		);
 	};
@@ -163,45 +187,39 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 			<div className="sheet-section">
 				{requiredFields.filter(isFieldVisible).map(renderField)}
 
-				{(() => {
-					const visibleAdvanced = advancedFields.filter(isFieldVisible);
-					const ungrouped = visibleAdvanced.filter((f) => !f.group);
+				{visibleAdvanced.filter((f) => !f.group).map(renderField)}
+
+				{FIELD_GROUPS.map((group) => {
+					const groupFields = visibleAdvanced.filter(
+						(f) => f.group === group
+					);
+
+					if (groupFields.length === 0) {
+						return null;
+					}
 
 					return (
-						<>
-							{ungrouped.map(renderField)}
+						<div key={group}>
+							<h5>{Liferay.Language.get(`section.${group}`)}</h5>
 
-							{FIELD_GROUPS.map((group) => {
-								const groupFields = visibleAdvanced.filter(
-									(f) => f.group === group
-								);
+							<hr />
 
-								if (groupFields.length === 0) {
-									return null;
-								}
-
-								return (
-									<div key={group}>
-										<h5>
-											{Liferay.Language.get(`section.${group}`)}
-										</h5>
-
-										<hr />
-
-										{groupFields.map(renderField)}
-									</div>
-								);
-							})}
-						</>
+							{groupFields.map(renderField)}
+						</div>
 					);
-				})()}
+				})}
 			</div>
 
-			<ProgressBar percent={percent} running={running} />
+			<ProgressBar
+				percent={percent}
+				running={running}
+				testId={`${entityKey}-progress`}
+			/>
 
 			<div className="sheet-footer">
 				<button
 					className="btn btn-primary"
+					data-testid={`${entityKey}-submit`}
 					disabled={submitting}
 					onClick={handleSubmit}
 					type="button"
@@ -217,6 +235,7 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 					message={result.message}
 					multiSite={result.multiSite}
 					onDismiss={() => setResult(null)}
+					testId={`${entityKey}-result`}
 					type={result.type}
 				/>
 			)}

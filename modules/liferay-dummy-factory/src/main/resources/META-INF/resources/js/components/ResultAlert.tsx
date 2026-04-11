@@ -6,11 +6,12 @@ interface ResultAlertProps {
 	message: string | null;
 	multiSite?: MultiSiteResult | null;
 	onDismiss: () => void;
+	testId?: string;
 	type: 'success' | 'danger' | 'warning';
 }
 
-function ResultAlert({message, multiSite, onDismiss, type}: ResultAlertProps) {
-	const entries: PerSiteResult[] = Array.isArray(multiSite?.perSite) ? multiSite!.perSite : [];
+function ResultAlert({message, multiSite, onDismiss, testId, type}: ResultAlertProps) {
+	const entries: PerSiteResult[] = multiSite?.perSite ?? [];
 	const totalCreated = multiSite?.totalCreated ?? 0;
 	const totalRequested = multiSite?.totalRequested ?? 0;
 
@@ -45,6 +46,7 @@ function ResultAlert({message, multiSite, onDismiss, type}: ResultAlertProps) {
 	return (
 		<div
 			className={`alert alert-${effectiveType} alert-dismissible`}
+			data-testid={testId}
 			role="alert"
 		>
 			<button

@@ -53,19 +53,16 @@ class UserFunctionalSpec extends BaseLiferaySpec {
 		page.waitForLoadState()
 
 		and: 'select Users entity type'
-		page.locator('.nav-link:has-text("users")').click()
+		page.locator('[data-testid="entity-selector-USERS"]').click()
 
 		and: 'wait for Users form to render'
-		page.locator('.sheet-header h2:has-text("users")').waitFor(
-			new Locator.WaitForOptions().setTimeout(15_000)
-		)
-		page.locator('#count').waitFor(
+		page.locator('[data-testid="users-count-input"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
 
 		and: 'fill in the user form'
-		page.locator('#count').fill("${USER_COUNT}")
-		page.locator('#baseName').fill(BASE_USER_NAME)
+		page.locator('[data-testid="users-count-input"]').fill("${USER_COUNT}")
+		page.locator('[data-testid="users-base-name-input"]').fill(BASE_USER_NAME)
 
 		and: 'capture API response and click Run'
 		page.onResponse(response -> {
@@ -79,13 +76,13 @@ class UserFunctionalSpec extends BaseLiferaySpec {
 			catch (ignored) {}
 		})
 
-		page.locator('.sheet-footer button.btn-primary').click()
+		page.locator('[data-testid="users-submit"]').click()
 
 		then: 'success alert appears'
-		page.locator('.alert-success, .alert-danger').waitFor(
+		page.locator('[data-testid="users-result"].alert-success').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
-		page.locator('.alert-success').isVisible()
+		page.locator('[data-testid="users-result"].alert-success').isVisible()
 	}
 
 	def 'API response confirms users were created'() {

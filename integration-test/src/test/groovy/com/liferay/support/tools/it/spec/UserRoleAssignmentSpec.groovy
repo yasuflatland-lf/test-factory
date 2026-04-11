@@ -99,34 +99,34 @@ class UserRoleAssignmentSpec extends BaseLiferaySpec {
 		page.waitForLoadState()
 
 		and: 'select Users entity type'
-		page.locator('.nav-link:has-text("users")').click()
-		page.locator('#count').waitFor(
+		page.locator('[data-testid="entity-selector-USERS"]').click()
+		page.locator('[data-testid="users-count-input"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
 
 		and: 'fill in user creation fields'
-		page.locator('#count').fill('1')
-		page.locator('#baseName').fill(BASE_USER_NAME)
+		page.locator('[data-testid="users-count-input"]').fill('1')
+		page.locator('[data-testid="users-base-name-input"]').fill(BASE_USER_NAME)
 
 		and: 'wait for advanced field to render (section is open-by-default after EntityForm refactor)'
-		page.locator('#organizationIds').waitFor(
+		page.locator('[data-testid="users-organization-ids-select"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
 
 		and: 'select the test organization in the multiselect'
-		page.locator("#organizationIds option:has-text(\"${TEST_ORG_NAME}\")").click()
+		page.locator("[data-testid=\"users-organization-ids-select\"] option[value=\"${testOrgId}\"]").click()
 
 		and: 'click Run button and capture the /ldf/user resource response'
 		Response response = page.waitForResponse(
 			{ Response r -> r.url().contains('p_p_resource_id=%2Fldf%2Fuser') },
-			{ -> page.locator('.sheet-footer button.btn-primary').click() })
+			{ -> page.locator('[data-testid="users-submit"]').click() })
 		apiResponseBody = response.text()
 
 		then: 'success alert appears'
-		page.locator('.alert-success').waitFor(
+		page.locator('[data-testid="users-result"].alert-success').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
-		page.locator('.alert-success').isVisible()
+		page.locator('[data-testid="users-result"].alert-success').isVisible()
 	}
 
 	def 'Created user is visible and belongs to test organization via JSONWS'() {

@@ -7,6 +7,7 @@ interface FormFieldProps {
 	formValues?: Record<string, string>;
 	onChange: (name: string, value: string) => void;
 	options?: SelectOption[];
+	testId?: string;
 	uploadURL?: string;
 	value: string;
 }
@@ -35,6 +36,7 @@ function FormField({
 	formValues,
 	onChange,
 	options,
+	testId,
 	uploadURL,
 	value,
 }: FormFieldProps) {
@@ -47,6 +49,7 @@ function FormField({
 					<input
 						checked={value === 'true'}
 						className="toggle-switch-check"
+						data-testid={testId}
 						id={field.name}
 						onChange={(e) =>
 							onChange(field.name, String(e.target.checked))
@@ -75,6 +78,7 @@ function FormField({
 
 				<select
 					className="form-control"
+					data-testid={testId}
 					id={field.name}
 					multiple
 					onChange={(e) => {
@@ -106,6 +110,7 @@ function FormField({
 
 				<select
 					className="form-control"
+					data-testid={testId}
 					id={field.name}
 					onChange={(e) => onChange(field.name, e.target.value)}
 					value={value}
@@ -131,6 +136,7 @@ function FormField({
 
 				<textarea
 					className="form-control"
+					data-testid={testId}
 					id={field.name}
 					onChange={(e) => onChange(field.name, e.target.value)}
 					rows={5}
@@ -150,6 +156,7 @@ function FormField({
 				groupId={groupId}
 				key={field.name}
 				onChange={(name, newValue) => onChange(field.name, newValue)}
+				testId={testId}
 				uploadURL={uploadURL ?? ''}
 				value={value}
 			/>
@@ -162,6 +169,7 @@ function FormField({
 
 			<input
 				className="form-control"
+				data-testid={testId}
 				id={field.name}
 				onChange={(e) => onChange(field.name, e.target.value)}
 				type={field.type === 'number' ? 'number' : 'text'}
