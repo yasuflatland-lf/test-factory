@@ -147,11 +147,18 @@ public class WcmResourceCommand extends BaseMVCResourceCommand {
 			List<Long> parsed = new ArrayList<>();
 
 			for (int i = 0; i < jsonArray.length(); i++) {
-				long value = GetterUtil.getLong(jsonArray.get(i));
+				Object rawToken = jsonArray.get(i);
+				long value = GetterUtil.getLong(rawToken);
 
-				if (value > 0) {
-					parsed.add(value);
+				if (value <= 0) {
+					_log.warn(
+						"Dropped unparseable or non-positive groupIds " +
+							"entry: " + rawToken);
+
+					continue;
 				}
+
+				parsed.add(value);
 			}
 
 			return _toLongArray(parsed);
@@ -164,11 +171,18 @@ public class WcmResourceCommand extends BaseMVCResourceCommand {
 
 			for (String token : groupIdsString.split(",")) {
 				if ((token != null) && !token.trim().isEmpty()) {
-					long value = GetterUtil.getLong(token.trim());
+					String rawToken = token.trim();
+					long value = GetterUtil.getLong(rawToken);
 
-					if (value > 0) {
-						parsed.add(value);
+					if (value <= 0) {
+						_log.warn(
+							"Dropped unparseable or non-positive " +
+								"groupIds entry: " + rawToken);
+
+						continue;
 					}
+
+					parsed.add(value);
 				}
 			}
 
