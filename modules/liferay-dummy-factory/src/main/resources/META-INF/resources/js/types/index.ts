@@ -1,4 +1,4 @@
-export type FieldType = 'number' | 'text' | 'select' | 'multiselect' | 'toggle' | 'textarea';
+export type FieldType = 'number' | 'text' | 'file' | 'select' | 'multiselect' | 'toggle' | 'textarea';
 
 export const FIELD_GROUPS = ['identity', 'generator', 'membership', 'layout', 'content'] as const;
 export type FieldGroup = typeof FIELD_GROUPS[number];
