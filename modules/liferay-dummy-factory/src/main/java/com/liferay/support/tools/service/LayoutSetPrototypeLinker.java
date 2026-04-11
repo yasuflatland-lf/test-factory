@@ -1,6 +1,5 @@
 package com.liferay.support.tools.service;
 
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.sites.kernel.util.Sites;
@@ -14,7 +13,7 @@ public class LayoutSetPrototypeLinker {
 	public void linkUserPersonalSite(
 			User user, long publicLayoutSetPrototypeId,
 			long privateLayoutSetPrototypeId)
-		throws PortalException {
+		throws Exception {
 
 		linkSite(
 			user.getGroup(), publicLayoutSetPrototypeId,
@@ -24,7 +23,7 @@ public class LayoutSetPrototypeLinker {
 	public void linkSite(
 			Group group, long publicLayoutSetPrototypeId,
 			long privateLayoutSetPrototypeId)
-		throws PortalException {
+		throws Exception {
 
 		if ((publicLayoutSetPrototypeId == 0) &&
 			(privateLayoutSetPrototypeId == 0)) {
