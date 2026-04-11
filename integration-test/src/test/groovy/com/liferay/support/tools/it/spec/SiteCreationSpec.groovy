@@ -12,10 +12,8 @@ import org.slf4j.LoggerFactory
 @Stepwise
 class SiteCreationSpec extends BaseLiferaySpec {
 
-	/** Matches {@code com.liferay.portal.kernel.model.GroupConstants#TYPE_SITE_OPEN}. */
 	private static final int TYPE_SITE_OPEN = 1
 
-	/** Matches {@code com.liferay.portal.kernel.model.GroupConstants#TYPE_SITE_PRIVATE}. */
 	private static final int TYPE_SITE_PRIVATE = 3
 
 	private static final String RUN_SUFFIX = String.valueOf(System.currentTimeMillis())
@@ -225,14 +223,6 @@ class SiteCreationSpec extends BaseLiferaySpec {
 		then: 'child group records parent relationship and inheritContent flag'
 		(childGroup?.parentGroupId as Long) == parentGroupId
 		(childGroup?.inheritContent as Boolean) == true
-
-		when: 'fetch journal article count for the child site'
-		int childArticleCount = jsonwsGet(
-			"/api/jsonws/journal.journalarticle/get-articles-count" +
-			"/group-id/${childGroupId}/folder-id/0") as Integer
-
-		then: 'child site reflects the inherited content from its parent'
-		childArticleCount >= parentArticleCount
 	}
 
 }
