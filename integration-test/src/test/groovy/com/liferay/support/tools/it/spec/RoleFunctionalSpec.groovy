@@ -70,7 +70,7 @@ class RoleFunctionalSpec extends BaseLiferaySpec {
 		page.waitForLoadState()
 
 		and: 'select Roles entity type'
-		page.locator('.nav-link:has-text("roles")').click()
+		page.locator('[data-testid="entity-selector-ROLES"]').click()
 		page.locator('#count').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
