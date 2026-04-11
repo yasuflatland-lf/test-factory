@@ -8,6 +8,8 @@
 <portlet:resourceURL id="/ldf/wcm" var="wcmResourceURL" />
 <portlet:resourceURL id="/ldf/doc" var="docResourceURL" />
 <portlet:resourceURL id="/ldf/doc/upload" var="docUploadResourceURL" />
+<portlet:resourceURL id="/ldf/vocabulary" var="vocabularyURL" />
+<portlet:resourceURL id="/ldf/category" var="categoryURL" />
 <portlet:resourceURL id="/ldf/data" var="dataResourceURL" />
 <portlet:resourceURL id="/ldf/progress" var="progressResourceURL" />
 
@@ -31,6 +33,10 @@
 				"/ldf/doc", docResourceURL
 			).put(
 				"/ldf/doc/upload", docUploadResourceURL
+			).put(
+				"/ldf/vocabulary", vocabularyURL
+			).put(
+				"/ldf/category", categoryURL
 			).build()
 		).put(
 			"dataResourceURL", dataResourceURL
