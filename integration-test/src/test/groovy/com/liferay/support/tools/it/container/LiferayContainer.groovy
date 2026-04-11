@@ -41,15 +41,16 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 				.withStartupTimeout(Duration.ofMinutes(8))
 		)
 		withEnv([
-			'LIFERAY_SETUP_WIZARD_ENABLED'       : 'false',
-			'LIFERAY_TERMS_OF_USE_REQUIRED'       : 'false',
-			'LIFERAY_USERS_REMINDER_QUERY_ENABLED': 'false',
+			'LIFERAY_SETUP_WIZARD_ENABLED'                       : 'false',
+			'LIFERAY_TERMS_OF_USE_REQUIRED'                      : 'false',
+			'LIFERAY_USERS_REMINDER_QUERY_ENABLED'               : 'false',
+			'LIFERAY_PASSWORDS_DEFAULT_POLICY_CHANGE_REQUIRED'   : 'false',
 		])
 		withCopyToContainer(
 			Transferable.of(PORTAL_EXT_PROPERTIES.bytes),
 			'/opt/liferay/tomcat/webapps/ROOT/WEB-INF/classes/portal-ext.properties'
 		)
-		withReuse(true)
+		withReuse(false)
 	}
 
 	static synchronized LiferayContainer getInstance() {
@@ -79,11 +80,6 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 
 	String getBaseUrl() {
 		return "http://${host}:${httpPort}"
-	}
-
-	@Override
-	void close() {
-		super.close()
 	}
 
 }

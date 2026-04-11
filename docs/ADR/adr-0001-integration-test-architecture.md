@@ -47,17 +47,15 @@ The liferay-dummy-factory project needs to build E2E integration tests using Tes
 
 ### 3. Password Policy Handling
 
-**Decision**: Sequential trial of multiple passwords + `portal-ext.properties` placement.
+**Decision**: `LIFERAY_PASSWORDS_DEFAULT_POLICY_CHANGE_REQUIRED=false` env var + fallback password trial + interactive handler.
 
-- Place `portal-ext.properties` in `/opt/liferay/tomcat/webapps/ROOT/WEB-INF/classes/` (via `withCopyToContainer`)
-  - However, `passwords.default.policy.change.required=false` does not take effect on the Docker image's pre-built database
-- The test side tries both `test` and `Test12345` in sequence, also handling containers where the password change has been persisted via `withReuse(true)`
-- If the password change page appears, it is handled automatically
+- Set `LIFERAY_PASSWORDS_DEFAULT_POLICY_CHANGE_REQUIRED=false` so the pre-built DB is patched at container startup and the default admin password is accepted as-is.
+- `portal-ext.properties` is still placed in `/opt/liferay/tomcat/webapps/ROOT/WEB-INF/classes/` for the non-password settings that do take effect from properties (setup wizard, terms-of-use, reminder queries).
+- The test side still tries both `test` and `Test12345` in sequence to tolerate both fresh containers and any future image change that re-enables the policy. If the password change page still appears, it is handled automatically.
 
 **Rejected alternatives**:
-- **Environment variable `LIFERAY_PASSWORDS_DEFAULT_POLICY_CHANGE_REQUIRED`**: Not recognized by Liferay
-- **DB update via GoGo Shell**: Direct SQL execution is not possible from the OSGi console
-- **Groovy script execution**: `groovy:exec` in GoGo Shell is not available in the CE Docker image
+- **DB update via GoGo Shell**: Direct SQL execution is not possible from the OSGi console.
+- **Groovy script execution**: `groovy:exec` in GoGo Shell is not available in the CE Docker image.
 
 ### 4. JAR Deployment Method: Copy via /tmp + chown
 
@@ -71,10 +69,24 @@ The liferay-dummy-factory project needs to build E2E integration tests using Tes
 
 **Rationale**: GoGo Shell is an OSGi console and does not support Unix shell pipes (`|`) or the `grep` command. Running `lb | grep dummy.factory` simply causes the `grep` command to return `false`.
 
-### 6. Container Configuration
+### 6. Verification Strategy: JSONWS First, Playwright Only for UI
+
+**Decision**: Post-condition assertions (did the entity actually get created / updated / deleted?) go through Liferay JSONWS (`/api/jsonws/...`) with Basic Auth. Playwright is reserved for behavior that is genuinely UI-specific (rendering, client-side validation, navigation flows).
+
+**Rationale**: JSONWS is faster and deterministic, and it does not depend on Control Panel rendering or portlet UI state. Relying on Playwright for data assertions couples the test outcome to transient UI layout, and the Elasticsearch-backed headless REST endpoints (`/o/headless-admin-user/...`) have observable indexing lag that makes post-create reads non-deterministic; JSONWS goes directly through the service layer and avoids both issues.
+
+### 7. Creator Services Declare `throws Throwable`
+
+**Decision**: The public `create(...)` method on every `*Creator` service in `com.liferay.support.tools.service` declares `throws Throwable`, and the `*ResourceCommand` callers use `catch (Throwable t)`.
+
+**Rationale**: `TransactionInvokerUtil.invoke(TransactionConfig, Callable)` is declared `throws Throwable` — its `Callable`-shaped lambda lets the transaction machinery surface both checked exceptions and `Error`s. Adding a `catch (Throwable) { throw new Exception(t); }` bridge inside each Creator would let the public signature return to `throws Exception`, but it would also (a) flatten the distinction between `PortalException` subtypes that the ResourceCommand can decide to render as user errors, and (b) re-wrap the original throwable, obscuring the root cause in logs.
+
+**Trade-off accepted**: `catch (Throwable)` at the ResourceCommand layer will also catch `Error` subtypes (`OutOfMemoryError`, `StackOverflowError`, `LinkageError`). In the portlet request path this is acceptable: the JVM's error state is reported to the user as a failed action rather than silently killing the worker thread, and the portlet container will continue to serve other requests. If this ever becomes a problem, the bridge-and-rethrow pattern can be added in the Creators without changing the ResourceCommand contract.
+
+### 8. Container Configuration
 
 ```groovy
-withReuse(true)                    // Reuse container since startup takes ~8 minutes
+withReuse(false)                   // Always start a fresh container to prevent state leakage
 withCopyToContainer(...)           // Place portal-ext.properties
 withEnv([                          // Environment variables
     'LIFERAY_SETUP_WIZARD_ENABLED': 'false',
@@ -88,15 +100,15 @@ withEnv([                          // Environment variables
 ### Positive
 
 - Login method follows the official Liferay Playwright test patterns
-- `withReuse(true)` enables fast test execution during development (no container startup required)
+- `withReuse(false)` guarantees a clean Liferay state for every test run, so entities (users, roles, sites) or password changes from a previous run cannot leak into the next run and hide regressions
 - Installing only Chromium reduces download time
 - Testcontainers 2.0.4 provides compatibility with the latest Docker Engine 29.x
 
 ### Negative
 
 - **No Global Menu in CE**: The DXP-only Global Menu (`Open Applications Menu`) does not exist in CE GA132. Resolved by using direct URL access with `p_p_state=maximized` (e.g., `/group/control_panel/manage?p_p_id=...&p_p_lifecycle=0&p_p_state=maximized`).
-- Multiple password trial logic is required to handle password changes persisted by `withReuse(true)`
-- Some properties in `portal-ext.properties` (e.g., `passwords.default.policy.change.required`) have no effect on the Docker image's pre-built database
+- Each test run pays the full ~8 minute container startup cost, since container reuse is disabled. This is an intentional trade-off to preserve test isolation.
+- Some properties in `portal-ext.properties` (e.g., `passwords.default.policy.change.required`) have no effect on the Docker image's pre-built database. These are handled by the equivalent `LIFERAY_*` environment variables instead.
 
 ### Resolved Questions
 

@@ -4,8 +4,10 @@ import com.liferay.support.tools.it.util.PlaywrightLifecycle
 
 import com.microsoft.playwright.Locator
 import com.microsoft.playwright.Page
+import com.microsoft.playwright.Response
 
 import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
 
 import spock.lang.Shared
 import spock.lang.Stepwise
@@ -18,13 +20,9 @@ class UserRoleAssignmentSpec extends BaseLiferaySpec {
 
 	private static final Logger log = LoggerFactory.getLogger(UserRoleAssignmentSpec)
 
-	private static final String BASE_USER_NAME = 'ITRoleUser'
-	private static final String TEST_ORG_NAME = 'ITRoleTestOrg'
-	private static final String USERS_ADMIN_URL_PATH =
-		'/group/guest/~/control_panel/manage' +
-		'?p_p_id=com_liferay_users_admin_web_portlet_UsersAdminPortlet' +
-		'&p_p_lifecycle=0' +
-		'&p_p_state=maximized'
+	private static final String RUN_SUFFIX = String.valueOf(System.currentTimeMillis())
+	private static final String BASE_USER_NAME = "ITRoleUser${RUN_SUFFIX}"
+	private static final String TEST_ORG_NAME = "ITRoleTestOrg${RUN_SUFFIX}"
 
 	@Shared
 	PlaywrightLifecycle pw
@@ -32,15 +30,34 @@ class UserRoleAssignmentSpec extends BaseLiferaySpec {
 	@Shared
 	Long testOrgId
 
+	@Shared
+	Long createdUserId
+
+	@Shared
+	String apiResponseBody = ''
+
 	def setupSpec() {
 		ensureBundleActive()
 		pw = new PlaywrightLifecycle()
 	}
 
 	def cleanupSpec() {
+		if (createdUserId) {
+			try {
+				jsonwsPost(
+					'/api/jsonws/user/delete-user',
+					['userId': createdUserId])
+			}
+			catch (Exception e) {
+				log.warn('Failed to clean up user {}: {}', createdUserId, e.message)
+			}
+		}
+
 		if (testOrgId) {
 			try {
-				headlessDelete("/o/headless-admin-user/v1.0/organizations/${testOrgId}")
+				jsonwsPost(
+					'/api/jsonws/organization/delete-organization',
+					['organizationId': testOrgId])
 			}
 			catch (Exception e) {
 				log.warn('Failed to clean up organization {}: {}', testOrgId, e.message)
@@ -56,7 +73,7 @@ class UserRoleAssignmentSpec extends BaseLiferaySpec {
 	}
 
 	def 'Create test organization for role assignment'() {
-		when: 'create fresh organization'
+		when: 'create fresh organization via headless REST (DB-backed create)'
 		def orgResult = headlessPost(
 			'/o/headless-admin-user/v1.0/organizations',
 			JsonOutput.toJson([name: TEST_ORG_NAME])
@@ -100,8 +117,11 @@ class UserRoleAssignmentSpec extends BaseLiferaySpec {
 		and: 'select the test organization in the multiselect'
 		page.locator("#organizationIds option:has-text(\"${TEST_ORG_NAME}\")").click()
 
-		and: 'click Run button'
-		page.locator('.sheet-footer button.btn-primary').click()
+		and: 'click Run button and capture the /ldf/user resource response'
+		Response response = page.waitForResponse(
+			{ Response r -> r.url().contains('p_p_resource_id=%2Fldf%2Fuser') },
+			{ -> page.locator('.sheet-footer button.btn-primary').click() })
+		apiResponseBody = response.text()
 
 		then: 'success alert appears'
 		page.locator('.alert-success').waitFor(
@@ -110,39 +130,44 @@ class UserRoleAssignmentSpec extends BaseLiferaySpec {
 		page.locator('.alert-success').isVisible()
 	}
 
-	def 'Created user exists in Users and Organizations'() {
+	def 'Created user is visible and belongs to test organization via JSONWS'() {
 		given:
-		Page page = pw.page
 		String expectedScreenName = BASE_USER_NAME.toLowerCase() + '1'
 
-		when: 'navigate to Users and Organizations'
-		page.navigate("${liferay.baseUrl}${USERS_ADMIN_URL_PATH}")
-		page.waitForLoadState()
+		expect: 'portlet API response captured the created user id'
+		apiResponseBody.contains('"success":true')
 
-		and: 'search for the test user'
-		def searchInput = page.locator('input[type="text"].form-control, input.search-bar-input, input[name="keywords"]').first()
-		searchInput.waitFor(new Locator.WaitForOptions().setTimeout(15_000))
-		searchInput.fill(expectedScreenName)
-		searchInput.press('Enter')
-		page.waitForLoadState()
+		when: 'extract userId from portlet API response'
+		def apiJson = new JsonSlurper().parseText(apiResponseBody) as Map
+		def firstUser = (apiJson.users as List)?.first() as Map
+		createdUserId = Long.parseLong(firstUser.userId as String)
 
-		and: 'wait for results table'
-		page.locator('table tbody tr').first().waitFor(
-			new Locator.WaitForOptions().setTimeout(30_000)
-		)
+		and: 'fetch the user by id via JSONWS (DB-backed)'
+		def user = jsonwsGet(
+			"/api/jsonws/user/get-user-by-id/user-id/${createdUserId}") as Map
 
-		then: 'the user appears in the results'
-		def rows = page.locator('table tbody tr')
-		boolean found = false
-		for (int i = 0; i < rows.count(); i++) {
-			String text = rows.nth(i).textContent().toLowerCase()
-			if (text.contains(expectedScreenName)) {
-				found = true
-				break
-			}
-		}
-		log.info('User {} found in Users and Organizations: {}', expectedScreenName, found)
-		found
+		then: 'screen name matches'
+		(user.screenName as String) == expectedScreenName
+
+		when: 'fetch user organizations via JSONWS'
+		def userOrgs = jsonwsGet(
+			"/api/jsonws/organization/get-user-organizations/user-id/${createdUserId}") as List
+
+		then: 'organization membership reflects testOrgId'
+		userOrgs.any { (it.organizationId as Long) == testOrgId }
+	}
+
+	def 'Test organization lists the created user as a member via JSONWS'() {
+		given:
+		String expectedScreenName = BASE_USER_NAME.toLowerCase() + '1'
+
+		when: 'query organization users via JSONWS (DB-backed, no index lag)'
+		def users = jsonwsGet(
+			"/api/jsonws/user/get-organization-users/organization-id/${testOrgId}"
+		) as List
+
+		then: 'the created user appears in the organization member list'
+		users?.any { (it.screenName as String) == expectedScreenName }
 	}
 
 }

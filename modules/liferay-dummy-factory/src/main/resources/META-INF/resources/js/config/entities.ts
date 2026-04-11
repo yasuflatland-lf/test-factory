@@ -1,26 +1,34 @@
 import {ENTITY_TYPES, EntityType} from './constants';
-import {EntityFormConfig} from '../types';
+import {EntityFormConfig, FieldDefinition} from '../types';
+
+function createCountField(label: string): FieldDefinition {
+	return {
+		label,
+		name: 'count',
+		required: true,
+		type: 'number',
+		validators: [
+			{message: 'please-enter-a-valid-number', type: 'digits'},
+			{message: 'value-must-be-greater-than-0', type: 'min', value: 1},
+		],
+	};
+}
+
+function createBaseNameField(label: string): FieldDefinition {
+	return {
+		label,
+		name: 'baseName',
+		required: true,
+		type: 'text',
+	};
+}
 
 const ORGANIZATION_CONFIG: EntityFormConfig = {
 	actionURL: '/ldf/org',
 	entityType: ENTITY_TYPES.ORGANIZATION,
 	fields: [
-		{
-			label: 'number-of-organizations',
-			name: 'count',
-			required: true,
-			type: 'number',
-			validators: [
-				{message: 'please-enter-a-valid-number', type: 'digits'},
-				{message: 'value-must-be-greater-than-0', type: 'min', value: 1},
-			],
-		},
-		{
-			label: 'base-organization-name',
-			name: 'baseName',
-			required: true,
-			type: 'text',
-		},
+		createCountField('number-of-organizations'),
+		createBaseNameField('base-organization-name'),
 		{
 			dataSource: '/ldf/data/organizations',
 			defaultValue: '0',
@@ -46,22 +54,8 @@ const USER_CONFIG: EntityFormConfig = {
 	actionURL: '/ldf/user',
 	entityType: ENTITY_TYPES.USERS,
 	fields: [
-		{
-			label: 'number-of-users',
-			name: 'count',
-			required: true,
-			type: 'number',
-			validators: [
-				{message: 'please-enter-a-valid-number', type: 'digits'},
-				{message: 'value-must-be-greater-than-0', type: 'min', value: 1},
-			],
-		},
-		{
-			label: 'base-user-name',
-			name: 'baseName',
-			required: true,
-			type: 'text',
-		},
+		createCountField('number-of-users'),
+		createBaseNameField('base-user-name'),
 		{
 			advanced: true,
 			defaultValue: 'liferay.com',
@@ -149,22 +143,8 @@ const ROLE_CONFIG: EntityFormConfig = {
 	actionURL: '/ldf/role',
 	entityType: ENTITY_TYPES.ROLES,
 	fields: [
-		{
-			label: 'number-of-roles',
-			name: 'count',
-			required: true,
-			type: 'number',
-			validators: [
-				{message: 'please-enter-a-valid-number', type: 'digits'},
-				{message: 'value-must-be-greater-than-0', type: 'min', value: 1},
-			],
-		},
-		{
-			label: 'base-role-name',
-			name: 'baseName',
-			required: true,
-			type: 'text',
-		},
+		createCountField('number-of-roles'),
+		createBaseNameField('base-role-name'),
 		{
 			defaultValue: 'regular',
 			label: 'role-type',
@@ -199,22 +179,8 @@ const SITE_CONFIG: EntityFormConfig = {
 	actionURL: '/ldf/site',
 	entityType: ENTITY_TYPES.SITES,
 	fields: [
-		{
-			label: 'number-of-sites',
-			name: 'count',
-			required: true,
-			type: 'number',
-			validators: [
-				{message: 'please-enter-a-valid-number', type: 'digits'},
-				{message: 'value-must-be-greater-than-0', type: 'min', value: 1},
-			],
-		},
-		{
-			label: 'base-site-name',
-			name: 'baseName',
-			required: true,
-			type: 'text',
-		},
+		createCountField('number-of-sites'),
+		createBaseNameField('base-site-name'),
 		{
 			defaultValue: 'open',
 			label: 'membership-type',

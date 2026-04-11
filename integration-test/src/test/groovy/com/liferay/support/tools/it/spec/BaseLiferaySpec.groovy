@@ -34,23 +34,25 @@ abstract class BaseLiferaySpec extends Specification {
 	@Shared
 	static String activePassword = NEW_PASSWORD
 
-	static Path getModuleJarPath() {
-		Path workspaceRoot = Path.of(System.getProperty('user.dir')).parent
-		Path jarDir = workspaceRoot.resolve(
-			'modules/liferay-dummy-factory/build/libs'
-		)
-		File[] jars = jarDir.toFile().listFiles({ File f ->
-			f.name.endsWith('.jar') && f.name.contains('liferay.dummy.factory')
-		} as FileFilter)
+	@Shared
+	static Long cachedCompanyId = null
 
-		if (jars == null || jars.length == 0) {
+	static Path getModuleJarPath() {
+		Path jarDir = Path.of(System.getProperty('user.dir')).parent.resolve(
+			'modules/liferay-dummy-factory/build/libs')
+
+		File jar = jarDir.toFile().listFiles()?.find { File f ->
+			f.name.endsWith('.jar') && f.name.contains('liferay.dummy.factory')
+		}
+
+		if (jar == null) {
 			throw new IllegalStateException(
 				"Module JAR not found in ${jarDir}. " +
 				"Run './gradlew :modules:liferay-dummy-factory:build' first."
 			)
 		}
 
-		return jars[0].toPath()
+		return jar.toPath()
 	}
 
 	static synchronized void ensureBundleActive() {
@@ -161,58 +163,122 @@ abstract class BaseLiferaySpec extends Specification {
 	}
 
 	protected Map headlessGet(String path) {
-		def conn = new URL("${liferay.baseUrl}${path}").openConnection() as HttpURLConnection
+		return _request('GET', path, 'application/json', null, null) { status, body ->
+			if (status >= 400) {
+				throw new IllegalStateException(
+					"headlessGet ${path} returned HTTP ${status}: ${body}")
+			}
 
-		conn.requestMethod = 'GET'
-		conn.connectTimeout = 10_000
-		conn.readTimeout = 10_000
-		conn.setRequestProperty('Authorization', basicAuthHeader())
-		conn.setRequestProperty('Accept', 'application/json')
+			return new JsonSlurper().parseText(body) as Map
+		}
+	}
 
-		int status = conn.responseCode
-		String body = (status < 400) ? conn.inputStream.text : (conn.errorStream?.text ?: '')
+	protected Object jsonwsGet(String path) {
+		return _request('GET', path, 'application/json', null, null) { status, body ->
+			if (status >= 400) {
+				throw new IllegalStateException(
+					"jsonwsGet ${path} returned HTTP ${status}: ${body}")
+			}
 
-		if (status >= 400) {
-			throw new IllegalStateException("headlessGet ${path} returned HTTP ${status}: ${body}")
+			if (!body?.trim() || body.trim() == 'null') {
+				return null
+			}
+
+			return new JsonSlurper().parseText(body)
+		}
+	}
+
+	protected Object jsonwsPost(String path, Map<String, Object> params) {
+		String body = params.collect { k, v ->
+			"${URLEncoder.encode(k as String, 'UTF-8')}=" +
+				"${URLEncoder.encode(v == null ? '' : v.toString(), 'UTF-8')}"
+		}.join('&')
+
+		return _request(
+				'POST', path, 'application/json',
+				'application/x-www-form-urlencoded', body) { status, responseBody ->
+
+			if (status >= 400) {
+				throw new IllegalStateException(
+					"jsonwsPost ${path} returned HTTP ${status}: ${responseBody}")
+			}
+
+			if (!responseBody?.trim() || responseBody.trim() == 'null') {
+				return null
+			}
+
+			return new JsonSlurper().parseText(responseBody)
+		}
+	}
+
+	protected Long getCompanyId() {
+		if (cachedCompanyId == null) {
+			def company = jsonwsGet(
+				'/api/jsonws/company/get-company-by-virtual-host' +
+				'/virtual-host/localhost') as Map
+			cachedCompanyId = company.companyId as Long
 		}
 
-		return new JsonSlurper().parseText(body) as Map
+		return cachedCompanyId
 	}
 
 	protected Map headlessPost(String path, String jsonBody) {
-		def conn = new URL("${liferay.baseUrl}${path}").openConnection() as HttpURLConnection
+		return _request(
+				'POST', path, 'application/json', 'application/json',
+				jsonBody) { status, body ->
 
-		conn.requestMethod = 'POST'
-		conn.doOutput = true
-		conn.connectTimeout = 10_000
-		conn.readTimeout = 10_000
-		conn.setRequestProperty('Authorization', basicAuthHeader())
-		conn.setRequestProperty('Content-Type', 'application/json')
-		conn.setRequestProperty('Accept', 'application/json')
+			if (status >= 400) {
+				throw new IllegalStateException(
+					"headlessPost ${path} returned HTTP ${status}: ${body}")
+			}
 
-		conn.outputStream.withWriter('UTF-8') { writer ->
-			writer.write(jsonBody)
+			return new JsonSlurper().parseText(body) as Map
 		}
-
-		int status = conn.responseCode
-		String body = (status < 400) ? conn.inputStream.text : (conn.errorStream?.text ?: '')
-
-		if (status >= 400) {
-			throw new IllegalStateException("headlessPost ${path} returned HTTP ${status}: ${body}")
-		}
-
-		return new JsonSlurper().parseText(body) as Map
 	}
 
 	protected int headlessDelete(String path) {
+		return _request('DELETE', path, null, null, null) { status, _body ->
+			return status
+		} as int
+	}
+
+	private Object _request(
+			String method, String path, String acceptType, String contentType,
+			String requestBody, Closure<Object> responseHandler) {
+
 		def conn = new URL("${liferay.baseUrl}${path}").openConnection() as HttpURLConnection
 
-		conn.requestMethod = 'DELETE'
-		conn.connectTimeout = 10_000
-		conn.readTimeout = 10_000
-		conn.setRequestProperty('Authorization', basicAuthHeader())
+		try {
+			conn.requestMethod = method
+			conn.connectTimeout = 10_000
+			conn.readTimeout = 30_000
+			conn.setRequestProperty('Authorization', basicAuthHeader())
 
-		return conn.responseCode
+			if (acceptType) {
+				conn.setRequestProperty('Accept', acceptType)
+			}
+
+			if (contentType) {
+				conn.setRequestProperty('Content-Type', contentType)
+			}
+
+			if (requestBody != null) {
+				conn.doOutput = true
+				conn.outputStream.withWriter('UTF-8') { writer ->
+					writer.write(requestBody)
+				}
+			}
+
+			int status = conn.responseCode
+			String body = (status < 400)
+				? (conn.inputStream?.text ?: '')
+				: (conn.errorStream?.text ?: '')
+
+			return responseHandler.call(status, body)
+		}
+		finally {
+			conn.disconnect()
+		}
 	}
 
 	protected String basicAuthHeader() {

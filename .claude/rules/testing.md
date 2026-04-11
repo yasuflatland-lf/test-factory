@@ -12,11 +12,18 @@
 ## Container Setup
 
 - Docker image: `liferay/portal:7.4.3.132-ga132` (CE GA132).
-- Singleton pattern: `LiferayContainer.getInstance()` starts the container once and reuses it across all specs. Never create a second container instance.
+- Singleton pattern: `LiferayContainer.getInstance()` starts one container per test run and shares it across all specs. Never create a second container instance inside a single run.
 - Startup timeout: **8 minutes** (log-based wait strategy matching Catalina startup message).
 - Exposed ports: **8080** (HTTP) and **11311** (GoGo Shell). Access via `liferay.httpPort` / `liferay.gogoPort` (mapped ports).
 - Environment variables disable the setup wizard, terms-of-use prompt, and reminder queries so tests run unattended.
-- Container reuse is enabled (`withReuse(true)`) to speed up repeated local runs.
+- **Container reuse is disabled** (`withReuse(false)`). Every Gradle run starts a fresh container so state from a previous run (created users, roles, sites, password changes) cannot leak across runs and mask regressions. Do not flip this to `true` for local speedups — state drift will cause false passes.
+
+## Verification Strategy: Prefer JSONWS
+
+- **Prefer Liferay JSONWS (`/api/jsonws/...`) over Playwright/UI navigation for verifying test outcomes.** JSONWS calls are faster, deterministic, and do not depend on Control Panel rendering or portlet UI state.
+- Use Playwright when the assertion is about DOM/rendering, client-side validation, or navigation flows. For database-state assertions ("did the entity actually get created / updated / deleted?"), query JSONWS.
+- Authenticate JSONWS calls with Basic Auth using the default admin credentials (`test@liferay.com` / `test`).
+- See `BaseLiferaySpec` for `jsonwsGet` / `jsonwsPost` helpers, and any `*FunctionalSpec` under `integration-test/.../spec/` for usage.
 
 ## Deploy Verification
 

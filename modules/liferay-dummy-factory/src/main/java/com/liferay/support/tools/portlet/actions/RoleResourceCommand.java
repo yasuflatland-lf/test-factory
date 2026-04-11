@@ -7,7 +7,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
-import com.liferay.portal.kernel.transaction.TransactionInvoker;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -50,26 +49,17 @@ public class RoleResourceCommand extends BaseMVCResourceCommand {
 		try {
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
-			int count = GetterUtil.getInteger(
-				data.getString("count"));
-			String baseName = data.getString("baseName");
+			BatchSpec batchSpec = ResourceCommandUtil.parseBatchSpec(data);
 
-			BatchSpec batchSpec = new BatchSpec(count, baseName);
-
-			String roleTypeString = GetterUtil.getString(
-				data.getString("roleType"), "regular");
+			RoleType roleType = RoleType.fromString(
+				GetterUtil.getString(data.getString("roleType"), "regular"));
 			String description = GetterUtil.getString(
 				data.getString("description"), "");
 
-			RoleType roleType = RoleType.fromString(roleTypeString);
-
 			long userId = _portal.getUserId(resourceRequest);
 
-			responseJson = _transactionInvoker.invoke(
-				ResourceCommandUtil.TRANSACTION_CONFIG,
-				() -> _roleCreator.create(
-					userId, batchSpec,
-					roleType, description));
+			responseJson = _roleCreator.create(
+				userId, batchSpec, roleType, description);
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(
@@ -93,8 +83,5 @@ public class RoleResourceCommand extends BaseMVCResourceCommand {
 
 	@Reference
 	private RoleCreator _roleCreator;
-
-	@Reference
-	private TransactionInvoker _transactionInvoker;
 
 }

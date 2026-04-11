@@ -1,8 +1,11 @@
 package com.liferay.support.tools.service;
 
+import com.liferay.portal.kernel.exception.UserScreenNameException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.User;
@@ -10,9 +13,9 @@ import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.exception.UserScreenNameException;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.transaction.TransactionConfig;
+import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 
 import java.util.Calendar;
@@ -29,7 +32,7 @@ public class UserCreator {
 			boolean male, String jobTitle, long[] organizationIds,
 			long[] roleIds, long[] userGroupIds,
 			long[] siteRoleIds, long[] orgRoleIds)
-		throws Exception {
+		throws Throwable {
 
 		int count = batchSpec.count();
 		String baseName = batchSpec.baseName();
@@ -38,10 +41,11 @@ public class UserCreator {
 		JSONArray created = JSONFactoryUtil.createJSONArray();
 
 		for (int i = 0; i < count; i++) {
-			String screenName = baseName.toLowerCase() + (i + 1);
-			String emailAddress = screenName + "@" + emailDomain;
+			final String screenName = baseName.toLowerCase() + (i + 1);
+			final String emailAddress = screenName + "@" + emailDomain;
+			final int idx = i;
 
-			ServiceContext serviceContext = new ServiceContext();
+			final ServiceContext serviceContext = new ServiceContext();
 
 			serviceContext.setCompanyId(companyId);
 			serviceContext.setUserId(creatorUserId);
@@ -49,26 +53,66 @@ public class UserCreator {
 			User user;
 
 			try {
-				user = _userLocalService.addUserWithWorkflow(
-					creatorUserId, companyId, false, password, password,
-					false, screenName, emailAddress,
-					LocaleUtil.getDefault(), baseName, "",
-					String.valueOf(i + 1), 0L, 0L, male,
-					Calendar.JANUARY, 1, 1970, jobTitle, 0, new long[0],
-					organizationIds, roleIds, userGroupIds, false,
-					serviceContext);
+				user = TransactionInvokerUtil.invoke(
+					_transactionConfig,
+					() -> {
+						User u = _userLocalService.addUserWithWorkflow(
+							creatorUserId, companyId, false, password,
+							password, false, screenName, emailAddress,
+							LocaleUtil.getDefault(), baseName, "",
+							String.valueOf(idx + 1), 0L, 0L, male,
+							Calendar.JANUARY, 1, 1970, jobTitle, 0,
+							new long[0], organizationIds, roleIds,
+							userGroupIds, false, serviceContext);
+
+						if ((organizationIds.length > 0) &&
+							((siteRoleIds.length > 0) ||
+								(orgRoleIds.length > 0))) {
+
+							for (long orgId : organizationIds) {
+								Organization org =
+									_organizationLocalService.
+										getOrganization(orgId);
+
+								Group group = org.getGroup();
+								long groupId = org.getGroupId();
+
+								if ((siteRoleIds.length > 0) &&
+									(group != null) && group.isSite() &&
+									(groupId > 0)) {
+
+									_userGroupRoleLocalService.
+										addUserGroupRoles(
+											u.getUserId(), groupId,
+											siteRoleIds);
+								}
+
+								if ((orgRoleIds.length > 0) &&
+									(groupId > 0)) {
+
+									_userGroupRoleLocalService.
+										addUserGroupRoles(
+											u.getUserId(), groupId,
+											orgRoleIds);
+								}
+							}
+						}
+
+						return u;
+					});
 			}
 			catch (UserScreenNameException e) {
 				_log.warn(
-					"User '" + screenName + "' already exists, skipping");
+					"User '" + screenName +
+						"' already exists, skipping");
 
 				continue;
 			}
 			catch (Exception e) {
 				throw new Exception(
 					"Failed to create user '" + screenName + "' (" +
-						(i + 1) + " of " + count + "): " +
-						e.getMessage(),
+						(idx + 1) + " of " + count + "): " +
+							e.getMessage(),
 					e);
 			}
 
@@ -77,39 +121,6 @@ public class UserCreator {
 			userJson.put("emailAddress", user.getEmailAddress());
 			userJson.put("screenName", user.getScreenName());
 			userJson.put("userId", user.getUserId());
-
-			if ((organizationIds.length > 0) &&
-				((siteRoleIds.length > 0) || (orgRoleIds.length > 0))) {
-
-				for (long orgId : organizationIds) {
-					try {
-						Organization org =
-							_organizationLocalService.getOrganization(orgId);
-
-						Group group = org.getGroup();
-						long groupId = org.getGroupId();
-
-						if ((siteRoleIds.length > 0) && (group != null) &&
-							group.isSite() && (groupId > 0)) {
-
-							_userGroupRoleLocalService.addUserGroupRoles(
-								user.getUserId(), groupId, siteRoleIds);
-						}
-
-						if ((orgRoleIds.length > 0) && (groupId > 0)) {
-							_userGroupRoleLocalService.addUserGroupRoles(
-								user.getUserId(), groupId, orgRoleIds);
-						}
-					}
-					catch (Exception e) {
-						throw new Exception(
-							"Failed to assign roles for user '" +
-								screenName + "' in organization " + orgId +
-								": " + e.getMessage(),
-							e);
-					}
-				}
-			}
 
 			created.put(userJson);
 		}
@@ -121,7 +132,8 @@ public class UserCreator {
 		if (created.length() == 0) {
 			result.put(
 				"error",
-				"No users were created (all screen names may already exist)");
+				"No users were created (all screen names may already " +
+					"exist)");
 		}
 
 		return result;
@@ -129,6 +141,10 @@ public class UserCreator {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		UserCreator.class);
+
+	private static final TransactionConfig _transactionConfig =
+		TransactionConfig.Factory.create(
+			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private OrganizationLocalService _organizationLocalService;

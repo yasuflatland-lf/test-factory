@@ -7,7 +7,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
-import com.liferay.portal.kernel.transaction.TransactionInvoker;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -49,24 +48,16 @@ public class OrganizationResourceCommand extends BaseMVCResourceCommand {
 		try {
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
-			int count = GetterUtil.getInteger(
-				data.getString("count"));
-			String baseName = data.getString("baseName");
-
-			BatchSpec batchSpec = new BatchSpec(count, baseName);
+			BatchSpec batchSpec = ResourceCommandUtil.parseBatchSpec(data);
 
 			long parentOrganizationId = GetterUtil.getLong(
 				data.getString("parentOrganizationId"));
-			boolean site = GetterUtil.getBoolean(
-				data.getString("site"));
+			boolean site = GetterUtil.getBoolean(data.getString("site"));
 
 			long userId = _portal.getUserId(resourceRequest);
 
-			responseJson = _transactionInvoker.invoke(
-				ResourceCommandUtil.TRANSACTION_CONFIG,
-				() -> _organizationCreator.create(
-					userId, batchSpec,
-					parentOrganizationId, site));
+			responseJson = _organizationCreator.create(
+				userId, batchSpec, parentOrganizationId, site);
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(
@@ -90,8 +81,5 @@ public class OrganizationResourceCommand extends BaseMVCResourceCommand {
 
 	@Reference
 	private Portal _portal;
-
-	@Reference
-	private TransactionInvoker _transactionInvoker;
 
 }

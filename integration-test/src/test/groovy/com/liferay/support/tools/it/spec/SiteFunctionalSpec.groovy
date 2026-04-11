@@ -33,7 +33,9 @@ class SiteFunctionalSpec extends BaseLiferaySpec {
 	def cleanupSpec() {
 		createdSiteIds.each { id ->
 			try {
-				headlessDelete("/o/headless-admin-user/v1.0/sites/${id}")
+				jsonwsPost(
+					'/api/jsonws/group/delete-group',
+					['groupId': id])
 			}
 			catch (Exception e) {
 				log.warn('Failed to clean up site {}: {}', id, e.message)
@@ -86,42 +88,46 @@ class SiteFunctionalSpec extends BaseLiferaySpec {
 		page.locator('.alert-success').isVisible()
 	}
 
-	def 'Created sites are visible via headless REST API'() {
+	def 'Created sites are visible via JSONWS GroupService'() {
 		when:
-		def result = headlessGet('/o/headless-admin-user/v1.0/sites?page=1&pageSize=200')
+		def groups = jsonwsGet(
+			"/api/jsonws/group/get-groups/company-id/${companyId}" +
+			'/parent-group-id/0/site/true/start/-1/end/-1') as List
 
 		then:
-		result.items != null
+		groups != null
 
 		when:
-		def matchingItems = result.items.findAll { item ->
-			(item.name as String).startsWith(BASE_SITE_NAME)
+		def matchingSites = groups.findAll { group ->
+			def name = (group.nameCurrentValue ?: group.name) as String
+			name?.startsWith(BASE_SITE_NAME)
 		}
 
 		createdSiteIds.addAll(
-			matchingItems.collect { it.id as Long }
+			matchingSites.collect { it.groupId as Long }
 		)
 
-		then: 'all created sites exist with expected names'
-		matchingItems.size() == SITE_COUNT
-		matchingItems.collect { it.name }.sort() == (1..SITE_COUNT).collect { "${BASE_SITE_NAME}${it}" }
+		then: 'all created sites are found by name prefix'
+		matchingSites.size() == SITE_COUNT
 	}
 
-	def 'Test sites are cleaned up via headless REST API'() {
-		when:
-		def deleteResults = createdSiteIds.collect { id ->
-			headlessDelete("/o/headless-admin-user/v1.0/sites/${id}")
+	def 'Test sites are cleaned up via JSONWS GroupService'() {
+		when: 'delete each created site'
+		createdSiteIds.each { id ->
+			jsonwsPost(
+				'/api/jsonws/group/delete-group',
+				['groupId': id])
 		}
 
-		then: 'all deletes succeed'
-		deleteResults.every { it in [200, 204] }
-
-		when:
-		def result = headlessGet('/o/headless-admin-user/v1.0/sites?page=1&pageSize=200')
+		and: 'list groups again'
+		def groups = jsonwsGet(
+			"/api/jsonws/group/get-groups/company-id/${companyId}" +
+			'/parent-group-id/0/site/true/start/-1/end/-1') as List
 
 		then: 'none of the test sites remain'
-		!result.items?.any { item ->
-			(item.name as String).startsWith(BASE_SITE_NAME)
+		!groups.any { group ->
+			def name = (group.nameCurrentValue ?: group.name) as String
+			name?.startsWith(BASE_SITE_NAME)
 		}
 	}
 

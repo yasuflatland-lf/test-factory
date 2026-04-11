@@ -9,6 +9,9 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.transaction.TransactionConfig;
+import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 
 import java.util.Collections;
@@ -24,7 +27,7 @@ public class RoleCreator {
 	public JSONObject create(
 			long userId, BatchSpec batchSpec,
 			RoleType roleType, String description)
-		throws Exception {
+		throws Throwable {
 
 		int count = batchSpec.count();
 		String baseName = batchSpec.baseName();
@@ -35,19 +38,21 @@ public class RoleCreator {
 		JSONArray created = JSONFactoryUtil.createJSONArray();
 		int skipped = 0;
 
-		for (int i = 0; i < count; i++) {
-			String name = (count == 1) ? baseName : baseName + (i + 1);
+		Map<Locale, String> descriptionMap = Collections.singletonMap(
+			LocaleUtil.getDefault(), description);
 
-			Map<Locale, String> titleMap = Collections.singletonMap(
+		for (int i = 0; i < count; i++) {
+			final String name = BatchNaming.resolve(baseName, count, i);
+
+			final Map<Locale, String> titleMap = Collections.singletonMap(
 				LocaleUtil.getDefault(), name);
 
-			Map<Locale, String> descriptionMap = Collections.singletonMap(
-				LocaleUtil.getDefault(), description);
-
 			try {
-				Role role = _roleLocalService.addRole(
-					StringPool.BLANK, userId, null, 0, name,
-					titleMap, descriptionMap, type, null, null);
+				Role role = TransactionInvokerUtil.invoke(
+					_transactionConfig,
+					() -> _roleLocalService.addRole(
+						StringPool.BLANK, userId, null, 0, name, titleMap,
+						descriptionMap, type, null, null));
 
 				JSONObject roleJson = JSONFactoryUtil.createJSONObject();
 
@@ -58,7 +63,8 @@ public class RoleCreator {
 				created.put(roleJson);
 			}
 			catch (DuplicateRoleException e) {
-				_log.warn("Role '" + name + "' already exists, skipping");
+				_log.warn(
+					"Role '" + name + "' already exists, skipping");
 
 				skipped++;
 			}
@@ -80,6 +86,10 @@ public class RoleCreator {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		RoleCreator.class);
+
+	private static final TransactionConfig _transactionConfig =
+		TransactionConfig.Factory.create(
+			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private RoleLocalService _roleLocalService;
