@@ -38,3 +38,51 @@ Template for running multi-agent work where the main Claude Code session coordin
 - Multiple agents committing in the same session — forbidden; the commit agent is the only writer of git history.
 - Skipping the verify step because "the diff looks right" — forbidden; green build is the gate.
 - Sub-agents spawning their own sub-agents — forbidden; only the main agent dispatches.
+
+## Merge Conflict Resolution
+
+When merging a base branch (e.g. `origin/master`) into a feature branch produces conflicts, follow a deterministic pattern instead of hand-editing conflict markers.
+
+### Pattern I23 — feature branch wins
+
+Use when the feature branch is authoritative and base-branch changes should be discarded in the conflicting files:
+
+1. `git fetch origin`
+2. `git merge origin/<base-branch>`
+3. Identify conflicting files from `git status`.
+4. **Confirm with the user which side is authoritative** before running any `--ours` / `--theirs` — these flags are destructive and silently drop the other side's changes.
+5. `git checkout --ours <file>` (or `--theirs <file>`) for each conflicting path.
+6. `git add <file>`
+7. `git commit --no-edit`
+8. Run verification commands (see I24).
+9. `git push <branch>`
+
+### Pattern I24 — always re-run tests after a merge
+
+Lock files (`yarn.lock`, `package-lock.json`, `pnpm-lock.yaml`) can auto-merge cleanly yet produce a broken dependency graph. Never trust a green merge — re-run the full unit and integration test suites before pushing.
+
+### Lock-file + manifest triad
+
+`package.json` and its lock file almost always conflict together. The canonical recovery is:
+
+1. Resolve all three files (`package.json`, `yarn.lock` / `package-lock.json`) with the same side (`--ours` or `--theirs`) — never mix.
+2. Run `yarn install` / `npm install` / `pnpm install` to rebuild lock-file consistency against the resolved `package.json`.
+3. Re-run `yarn test` (unit + integration) to catch regressions from transitive dependency drift.
+4. Only then stage, commit, and push.
+
+### Step template
+
+```
+1. git fetch origin
+2. git merge origin/<base-branch>
+3. List conflicting files
+4. Confirm with the user which branch is authoritative
+5. git checkout --ours <file>   (or --theirs)
+6. git add <file>
+7. yarn install / pnpm install to re-sync lock files
+8. yarn test / unit test / integration test to catch regressions
+9. git commit --no-edit
+10. git push <branch>
+```
+
+All merge-conflict commits still flow through the single commit agent — sub-agents never resolve conflicts and commit on their own.
