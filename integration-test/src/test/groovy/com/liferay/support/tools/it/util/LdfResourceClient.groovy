@@ -170,14 +170,42 @@ class LdfResourceClient {
 
 		HttpResponse<String> loginResponse = _send(loginRequest)
 		int status = loginResponse.statusCode()
-
-		if ((status >= 400) && (status != 302)) {
-			throw new RuntimeException(
-				"Login failed for ${_username}: HTTP ${status}: " +
-				"${loginResponse.body()}")
-		}
+		String loginBodyText = loginResponse.body() ?: ''
 
 		_captureCookies(loginResponse)
+
+		// Liferay's /c/portal/login can respond in several successful shapes:
+		//   * 302 redirect to /c (classic form post)
+		//   * 200 with a meta-refresh HTML body that redirects the browser
+		//     to /c (seen on CE 7.4 GA132 when no explicit redirect param is
+		//     supplied)
+		//   * 500 with the same meta-refresh body (Liferay still sets the
+		//     authenticated session cookies before throwing, which is what
+		//     we actually need)
+		//
+		// Instead of trusting the status code, consider the login successful
+		// when either the response body contains the meta-refresh hand-off to
+		// /c, or when the Set-Cookie headers established a JSESSIONID. That
+		// covers every variant above without masking a genuine auth failure,
+		// which Liferay signals by re-rendering the login form (no redirect
+		// body, no new session cookie).
+		boolean metaRefreshToC =
+			loginBodyText.contains("window.location.replace('\\x2fc')") ||
+			loginBodyText.contains('url=/c') ||
+			loginBodyText.contains("location.replace('/c')")
+
+		boolean hasSession = _cookieJar.toString().contains('JSESSIONID=')
+
+		boolean redirected = (status == 302) || (status == 301)
+
+		boolean success = redirected || metaRefreshToC || hasSession ||
+			((status >= 200) && (status < 300))
+
+		if (!success) {
+			throw new RuntimeException(
+				"Login failed for ${_username}: HTTP ${status}: " +
+				"${loginBodyText}")
+		}
 
 		_authToken = _fetchAuthToken()
 		_loggedIn = true
