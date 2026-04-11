@@ -9,6 +9,7 @@ export const ENTITY_TYPES = {
 	ROLES: 'ROLES',
 	SITES: 'SITES',
 	USERS: 'USERS',
+	VOCABULARY: 'VOCABULARY',
 	WCM: 'WCM',
 } as const;
 
@@ -25,6 +26,7 @@ export const ENTITY_LABELS: Record<EntityType, string> = {
 	ROLES: 'roles',
 	SITES: 'sites',
 	USERS: 'users',
+	VOCABULARY: 'vocabularies',
 	WCM: 'web-content',
 };
 
@@ -39,5 +41,6 @@ export const ENTITY_ICONS: Record<EntityType, string> = {
 	ROLES: 'roles',
 	SITES: 'sites',
 	USERS: 'user',
+	VOCABULARY: 'categories',
 	WCM: 'web-content',
 };
