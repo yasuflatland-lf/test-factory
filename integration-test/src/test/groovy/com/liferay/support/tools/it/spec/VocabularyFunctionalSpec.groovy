@@ -86,6 +86,13 @@ class VocabularyFunctionalSpec extends BaseLiferaySpec {
 		and: 'fill in the vocabularies form'
 		page.locator('[data-testid="vocabulary-count-input"]').fill("${VOCAB_COUNT}")
 		page.locator('[data-testid="vocabulary-base-name-input"]').fill(BASE_VOCAB_NAME)
+		page.locator(
+			"[data-testid=\"vocabulary-group-id-select\"] option[value=\"${guestGroupId}\"]"
+		).waitFor(
+			new Locator.WaitForOptions()
+				.setState(com.microsoft.playwright.options.WaitForSelectorState.ATTACHED)
+				.setTimeout(15_000)
+		)
 		page.locator('[data-testid="vocabulary-group-id-select"]').selectOption("${guestGroupId}")
 
 		and: 'click Run button'

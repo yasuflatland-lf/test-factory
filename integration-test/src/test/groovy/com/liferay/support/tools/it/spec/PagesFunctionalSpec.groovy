@@ -96,6 +96,13 @@ class PagesFunctionalSpec extends BaseLiferaySpec {
 		and: 'fill in the pages form'
 		page.locator('[data-testid="pages-count-input"]').fill("${PAGE_COUNT}")
 		page.locator('[data-testid="pages-base-name-input"]').fill(BASE_PAGE_NAME)
+		page.locator(
+			"[data-testid=\"pages-group-id-select\"] option[value=\"${guestGroupId}\"]"
+		).waitFor(
+			new Locator.WaitForOptions()
+				.setState(com.microsoft.playwright.options.WaitForSelectorState.ATTACHED)
+				.setTimeout(15_000)
+		)
 		page.locator('[data-testid="pages-group-id-select"]').selectOption("${guestGroupId}")
 
 		and: 'click Run button'

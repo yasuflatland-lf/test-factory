@@ -94,6 +94,13 @@ class DocumentFunctionalSpec extends BaseLiferaySpec {
 		and: 'fill in the documents form'
 		page.locator('[data-testid="doc-count-input"]').fill("${DOC_COUNT}")
 		page.locator('[data-testid="doc-base-name-input"]').fill(BASE_DOC_NAME)
+		page.locator(
+			"[data-testid=\"doc-group-id-select\"] option[value=\"${guestGroupId}\"]"
+		).waitFor(
+			new Locator.WaitForOptions()
+				.setState(com.microsoft.playwright.options.WaitForSelectorState.ATTACHED)
+				.setTimeout(15_000)
+		)
 		page.locator('[data-testid="doc-group-id-select"]').selectOption("${guestGroupId}")
 
 		and: 'click Run button'
