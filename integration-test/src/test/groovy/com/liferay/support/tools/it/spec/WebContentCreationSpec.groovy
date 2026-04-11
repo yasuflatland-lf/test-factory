@@ -206,8 +206,8 @@ class WebContentCreationSpec extends BaseLiferaySpec {
 			baseName: 'Struct',
 			groupIds: [siteAId, siteBId],
 			createContentsType: '2',
-			ddmStructureId: -1,
-			ddmTemplateId: -1,
+			ddmStructureId: 999_999_999,
+			ddmTemplateId: 999_999_999,
 			folderId: 0
 		])
 
