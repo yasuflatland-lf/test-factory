@@ -21,6 +21,7 @@ import com.liferay.portal.kernel.transaction.TransactionConfig;
 import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.support.tools.utils.CommonUtil;
+import com.liferay.support.tools.utils.ScreenNameSanitizer;
 
 import java.util.Calendar;
 
@@ -46,11 +47,23 @@ public class UserCreator {
 		int count = batchSpec.count();
 		String baseName = batchSpec.baseName();
 
+		if (!fakerEnable) {
+			String normalizedBaseName = baseName.toLowerCase();
+
+			if (!normalizedBaseName.matches("^[a-z0-9._-]+$")) {
+				throw new IllegalArgumentException(
+					"Invalid baseName '" + baseName +
+						"': must contain only lowercase letters, digits, " +
+							"'.', '_', or '-'");
+			}
+		}
+
 		final Faker faker = fakerEnable ?
 			_commonUtil.createFaker(locale) : null;
 
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		JSONArray created = JSONFactoryUtil.createJSONArray();
+		int skippedDuplicates = 0;
 
 		for (int i = 0; i < count; i++) {
 			final int idx = i;
@@ -62,8 +75,8 @@ public class UserCreator {
 			if (fakerEnable) {
 				firstName = faker.name().firstName();
 				lastName = faker.name().lastName();
-				screenName =
-					(firstName + "." + lastName + (idx + 1)).toLowerCase();
+				screenName = ScreenNameSanitizer.sanitize(
+					(firstName + "." + lastName + (idx + 1)).toLowerCase());
 			}
 			else {
 				firstName = baseName;
@@ -150,6 +163,8 @@ public class UserCreator {
 					"User '" + screenName + "' already exists, skipping",
 					e);
 
+				skippedDuplicates++;
+
 				continue;
 			}
 			catch (UserScreenNameException e) {
@@ -205,15 +220,29 @@ public class UserCreator {
 			created.put(userJson);
 		}
 
+		boolean success = created.length() == count;
+
 		result.put("count", created.length());
-		result.put("success", created.length() > 0);
+		result.put("requested", count);
+		result.put("skipped", skippedDuplicates);
+		result.put("success", success);
 		result.put("users", created);
 
-		if (created.length() == 0) {
-			result.put(
-				"error",
-				"No users were created (all screen names may already " +
-					"exist)");
+		if (!success) {
+			if (created.length() == 0) {
+				result.put(
+					"error",
+					"No users were created (all screen names may already " +
+						"exist)");
+			}
+			else if (skippedDuplicates > 0) {
+				result.put(
+					"error",
+					"Only " + created.length() + " of " + count +
+						" users were created; " + skippedDuplicates +
+							" skipped because the screen name already " +
+								"existed.");
+			}
 		}
 
 		return result;

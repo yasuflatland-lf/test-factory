@@ -57,6 +57,21 @@ The PortletTracker in CE 7.4 GA132 tracks `javax.portlet.Portlet` services, **no
 - Set explicit timeouts on waits: `waitForURL(..., new Page.WaitForURLOptions().setTimeout(30_000))`, `waitFor(new Locator.WaitForOptions().setTimeout(15_000))`.
 - Close the `PlaywrightLifecycle` instance in `cleanupSpec()` using safe-navigation: `pw?.close()`.
 
+## Playwright Java vs Node Version Skew
+
+- **Playwright Java (`com.microsoft.playwright:playwright` on Maven Central) and Playwright Node/CLI (`playwright` on npm) ship on separate release cycles.** The same `1.x.y` number can exist on one side and not the other.
+- As of 2026-04, npm publishes `1.59.1` as the latest stable, while Maven Central's latest is `1.59.0` — `1.59.1`, `1.59.2`, and `1.60.x` all return HTTP 404 from the Maven repo.
+- The Playwright project recommends keeping the **client (Java) and driver (CLI) on the same version**, so bumping one side ahead of the other invites protocol skew and must be avoided.
+- Before bumping the Java side, **always confirm the version actually exists on Maven Central** with a direct POM fetch:
+
+	```bash
+	curl -s -o /dev/null -w "%{http_code}" \
+	    https://repo.maven.apache.org/maven2/com/microsoft/playwright/playwright/<version>/playwright-<version>.pom
+	```
+
+	`200` means the artifact is published; `404` means it is not yet available. Do **not** rely on the Maven Search API (`search.maven.org/solrsearch`) for this check — its index lags behind the repo and will miss recent releases. The direct URL is authoritative.
+- `gradle.properties`' `test.playwright.version` and the workflow's `npx playwright@<version>` invocation must be **pinned to the same version in the same commit**. Never update one without updating the other.
+
 ## Playwright Success Assertion Pattern
 
 - **Always AND the success class onto the result `data-testid` selector.** `ResultAlert` emits the same `data-testid="<entity>-result"` regardless of state (success / danger / warning), because the alert region is a single element whose class flips between `alert-success` and `alert-danger`. Waiting on the testId alone therefore also passes on failure — a tautology that was actually shipped and caught in review.
@@ -76,9 +91,9 @@ The PortletTracker in CE 7.4 GA132 tracks `javax.portlet.Portlet` services, **no
 - **Runtime impact:** a typo or a deleted key surfaces to users as `execution-completed-successfully` or `create-user` instead of the translated phrase. Since the string is non-empty and looks superficially like valid text, the bug slips through manual smoke tests.
 - **Test impact:** Playwright assertions written as `page.locator(':has-text("execution-completed-successfully")')` will pass even when the key is missing from `Language.properties`, because the DOM literally contains that key string. A regression that deletes the key goes green. A regression that never defined the key in the first place goes green. This exact pattern was shipped and later caught in review.
 - **Authoring rule:** when writing a Playwright assertion on localized text, assert on the **resolved** English phrase from `Language.properties` (e.g. `"Execution completed successfully."`), never on the key identifier. If the assertion string contains hyphens and matches the key name, that is a code smell — look up the actual value.
-- **Adding a new key:** always add the entry to `Language.properties` in the same commit that introduces the `Liferay.Language.get('...')` call. See the Jest i18n Fallback Guard below for the unit-test side of the same problem.
+- **Adding a new key:** always add the entry to `Language.properties` in the same commit that introduces the `Liferay.Language.get('...')` call. See the Vitest i18n Fallback Guard below for the unit-test side of the same problem.
 
-## Jest i18n Fallback Guard
+## Vitest i18n Fallback Guard
 
 - `test/setup.ts` stubs `Liferay.Language.get` as `languageMap.get(key) ?? key`. If a key is removed from `Language.properties` but a test only asserts `expect(text).toBe('Create User')`, the test will keep passing by echoing the key back as its own value. Any unit test that asserts on a localized string MUST pair the positive assertion with a guard that rejects the fallback:
 
@@ -90,34 +105,100 @@ The PortletTracker in CE 7.4 GA132 tracks `javax.portlet.Portlet` services, **no
 
 	This guarantees that the key actually resolved through `languageMap`, so silently deleting the key from `Language.properties` will fail the test instead of passing through the identity fallback.
 
-## Jest Unit Test Patterns
+## Vitest Unit Test Patterns
 
 ### Language.properties auto-load in `test/setup.ts`
 
 - `modules/liferay-dummy-factory/test/setup.ts` reads `src/main/resources/content/Language.properties` **synchronously** with `fs.readFileSync` at module load time and parses it into a `Map<string, string>`. The global `Liferay.Language.get` stub then returns `languageMap.get(key) ?? key`. This means unit tests see the real resolved values without any build step or per-spec mock wiring.
-- The sync read is intentional: Jest's global `setup.ts` runs before any test module, and an async load would require `beforeAll` plumbing in every spec. Sync I/O at setup time is fine — it runs once per worker, not per test.
+- The sync read is intentional: Vitest's `setupFiles` run before any test module, and an async load would require `beforeAll` plumbing in every spec. Sync I/O at setup time is fine — it runs once per worker, not per test.
 - Comment-only lines (`#`) and blank lines are skipped; `key=value` is split on the **first** `=` so values containing `=` survive. Do not "improve" the parser to use `split('=')` — it will truncate values.
-- Pair every localized-string assertion with the i18n fallback guard documented above in **Jest i18n Fallback Guard**. The loader and the guard are two halves of the same contract.
+- Pair every localized-string assertion with the i18n fallback guard documented above in **Vitest i18n Fallback Guard**. The loader and the guard are two halves of the same contract.
 
-### `jest.MockedFunction` + minimal-shape pattern
+### `Mock<T>` + minimal-shape pattern
 
-- When a component under test calls a custom hook (`useFormState`, `useProgress`, etc.), cast the imported hook with `jest.MockedFunction<typeof X>` and return a **minimal object** coerced via `as unknown as ReturnType<typeof X>`. Example from `EntityForm.test.tsx`:
+- When a component under test calls a custom hook (`useFormState`, `useProgress`, etc.), cast the imported hook with Vitest's `Mock<T>` and return a **minimal object** coerced via `as unknown as ReturnType<typeof X>`. Example from `EntityForm.test.tsx`:
 
 	```ts
-	const mockedUseFormState = useFormState as jest.MockedFunction<typeof useFormState>;
+	import {vi, type Mock} from 'vitest';
+
+	const mockedUseFormState = useFormState as unknown as Mock<typeof useFormState>;
 	mockedUseFormState.mockReturnValue({
 		formData: {count: 1, baseName: 'Test'},
-		handleChange: jest.fn(),
+		handleChange: vi.fn(),
 		// ...only the fields the component actually reads
 	} as unknown as ReturnType<typeof useFormState>);
 	```
 
-	Do NOT replicate the hook's full return shape in the test — that couples the test to every field on the hook and makes adding a new field a multi-spec churn. The `as unknown as ReturnType<typeof X>` escape hatch is the intended pattern.
+	Do NOT replicate the hook's full return shape in the test — that couples the test to every field on the hook and makes adding a new field a multi-spec churn. The `as unknown as ReturnType<typeof X>` escape hatch is the intended pattern. See **Vitest Migration Gotchas → B5** below for the `Mock<T>` generic-argument pitfall when porting from Jest.
 
 ### Helper extraction stays in-file
 
 - Test helpers (render wrappers, fixture builders, mock factories) MUST stay inside the spec file that uses them. Do NOT create shared utility files under `test/js/utils/` or similar. If two specs need the same helper, copy it — the duplication is cheaper than the import graph and the coupling it creates.
-- The only exception is `test/setup.ts`, which is loaded globally by Jest and is not a helper file in the usual sense.
+- The only exception is `test/setup.ts`, which is loaded globally by Vitest and is not a helper file in the usual sense.
+
+## Vitest Migration Gotchas
+
+Lessons from the Jest → Vitest migration. These are easy to get wrong when mechanically porting Jest specs, and most of them fail silently (tests pass on a regression, or whole files are skipped without counting as failures).
+
+### B. Vitest-native semantics (differences from Jest)
+
+- **`Mock<T>` generic-argument order.** Jest uses `Mock<TReturn, TArgs>`; Vitest 2.x uses `Mock<T extends Procedure>` and takes a **single function type**. Porting the Jest form compiles but silently disables type checking on the mock. The correct form is:
+
+	```ts
+	const fetchMock = vi.fn() as Mock<(input: RequestInfo, init?: RequestInit) => Promise<Partial<Response>>>;
+	```
+
+- **Set `globals: false` in `vitest.config.ts`.** This forces `describe / it / expect / vi` to be imported from `'vitest'` in every spec, avoiding namespace pollution and giving reliable type inference. Do not rely on Jest-style globals.
+- **React Testing Library 16 does NOT auto-cleanup under Vitest.** Unlike Jest + RTL, Vitest does not trigger RTL's auto-cleanup even with `globals: false`. Register it manually in `setupFiles`:
+
+	```ts
+	import {afterEach} from 'vitest';
+	import {cleanup} from '@testing-library/react';
+	afterEach(() => cleanup());
+	```
+
+	Without this, DOM from previous tests persists and `queryByText` / `getByRole` fail with `Found multiple elements`.
+- **`vi.mock` factory hoisting.** `vi.mock(...)` is hoisted above imports. If the factory references an outer variable, you get a ReferenceError and the entire spec file is reported as a **load error**, which Vitest surfaces as a silent skip in some reporters. Use `vi.hoisted` to declare shared state:
+
+	```ts
+	const {mockFetch} = vi.hoisted(() => ({mockFetch: vi.fn()}));
+	vi.mock('../src/api', () => ({fetch: mockFetch}));
+	```
+
+### C. Vite React double-resolution
+
+- **Do not use `resolve.alias` regexes for `react/*` subpaths.** A pattern like `^react\/(.*)$` → `${reactDir}/$1` breaks Vite's extension resolution for `react/jsx-dev-runtime`, `react/jsx-runtime`, etc. — Vite treats the alias target as a fully resolved path and does not append `.js`, so the import fails at load time.
+- **`resolve.dedupe` is the correct fix** for monorepo React double-hoisting. Use:
+
+	```ts
+	resolve: {dedupe: ['react', 'react-dom']}
+	```
+
+	This collapses duplicate copies of React without touching subpath resolution, and normal `node_modules` resolution still handles `react/jsx-dev-runtime`.
+- **Do not mechanically translate Jest's `moduleNameMapper` into Vite aliases.** Most `moduleNameMapper` entries aimed at React duplication should become `resolve.dedupe` entries, not `resolve.alias` rewrites.
+
+### D. ESM `setup.ts` details
+
+- **`__dirname` is not defined in ESM.** Vitest evaluates `setup.ts` as ESM, so CommonJS globals are gone. Use `import.meta.dirname` (Node 20.11+) to locate sibling resource files like `Language.properties`.
+- **Avoid `fileURLToPath(import.meta.url)`.** Under Vite's transform pipeline it can fail with `fileURLToPath is not a function` depending on how the setup file is bundled. `import.meta.dirname` is native and reliable.
+- **Use `globalThis`, not `global`.** Jest's jsdom environment exposed `global`, but Vitest + ESM expects assignments like `globalThis.Liferay = {...}`. The Jest pattern compiles but leaves the stub unreachable from production code.
+
+### E. `@testing-library/react@16` with React 19
+
+- RTL 16 is the first version with React 18 / 19 dual peer support. RTL 14.x pins a React 18 peer and will conflict when the module is upgraded to React 19.
+- `@testing-library/jest-dom` works under Vitest, but the matchers are only registered when `test/setup.ts` does `import '@testing-library/jest-dom/vitest'` (note the `/vitest` subpath). The plain `@testing-library/jest-dom` import is a no-op under Vitest. If no spec uses the custom matchers, drop the dependency entirely instead of importing the wrong entry point.
+
+## Gradle Incremental Build Trap
+
+- **`:integration-test:integrationTest` does not declare `package.json` as an input.** Changing a JavaScript dependency (e.g. bumping React, swapping Jest for Vitest) does not invalidate the `integrationTest` task, so Gradle marks it `UP-TO-DATE` and **replays the previous run's result** without executing anything. A regression introduced in the JS toolchain will appear as a green build.
+- For any change that touches the frontend toolchain, the only trustworthy verification is:
+
+	```bash
+	./gradlew :modules:liferay-dummy-factory:clean :integration-test:clean
+	./gradlew :integration-test:integrationTest
+	```
+
+- **Tell real runs from skipped runs by the elapsed time in the `BUILD SUCCESSFUL in Xs` line.** A genuine run is on the order of minutes (container startup + Playwright); a cached replay is a few seconds. If the build completes in single-digit seconds, assume the tests did not actually run and re-invoke with the `clean` tasks above.
 
 ## Playwright / Headless Gotchas
 

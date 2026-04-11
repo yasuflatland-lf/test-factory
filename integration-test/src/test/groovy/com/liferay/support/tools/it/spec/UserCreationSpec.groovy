@@ -139,6 +139,25 @@ class UserCreationSpec extends BaseLiferaySpec {
 
 		and: 'firstName is Datafaker-derived, not the baseName fallback'
 		dbUsers.every { Map u -> (u.firstName as String) != FAKER_BASE_NAME }
+
+		and: 'all returned screen names match Liferay-legal characters'
+		(response.users as List).every {
+			(it.screenName as String) ==~ /^[a-z0-9._-]+$/
+		}
+	}
+
+	def 'rejects non-faker baseName that contains invalid characters'() {
+		when: 'a dirty baseName is submitted with faker disabled'
+		Map response = ldf.createUser([
+			count      : 1,
+			baseName   : "O'Brien",
+			fakerEnable: false
+		])
+
+		then: 'server rejects the request with a validation error'
+		response.success == false
+		response.error != null
+		(response.error as String).contains("Invalid baseName")
 	}
 
 	def 'assigns users to organizations and roles'() {
