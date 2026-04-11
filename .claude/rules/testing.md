@@ -57,6 +57,31 @@ The PortletTracker in CE 7.4 GA132 tracks `javax.portlet.Portlet` services, **no
 - Set explicit timeouts on waits: `waitForURL(..., new Page.WaitForURLOptions().setTimeout(30_000))`, `waitFor(new Locator.WaitForOptions().setTimeout(15_000))`.
 - Close the `PlaywrightLifecycle` instance in `cleanupSpec()` using safe-navigation: `pw?.close()`.
 
+## Playwright Success Assertion Pattern
+
+- **Always AND the success class onto the result `data-testid` selector.** `ResultAlert` emits the same `data-testid="<entity>-result"` regardless of state (success / danger / warning), because the alert region is a single element whose class flips between `alert-success` and `alert-danger`. Waiting on the testId alone therefore also passes on failure — a tautology that was actually shipped and caught in review.
+- The correct pattern is to wait on the testId **plus** the success class together:
+
+	```groovy
+	page.locator('[data-testid="organization-result"].alert-success').waitFor(
+	    new Locator.WaitForOptions().setTimeout(15_000)
+	)
+	```
+
+	Never write `page.locator('[data-testid="organization-result"]').waitFor(...)` as a post-condition for a "create succeeded" assertion. If the server returns an error, the alert still appears, the wait still resolves, and the test turns green on a regression.
+
+## Jest i18n Fallback Guard
+
+- `test/setup.ts` stubs `Liferay.Language.get` as `languageMap.get(key) ?? key`. If a key is removed from `Language.properties` but a test only asserts `expect(text).toBe('Create User')`, the test will keep passing by echoing the key back as its own value. Any unit test that asserts on a localized string MUST pair the positive assertion with a guard that rejects the fallback:
+
+	```ts
+	const text = Liferay.Language.get('create-user');
+	expect(text).not.toBe('create-user');
+	expect(text.length).toBeGreaterThan(0);
+	```
+
+	This guarantees that the key actually resolved through `languageMap`, so silently deleting the key from `Language.properties` will fail the test instead of passing through the identity fallback.
+
 ## Playwright / Headless Gotchas
 
 - **`<option>` elements need `ATTACHED` state, not `visible`.** When waiting for an option inside a collapsed `<select>`, Playwright's default `visible` state treats it as hidden and the wait times out even though the element exists in the DOM. Use `setState(WaitForSelectorState.ATTACHED)`:
