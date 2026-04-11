@@ -16,7 +16,9 @@ dependencies {
 	compileOnly group: "org.apache.httpcomponents", name: "httpcore-osgi", version: "4.4.+"
 	compileOnly group: "org.apache.httpcomponents", name: "httpclient", version: "4.5.+"
 
-	compileOnly group: "com.github.javafaker", name: "javafaker", version: "1.0.2"
+	compileOnly("com.github.javafaker:javafaker:1.0.2") {
+		exclude group: "org.yaml", module: "snakeyaml"
+	}
 
 	testImplementation group: "com.liferay.portal", name: "release.portal.api", version: "default"
 	testImplementation group: "org.junit.jupiter", name: "junit-jupiter", version: "5.10.2"
