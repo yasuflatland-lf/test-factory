@@ -37,7 +37,9 @@ describe('FormField i18n', () => {
 		);
 
 		expect(
-			screen.queryByText('This Field Is Required')
+			screen.queryByText(
+				Liferay.Language.get('this-field-is-required')
+			)
 		).not.toBeNull();
 	});
 
@@ -59,7 +61,9 @@ describe('FormField i18n', () => {
 		);
 
 		expect(
-			screen.queryByText('This Field Is Required')
+			screen.queryByText(
+				Liferay.Language.get('this-field-is-required')
+			)
 		).not.toBeNull();
 	});
 
@@ -72,7 +76,9 @@ describe('FormField i18n', () => {
 			/>
 		);
 
-		expect(screen.queryByText('Select')).not.toBeNull();
+		expect(
+			screen.queryByText(Liferay.Language.get('select'))
+		).not.toBeNull();
 	});
 
 	it('renders the required validation i18n message alongside the select placeholder when error is set', () => {
@@ -85,9 +91,13 @@ describe('FormField i18n', () => {
 			/>
 		);
 
-		expect(screen.queryByText('Select')).not.toBeNull();
 		expect(
-			screen.queryByText('This Field Is Required')
+			screen.queryByText(Liferay.Language.get('select'))
+		).not.toBeNull();
+		expect(
+			screen.queryByText(
+				Liferay.Language.get('this-field-is-required')
+			)
 		).not.toBeNull();
 	});
 });

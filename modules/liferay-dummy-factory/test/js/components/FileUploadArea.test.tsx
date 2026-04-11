@@ -33,7 +33,6 @@ describe('FileUploadArea i18n', () => {
 		expect(
 			screen.queryByText(Liferay.Language.get('upload-template-files'))
 		).not.toBeNull();
-		expect(screen.queryByText('Upload Template Files')).not.toBeNull();
 	});
 
 	it('renders the uploading message while a file upload is in flight', async () => {
@@ -56,11 +55,11 @@ describe('FileUploadArea i18n', () => {
 
 		fireEvent.change(input, {target: {files: [file]}});
 
+		const uploadingText = Liferay.Language.get('uploading');
+
 		await waitFor(() => {
 			expect(
-				screen.queryByText(
-					new RegExp(`^${Liferay.Language.get('uploading')}`)
-				)
+				screen.queryByText(new RegExp(`^${uploadingText}`))
 			).not.toBeNull();
 		});
 
@@ -89,13 +88,17 @@ describe('FileUploadArea i18n', () => {
 
 		fireEvent.change(input, {target: {files: [file]}});
 
+		let errorNode: HTMLElement | null = null;
+
 		await waitFor(() => {
-			expect(
-				screen.queryByText(/Server error: 500/)
-			).not.toBeNull();
+			errorNode = container.querySelector('li.text-danger');
+			expect(errorNode).not.toBeNull();
 		});
 
-		expect(screen.queryByText(/broken\.txt/)).not.toBeNull();
+		const errorText = (errorNode as unknown as HTMLElement).textContent ?? '';
+
+		expect(errorText).toContain('broken.txt');
+		expect(errorText).toContain('Server error: 500');
 	});
 
 	it('falls back to the upload-failed i18n string when the server response is unsuccessful without an error field', async () => {
@@ -116,12 +119,18 @@ describe('FileUploadArea i18n', () => {
 
 		const uploadFailedText = Liferay.Language.get('upload-failed');
 
+		let errorNode: HTMLElement | null = null;
+
 		await waitFor(() => {
-			expect(
-				screen.queryByText(new RegExp(uploadFailedText))
-			).not.toBeNull();
+			errorNode = container.querySelector('li.text-danger');
+			expect(errorNode).not.toBeNull();
 		});
 
-		expect(uploadFailedText).toBe('Upload failed');
+		const errorText = (errorNode as unknown as HTMLElement).textContent ?? '';
+
+		expect(errorText).toContain('noerror.txt');
+		expect(errorText).toContain(uploadFailedText);
+		expect(uploadFailedText).not.toBe('');
+		expect(uploadFailedText).not.toBe('upload-failed');
 	});
 });

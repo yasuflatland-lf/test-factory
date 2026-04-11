@@ -60,7 +60,9 @@ describe('DynamicSelect i18n', () => {
 		);
 
 		expect(
-			screen.getByText('Please select the parent field first')
+			screen.getByText(
+				Liferay.Language.get('please-select-parent-first')
+			)
 		).not.toBeNull();
 	});
 
@@ -98,7 +100,7 @@ describe('DynamicSelect i18n', () => {
 		);
 
 		const option = screen.getByRole('option', {
-			name: 'Select',
+			name: Liferay.Language.get('select'),
 		}) as HTMLOptionElement;
 
 		expect(option).not.toBeNull();
@@ -119,7 +121,9 @@ describe('DynamicSelect i18n', () => {
 		);
 
 		expect(
-			screen.queryByText('Please select the parent field first')
+			screen.queryByText(
+				Liferay.Language.get('please-select-parent-first')
+			)
 		).toBeNull();
 	});
 

@@ -17,7 +17,9 @@ describe('ResultAlert i18n', () => {
 		);
 
 		expect(
-			screen.queryByText('Execution Completed Successfully')
+			screen.queryByText(
+				Liferay.Language.get('execution-completed-successfully')
+			)
 		).not.toBeNull();
 	});
 
@@ -30,7 +32,9 @@ describe('ResultAlert i18n', () => {
 			/>
 		);
 
-		expect(screen.queryByText('Execution Failed')).not.toBeNull();
+		expect(
+			screen.queryByText(Liferay.Language.get('execution-failed'))
+		).not.toBeNull();
 	});
 
 	it('renders the partial execution i18n message when type is warning', () => {
