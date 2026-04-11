@@ -47,11 +47,23 @@ public class UserCreator {
 		int count = batchSpec.count();
 		String baseName = batchSpec.baseName();
 
+		if (!fakerEnable) {
+			String normalizedBaseName = baseName.toLowerCase();
+
+			if (!normalizedBaseName.matches("^[a-z0-9._-]+$")) {
+				throw new IllegalArgumentException(
+					"Invalid baseName '" + baseName +
+						"': must contain only lowercase letters, digits, " +
+							"'.', '_', or '-'");
+			}
+		}
+
 		final Faker faker = fakerEnable ?
 			_commonUtil.createFaker(locale) : null;
 
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		JSONArray created = JSONFactoryUtil.createJSONArray();
+		int skippedDuplicates = 0;
 
 		for (int i = 0; i < count; i++) {
 			final int idx = i;
@@ -69,8 +81,7 @@ public class UserCreator {
 			else {
 				firstName = baseName;
 				lastName = String.valueOf(idx + 1);
-				screenName = ScreenNameSanitizer.sanitize(
-					baseName.toLowerCase() + (idx + 1));
+				screenName = baseName.toLowerCase() + (idx + 1);
 			}
 
 			final String emailAddress = screenName + "@" + emailDomain;
@@ -152,6 +163,8 @@ public class UserCreator {
 					"User '" + screenName + "' already exists, skipping",
 					e);
 
+				skippedDuplicates++;
+
 				continue;
 			}
 			catch (UserScreenNameException e) {
@@ -207,15 +220,29 @@ public class UserCreator {
 			created.put(userJson);
 		}
 
+		boolean success = created.length() == count;
+
 		result.put("count", created.length());
-		result.put("success", created.length() > 0);
+		result.put("requested", count);
+		result.put("skipped", skippedDuplicates);
+		result.put("success", success);
 		result.put("users", created);
 
-		if (created.length() == 0) {
-			result.put(
-				"error",
-				"No users were created (all screen names may already " +
-					"exist)");
+		if (!success) {
+			if (created.length() == 0) {
+				result.put(
+					"error",
+					"No users were created (all screen names may already " +
+						"exist)");
+			}
+			else if (skippedDuplicates > 0) {
+				result.put(
+					"error",
+					"Only " + created.length() + " of " + count +
+						" users were created; " + skippedDuplicates +
+							" skipped because the screen name already " +
+								"existed.");
+			}
 		}
 
 		return result;
