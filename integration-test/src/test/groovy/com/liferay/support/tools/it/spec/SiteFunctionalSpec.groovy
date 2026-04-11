@@ -70,22 +70,22 @@ class SiteFunctionalSpec extends BaseLiferaySpec {
 		page.locator('[data-testid="sites-submit"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
-		page.locator('#count').waitFor(
+		page.locator('[data-testid="sites-count-input"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
 
 		and: 'fill in the site form'
-		page.locator('#count').fill("${SITE_COUNT}")
-		page.locator('#baseName').fill(BASE_SITE_NAME)
+		page.locator('[data-testid="sites-count-input"]').fill("${SITE_COUNT}")
+		page.locator('[data-testid="sites-base-name-input"]').fill(BASE_SITE_NAME)
 
 		and: 'click Run button'
-		page.locator('.sheet-footer button.btn-primary').click()
+		page.locator('[data-testid="sites-submit"]').click()
 
 		then: 'success alert appears'
-		page.locator('.alert-success').waitFor(
+		page.locator('[data-testid="sites-result"].alert-success').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
-		page.locator('.alert-success').isVisible()
+		page.locator('[data-testid="sites-result"].alert-success').isVisible()
 	}
 
 	def 'Created sites are visible via JSONWS GroupService'() {
