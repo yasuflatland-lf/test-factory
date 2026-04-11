@@ -34,67 +34,42 @@ public class UserCreator {
 			long[] siteRoleIds, long[] orgRoleIds)
 		throws Throwable {
 
-		return TransactionInvokerUtil.invoke(
-			_transactionConfig, () -> {
-				int count = batchSpec.count();
-				String baseName = batchSpec.baseName();
+		int count = batchSpec.count();
+		String baseName = batchSpec.baseName();
 
-				JSONObject result = JSONFactoryUtil.createJSONObject();
-				JSONArray created = JSONFactoryUtil.createJSONArray();
+		JSONObject result = JSONFactoryUtil.createJSONObject();
+		JSONArray created = JSONFactoryUtil.createJSONArray();
 
-				for (int i = 0; i < count; i++) {
-					String screenName =
-						baseName.toLowerCase() + (i + 1);
+		for (int i = 0; i < count; i++) {
+			final String screenName = baseName.toLowerCase() + (i + 1);
+			final String emailAddress = screenName + "@" + emailDomain;
+			final int idx = i;
 
-					String emailAddress =
-						screenName + "@" + emailDomain;
+			final ServiceContext serviceContext = new ServiceContext();
 
-					ServiceContext serviceContext = new ServiceContext();
+			serviceContext.setCompanyId(companyId);
+			serviceContext.setUserId(creatorUserId);
 
-					serviceContext.setCompanyId(companyId);
-					serviceContext.setUserId(creatorUserId);
+			User user;
 
-					User user;
-
-					try {
-						user = _userLocalService.addUserWithWorkflow(
+			try {
+				user = TransactionInvokerUtil.invoke(
+					_transactionConfig,
+					() -> {
+						User u = _userLocalService.addUserWithWorkflow(
 							creatorUserId, companyId, false, password,
 							password, false, screenName, emailAddress,
 							LocaleUtil.getDefault(), baseName, "",
-							String.valueOf(i + 1), 0L, 0L, male,
+							String.valueOf(idx + 1), 0L, 0L, male,
 							Calendar.JANUARY, 1, 1970, jobTitle, 0,
 							new long[0], organizationIds, roleIds,
 							userGroupIds, false, serviceContext);
-					}
-					catch (UserScreenNameException e) {
-						_log.warn(
-							"User '" + screenName +
-								"' already exists, skipping");
 
-						continue;
-					}
-					catch (Exception e) {
-						throw new Exception(
-							"Failed to create user '" + screenName +
-								"' (" + (i + 1) + " of " + count +
-								"): " + e.getMessage(),
-							e);
-					}
+						if ((organizationIds.length > 0) &&
+							((siteRoleIds.length > 0) ||
+								(orgRoleIds.length > 0))) {
 
-					JSONObject userJson =
-						JSONFactoryUtil.createJSONObject();
-
-					userJson.put(
-						"emailAddress", user.getEmailAddress());
-					userJson.put("screenName", user.getScreenName());
-					userJson.put("userId", user.getUserId());
-
-					if ((organizationIds.length > 0) &&
-						((siteRoleIds.length > 0) ||
-							(orgRoleIds.length > 0))) {
-
-						for (long orgId : organizationIds) {
-							try {
+							for (long orgId : organizationIds) {
 								Organization org =
 									_organizationLocalService.
 										getOrganization(orgId);
@@ -108,7 +83,7 @@ public class UserCreator {
 
 									_userGroupRoleLocalService.
 										addUserGroupRoles(
-											user.getUserId(), groupId,
+											u.getUserId(), groupId,
 											siteRoleIds);
 								}
 
@@ -117,37 +92,51 @@ public class UserCreator {
 
 									_userGroupRoleLocalService.
 										addUserGroupRoles(
-											user.getUserId(), groupId,
+											u.getUserId(), groupId,
 											orgRoleIds);
 								}
 							}
-							catch (Exception e) {
-								throw new Exception(
-									"Failed to assign roles for user '" +
-										screenName +
-										"' in organization " + orgId +
-										": " + e.getMessage(),
-									e);
-							}
 						}
-					}
 
-					created.put(userJson);
-				}
+						return u;
+					});
+			}
+			catch (UserScreenNameException e) {
+				_log.warn(
+					"User '" + screenName +
+						"' already exists, skipping");
 
-				result.put("count", created.length());
-				result.put("success", created.length() > 0);
-				result.put("users", created);
+				continue;
+			}
+			catch (Exception e) {
+				throw new Exception(
+					"Failed to create user '" + screenName + "' (" +
+						(idx + 1) + " of " + count + "): " +
+							e.getMessage(),
+					e);
+			}
 
-				if (created.length() == 0) {
-					result.put(
-						"error",
-						"No users were created (all screen names may " +
-							"already exist)");
-				}
+			JSONObject userJson = JSONFactoryUtil.createJSONObject();
 
-				return result;
-			});
+			userJson.put("emailAddress", user.getEmailAddress());
+			userJson.put("screenName", user.getScreenName());
+			userJson.put("userId", user.getUserId());
+
+			created.put(userJson);
+		}
+
+		result.put("count", created.length());
+		result.put("success", created.length() > 0);
+		result.put("users", created);
+
+		if (created.length() == 0) {
+			result.put(
+				"error",
+				"No users were created (all screen names may already " +
+					"exist)");
+		}
+
+		return result;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

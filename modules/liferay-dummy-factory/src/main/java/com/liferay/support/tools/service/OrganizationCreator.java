@@ -23,67 +23,61 @@ public class OrganizationCreator {
 			long parentOrganizationId, boolean site)
 		throws Throwable {
 
-		return TransactionInvokerUtil.invoke(
-			_transactionConfig, () -> {
-				int count = batchSpec.count();
-				String baseName = batchSpec.baseName();
+		int count = batchSpec.count();
+		String baseName = batchSpec.baseName();
 
-				JSONObject result = JSONFactoryUtil.createJSONObject();
-				JSONArray created = JSONFactoryUtil.createJSONArray();
-				int skipped = 0;
+		JSONObject result = JSONFactoryUtil.createJSONObject();
+		JSONArray created = JSONFactoryUtil.createJSONArray();
+		int skipped = 0;
 
-				for (int i = 0; i < count; i++) {
-					String name = BatchNaming.resolve(
-						baseName, count, i, " ");
+		for (int i = 0; i < count; i++) {
+			final String name = BatchNaming.resolve(baseName, count, i, " ");
 
-					try {
-						Organization organization =
-							_organizationLocalService.addOrganization(
-								userId, parentOrganizationId, name, site);
+			try {
+				Organization organization = TransactionInvokerUtil.invoke(
+					_transactionConfig,
+					() -> _organizationLocalService.addOrganization(
+						userId, parentOrganizationId, name, site));
 
-						JSONObject orgJson =
-							JSONFactoryUtil.createJSONObject();
+				JSONObject orgJson = JSONFactoryUtil.createJSONObject();
 
-						orgJson.put("name", organization.getName());
-						orgJson.put(
-							"organizationId",
-							organization.getOrganizationId());
+				orgJson.put("name", organization.getName());
+				orgJson.put(
+					"organizationId", organization.getOrganizationId());
 
-						created.put(orgJson);
-					}
-					catch (DuplicateOrganizationException e) {
-						_log.warn(
-							"Organization '" + name +
-								"' already exists, skipping");
+				created.put(orgJson);
+			}
+			catch (DuplicateOrganizationException e) {
+				_log.warn(
+					"Organization '" + name +
+						"' already exists, skipping");
 
-						skipped++;
-					}
-				}
+				skipped++;
+			}
+		}
 
-				int createdCount = created.length();
+		int createdCount = created.length();
 
-				result.put("count", createdCount);
-				result.put("organizations", created);
-				result.put("skipped", skipped);
-				result.put("success", createdCount > 0);
+		result.put("count", createdCount);
+		result.put("organizations", created);
+		result.put("skipped", skipped);
+		result.put("success", createdCount > 0);
 
-				if (createdCount == 0) {
-					result.put(
-						"error",
-						"No organizations were created (all names may " +
-							"already exist)");
-				}
+		if (createdCount == 0) {
+			result.put(
+				"error",
+				"No organizations were created (all names may " +
+					"already exist)");
+		}
 
-				if (skipped > 0) {
-					result.put(
-						"message",
-						skipped +
-							" organization(s) already existed and were " +
-								"skipped");
-				}
+		if (skipped > 0) {
+			result.put(
+				"message",
+				skipped +
+					" organization(s) already existed and were skipped");
+		}
 
-				return result;
-			});
+		return result;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

@@ -35,94 +35,85 @@ public class SiteCreator {
 			boolean inheritContent, boolean active, String description)
 		throws Throwable {
 
-		return TransactionInvokerUtil.invoke(
-			_transactionConfig, () -> {
-				int count = batchSpec.count();
-				String baseName = batchSpec.baseName();
+		int count = batchSpec.count();
+		String baseName = batchSpec.baseName();
 
-				JSONObject result = JSONFactoryUtil.createJSONObject();
-				JSONArray created = JSONFactoryUtil.createJSONArray();
+		JSONObject result = JSONFactoryUtil.createJSONObject();
+		JSONArray created = JSONFactoryUtil.createJSONArray();
 
-				int type = membershipType.toLiferayConstant();
+		final int type = membershipType.toLiferayConstant();
 
-				Map<Locale, String> descriptionMap =
-					Collections.singletonMap(
-						LocaleUtil.getDefault(), description);
+		final Map<Locale, String> descriptionMap = Collections.singletonMap(
+			LocaleUtil.getDefault(), description);
 
-				ServiceContext serviceContext = new ServiceContext();
+		final ServiceContext serviceContext = new ServiceContext();
 
-				serviceContext.setCompanyId(companyId);
-				serviceContext.setUserId(userId);
+		serviceContext.setCompanyId(companyId);
+		serviceContext.setUserId(userId);
 
-				for (int i = 0; i < count; i++) {
-					String siteName = BatchNaming.resolve(
-						baseName, count, i);
+		for (int i = 0; i < count; i++) {
+			final String siteName = BatchNaming.resolve(baseName, count, i);
 
-					Map<Locale, String> nameMap = Collections.singletonMap(
-						LocaleUtil.getDefault(), siteName);
+			final Map<Locale, String> nameMap = Collections.singletonMap(
+				LocaleUtil.getDefault(), siteName);
 
-					Group group;
-
-					try {
-						group = _groupLocalService.addGroup(
+			try {
+				Group group = TransactionInvokerUtil.invoke(
+					_transactionConfig,
+					() -> {
+						Group newGroup = _groupLocalService.addGroup(
 							userId, parentGroupId, null, 0,
 							GroupConstants.DEFAULT_LIVE_GROUP_ID, nameMap,
 							descriptionMap, type, manualMembership,
 							GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION,
 							StringPool.BLANK, true, inheritContent, active,
 							serviceContext);
-					}
-					catch (DuplicateGroupException e) {
-						_log.warn(
-							"Site '" + siteName +
-								"' already exists, skipping");
 
-						continue;
-					}
-					catch (GroupKeyException e) {
-						_log.warn(
-							"Invalid site name '" + siteName +
-								"', skipping");
-
-						continue;
-					}
-
-					if (siteTemplateId > 0) {
-						try {
-							_sites.updateLayoutSetPrototypesLinks(
-								group, siteTemplateId, 0, true, false);
+						if (siteTemplateId > 0) {
+							try {
+								_sites.updateLayoutSetPrototypesLinks(
+									newGroup, siteTemplateId, 0, true, false);
+							}
+							catch (Exception e) {
+								_log.error(
+									"Failed to apply site template " +
+										siteTemplateId + " to site '" +
+										siteName + "'",
+									e);
+							}
 						}
-						catch (Exception e) {
-							_log.error(
-								"Failed to apply site template " +
-									siteTemplateId + " to site '" +
-									siteName + "'",
-								e);
-						}
-					}
 
-					JSONObject siteJson =
-						JSONFactoryUtil.createJSONObject();
+						return newGroup;
+					});
 
-					siteJson.put("groupId", group.getGroupId());
-					siteJson.put("name", siteName);
+				JSONObject siteJson = JSONFactoryUtil.createJSONObject();
 
-					created.put(siteJson);
-				}
+				siteJson.put("groupId", group.getGroupId());
+				siteJson.put("name", siteName);
 
-				result.put("count", created.length());
-				result.put("sites", created);
-				result.put("success", created.length() > 0);
+				created.put(siteJson);
+			}
+			catch (DuplicateGroupException e) {
+				_log.warn(
+					"Site '" + siteName + "' already exists, skipping");
+			}
+			catch (GroupKeyException e) {
+				_log.warn(
+					"Invalid site name '" + siteName + "', skipping");
+			}
+		}
 
-				if (created.length() == 0) {
-					result.put(
-						"error",
-						"No sites were created (all names may already " +
-							"exist)");
-				}
+		result.put("count", created.length());
+		result.put("sites", created);
+		result.put("success", created.length() > 0);
 
-				return result;
-			});
+		if (created.length() == 0) {
+			result.put(
+				"error",
+				"No sites were created (all names may already exist)");
+		}
+
+		return result;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
