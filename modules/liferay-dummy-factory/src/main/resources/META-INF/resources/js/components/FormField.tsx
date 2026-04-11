@@ -1,10 +1,12 @@
 import {FieldDefinition, SelectOption} from '../types';
+import FileUploadArea from './FileUploadArea';
 
 interface FormFieldProps {
 	error?: string;
 	field: FieldDefinition;
 	onChange: (name: string, value: string) => void;
 	options?: SelectOption[];
+	uploadURL?: string;
 	value: string;
 }
 
@@ -26,7 +28,14 @@ function FieldError({error}: {error?: string}) {
 	return <div className="form-feedback-item">{error}</div>;
 }
 
-function FormField({error, field, onChange, options, value}: FormFieldProps) {
+function FormField({
+	error,
+	field,
+	onChange,
+	options,
+	uploadURL,
+	value,
+}: FormFieldProps) {
 	const resolvedOptions = options || field.options || [];
 
 	if (field.type === 'toggle') {
@@ -128,6 +137,17 @@ function FormField({error, field, onChange, options, value}: FormFieldProps) {
 
 				<FieldError error={error} />
 			</div>
+		);
+	}
+
+	if (field.type === 'file') {
+		return (
+			<FileUploadArea
+				key={field.name}
+				onChange={(name, newValue) => onChange(field.name, newValue)}
+				uploadURL={uploadURL ?? ''}
+				value={value}
+			/>
 		);
 	}
 
