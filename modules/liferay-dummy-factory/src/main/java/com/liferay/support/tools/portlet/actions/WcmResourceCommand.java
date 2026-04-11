@@ -147,18 +147,7 @@ public class WcmResourceCommand extends BaseMVCResourceCommand {
 			List<Long> parsed = new ArrayList<>();
 
 			for (int i = 0; i < jsonArray.length(); i++) {
-				Object rawToken = jsonArray.get(i);
-				long value = GetterUtil.getLong(rawToken);
-
-				if (value <= 0) {
-					_log.warn(
-						"Dropped unparseable or non-positive groupIds " +
-							"entry: " + rawToken);
-
-					continue;
-				}
-
-				parsed.add(value);
+				_addParsedGroupId(parsed, jsonArray.get(i));
 			}
 
 			return _toLongArray(parsed);
@@ -171,18 +160,7 @@ public class WcmResourceCommand extends BaseMVCResourceCommand {
 
 			for (String token : groupIdsString.split(",")) {
 				if ((token != null) && !token.trim().isEmpty()) {
-					String rawToken = token.trim();
-					long value = GetterUtil.getLong(rawToken);
-
-					if (value <= 0) {
-						_log.warn(
-							"Dropped unparseable or non-positive " +
-								"groupIds entry: " + rawToken);
-
-						continue;
-					}
-
-					parsed.add(value);
+					_addParsedGroupId(parsed, token.trim());
 				}
 			}
 
@@ -198,28 +176,32 @@ public class WcmResourceCommand extends BaseMVCResourceCommand {
 		return new long[0];
 	}
 
+	private void _addParsedGroupId(List<Long> parsed, Object rawToken) {
+		long value = GetterUtil.getLong(rawToken);
+
+		if (value <= 0) {
+			_log.warn(
+				"Dropped unparseable or non-positive groupIds entry: " +
+					rawToken);
+
+			return;
+		}
+
+		parsed.add(value);
+	}
+
 	private String[] _parseLocales(String localesCsv, long groupId) {
 		if (Validator.isNotNull(localesCsv)) {
-			String[] tokens = localesCsv.split(",");
-			int nonEmpty = 0;
+			List<String> parsed = new ArrayList<>();
 
-			for (String token : tokens) {
+			for (String token : localesCsv.split(",")) {
 				if ((token != null) && !token.trim().isEmpty()) {
-					nonEmpty++;
+					parsed.add(token.trim());
 				}
 			}
 
-			if (nonEmpty > 0) {
-				String[] result = new String[nonEmpty];
-				int idx = 0;
-
-				for (String token : tokens) {
-					if ((token != null) && !token.trim().isEmpty()) {
-						result[idx++] = token.trim();
-					}
-				}
-
-				return result;
+			if (!parsed.isEmpty()) {
+				return parsed.toArray(new String[0]);
 			}
 		}
 
