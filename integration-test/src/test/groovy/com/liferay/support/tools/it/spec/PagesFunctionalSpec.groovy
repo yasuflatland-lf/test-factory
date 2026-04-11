@@ -18,6 +18,8 @@ class PagesFunctionalSpec extends BaseLiferaySpec {
 
 	private static final String BASE_PAGE_NAME = 'IT Test Page'
 	private static final int PAGE_COUNT = 3
+	private static final String EXPECTED_FRIENDLY_URL_PREFIX =
+		'/' + BASE_PAGE_NAME.toLowerCase().replaceAll(/\s+/, '-')
 
 	@Shared
 	PlaywrightLifecycle pw
@@ -120,15 +122,14 @@ class PagesFunctionalSpec extends BaseLiferaySpec {
 
 		when:
 		def matchingLayouts = layouts.findAll { layout ->
-			def name = (layout.nameCurrentValue ?: layout.name) as String
-			name?.startsWith(BASE_PAGE_NAME)
+			(layout.friendlyURL as String)?.startsWith(EXPECTED_FRIENDLY_URL_PREFIX)
 		}
 
 		createdPlids.addAll(
 			matchingLayouts.collect { it.plid as Long }
 		)
 
-		then: 'all created pages are found by name prefix'
+		then: 'all created pages are found by friendly URL prefix'
 		matchingLayouts.size() == PAGE_COUNT
 	}
 
@@ -146,10 +147,10 @@ class PagesFunctionalSpec extends BaseLiferaySpec {
 			'/private-layout/false') as List
 
 		then: 'none of the test pages remain'
-		!layouts.any { layout ->
-			def name = (layout.nameCurrentValue ?: layout.name) as String
-			name?.startsWith(BASE_PAGE_NAME)
+		def remainingLayouts = layouts.findAll { layout ->
+			(layout.friendlyURL as String)?.startsWith(EXPECTED_FRIENDLY_URL_PREFIX)
 		}
+		remainingLayouts.isEmpty()
 	}
 
 }
