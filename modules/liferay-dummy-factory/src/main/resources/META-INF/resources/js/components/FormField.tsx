@@ -122,7 +122,7 @@ function FormField({error, field, onChange, options, value}: FormFieldProps) {
 					className="form-control"
 					id={field.name}
 					onChange={(e) => onChange(field.name, e.target.value)}
-					rows={3}
+					rows={5}
 					value={value}
 				/>
 
