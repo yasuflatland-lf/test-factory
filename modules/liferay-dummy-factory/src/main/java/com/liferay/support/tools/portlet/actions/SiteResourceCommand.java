@@ -65,6 +65,10 @@ public class SiteResourceCommand extends BaseMVCResourceCommand {
 			boolean active = GetterUtil.getBoolean(
 				data.getString("active"), true);
 			String description = data.getString("description");
+			long publicLayoutSetPrototypeId = GetterUtil.getLong(
+				data.getString("publicLayoutSetPrototypeId"));
+			long privateLayoutSetPrototypeId = GetterUtil.getLong(
+				data.getString("privateLayoutSetPrototypeId"));
 
 			long userId = _portal.getUserId(resourceRequest);
 			long companyId = _portal.getCompanyId(resourceRequest);
@@ -73,7 +77,8 @@ public class SiteResourceCommand extends BaseMVCResourceCommand {
 				userId, companyId, batchSpec,
 				membershipType, parentGroupId,
 				siteTemplateId, manualMembership,
-				inheritContent, active, description);
+				inheritContent, active, description,
+				publicLayoutSetPrototypeId, privateLayoutSetPrototypeId);
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(

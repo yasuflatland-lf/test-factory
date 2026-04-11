@@ -51,14 +51,21 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 
 			BatchSpec batchSpec = ResourceCommandUtil.parseBatchSpec(data);
 
-			String emailDomain = GetterUtil.getString(
-				data.getString("emailDomain"), "liferay.com");
-			String password = GetterUtil.getString(
-				data.getString("password"), "test");
-			boolean male = GetterUtil.getBoolean(
-				data.getString("male"), true);
-			String jobTitle = GetterUtil.getString(
-				data.getString("jobTitle"), "");
+			String emailDomain = data.getString("emailDomain", "liferay.com");
+
+			if (emailDomain.isEmpty()) {
+				emailDomain = "liferay.com";
+			}
+
+			String password = data.getString("password", "test");
+
+			if (password.isEmpty()) {
+				password = "test";
+			}
+
+			boolean male = data.has("male") ?
+				data.getBoolean("male") : true;
+			String jobTitle = data.getString("jobTitle", "");
 
 			long[] organizationIds = _toLongArray(
 				data.getJSONArray("organizationIds"));
@@ -70,6 +77,18 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 			long[] orgRoleIds = _toLongArray(
 				data.getJSONArray("orgRoleIds"));
 
+			boolean fakerEnable = GetterUtil.getBoolean(
+				data.getString("fakerEnable"), false);
+			String locale = GetterUtil.getString(
+				data.getString("locale"), "en_US");
+			boolean generatePersonalSiteLayouts = GetterUtil.getBoolean(
+				data.getString("generatePersonalSiteLayouts"), false);
+			long publicLayoutSetPrototypeId = GetterUtil.getLong(
+				data.getString("publicLayoutSetPrototypeId"), 0L);
+			long privateLayoutSetPrototypeId = GetterUtil.getLong(
+				data.getString("privateLayoutSetPrototypeId"), 0L);
+			long[] groupIds = _toLongArray(data.getJSONArray("groupIds"));
+
 			long userId = _portal.getUserId(resourceRequest);
 			long companyId = _portal.getCompanyId(resourceRequest);
 
@@ -77,7 +96,9 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 				userId, companyId, batchSpec,
 				emailDomain, password, male, jobTitle,
 				organizationIds, roleIds, userGroupIds,
-				siteRoleIds, orgRoleIds);
+				siteRoleIds, orgRoleIds, fakerEnable, locale,
+				generatePersonalSiteLayouts, publicLayoutSetPrototypeId,
+				privateLayoutSetPrototypeId, groupIds);
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(

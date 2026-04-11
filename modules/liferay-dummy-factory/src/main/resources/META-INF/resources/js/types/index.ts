@@ -1,5 +1,8 @@
 export type FieldType = 'number' | 'text' | 'select' | 'multiselect' | 'toggle' | 'textarea';
 
+export const FIELD_GROUPS = ['identity', 'generator', 'membership', 'layout', 'content'] as const;
+export type FieldGroup = typeof FIELD_GROUPS[number];
+
 export interface SelectOption {
 	label: string;
 	value: string;
@@ -8,6 +11,7 @@ export interface SelectOption {
 export interface FieldDefinition {
 	advanced?: boolean;
 	dataSource?: string;
+	group?: FieldGroup;
 	defaultValue?: unknown;
 	dependsOn?: {
 		field: string;
@@ -23,6 +27,21 @@ export interface FieldDefinition {
 		field: string;
 		value: string | string[];
 	};
+}
+
+export interface PerSiteResult {
+	groupId: number;
+	siteName: string;
+	created: number;
+	failed: number;
+	error?: string;
+}
+
+export interface MultiSiteResult {
+	ok: boolean;
+	totalRequested: number;
+	totalCreated: number;
+	perSite: PerSiteResult[];
 }
 
 export interface Validator {
