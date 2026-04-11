@@ -4,11 +4,18 @@ import {EntityFormConfig, FieldDefinition} from '../types';
 import {useFormState} from '../hooks/useFormState';
 import {useProgress} from '../hooks/useProgress';
 import {postResource} from '../utils/api';
-import AdvancedOptions from './AdvancedOptions';
 import DynamicSelect from './DynamicSelect';
 import FormField from './FormField';
 import ProgressBar from './ProgressBar';
 import ResultAlert from './ResultAlert';
+
+const GROUP_ORDER: NonNullable<FieldDefinition['group']>[] = [
+	'identity',
+	'generator',
+	'membership',
+	'layout',
+	'content',
+];
 
 interface EntityFormProps {
 	actionResourceURLs: Record<string, string>;
@@ -128,11 +135,38 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 			<div className="sheet-section">
 				{requiredFields.filter(isFieldVisible).map(renderField)}
 
-				{advancedFields.length > 0 && (
-					<AdvancedOptions>
-						{advancedFields.filter(isFieldVisible).map(renderField)}
-					</AdvancedOptions>
-				)}
+				{(() => {
+					const visibleAdvanced = advancedFields.filter(isFieldVisible);
+					const ungrouped = visibleAdvanced.filter((f) => !f.group);
+
+					return (
+						<>
+							{ungrouped.map(renderField)}
+
+							{GROUP_ORDER.map((group) => {
+								const groupFields = visibleAdvanced.filter(
+									(f) => f.group === group
+								);
+
+								if (groupFields.length === 0) {
+									return null;
+								}
+
+								return (
+									<div key={group}>
+										<h5>
+											{Liferay.Language.get(`section.${group}`)}
+										</h5>
+
+										<hr />
+
+										{groupFields.map(renderField)}
+									</div>
+								);
+							})}
+						</>
+					);
+				})()}
 			</div>
 
 			<ProgressBar percent={percent} running={running} />
