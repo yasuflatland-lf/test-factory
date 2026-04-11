@@ -16,7 +16,7 @@ function FileUploadArea({groupId, onChange, testId, uploadURL, value}: FileUploa
 
 	const fileNames = value ? value.split(',').filter(Boolean) : [];
 
-	const _uploadFile = async (file: File) => {
+	const uploadFile = async (file: File) => {
 		const formData = new FormData();
 
 		formData.append('cmd', 'add_temp');
@@ -61,9 +61,7 @@ function FileUploadArea({groupId, onChange, testId, uploadURL, value}: FileUploa
 		}
 	};
 
-	const _handleFileChange = async (
-		target: HTMLInputElement
-	) => {
+	const handleFileChange = async (target: HTMLInputElement) => {
 		const fileList = target.files;
 
 		if (!fileList || fileList.length === 0) {
@@ -87,7 +85,7 @@ function FileUploadArea({groupId, onChange, testId, uploadURL, value}: FileUploa
 		let accumulated = fileNames.slice();
 
 		for (const file of files) {
-			const result = await _uploadFile(file);
+			const result = await uploadFile(file);
 
 			if (result) {
 				accumulated = [...accumulated, result.fileName];
@@ -102,7 +100,7 @@ function FileUploadArea({groupId, onChange, testId, uploadURL, value}: FileUploa
 		target.value = '';
 	};
 
-	const _handleRemove = async (fileName: string) => {
+	const handleRemove = async (fileName: string) => {
 		try {
 			const formData = new FormData();
 
@@ -157,7 +155,7 @@ function FileUploadArea({groupId, onChange, testId, uploadURL, value}: FileUploa
 				data-testid={testId ? `${testId}-input` : undefined}
 				id="ldf-file-upload-area"
 				multiple
-				onChange={(e) => _handleFileChange(e.target)}
+				onChange={(e) => handleFileChange(e.target)}
 				type="file"
 			/>
 
@@ -194,7 +192,7 @@ function FileUploadArea({groupId, onChange, testId, uploadURL, value}: FileUploa
 												? `${testId}-remove-${index}`
 												: undefined
 										}
-										onClick={() => _handleRemove(fileName)}
+										onClick={() => handleRemove(fileName)}
 										type="button"
 									>
 										<span aria-hidden="true">&times;</span>

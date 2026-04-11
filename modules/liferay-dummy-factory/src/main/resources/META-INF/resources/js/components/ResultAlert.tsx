@@ -11,7 +11,7 @@ interface ResultAlertProps {
 }
 
 function ResultAlert({message, multiSite, onDismiss, testId, type}: ResultAlertProps) {
-	const entries: PerSiteResult[] = Array.isArray(multiSite?.perSite) ? multiSite!.perSite : [];
+	const entries: PerSiteResult[] = multiSite?.perSite ?? [];
 	const totalCreated = multiSite?.totalCreated ?? 0;
 	const totalRequested = multiSite?.totalRequested ?? 0;
 

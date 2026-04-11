@@ -41,6 +41,7 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 
 	const requiredFields = config.fields.filter((f) => !f.advanced);
 	const advancedFields = config.fields.filter((f) => f.advanced);
+	const visibleAdvanced = advancedFields.filter(isFieldVisible);
 	const uploadURL = actionResourceURLs['/ldf/doc/upload'] ?? '';
 
 	const entityKey = config.entityType.toLowerCase().replace(/_/g, '-');
@@ -186,38 +187,27 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 			<div className="sheet-section">
 				{requiredFields.filter(isFieldVisible).map(renderField)}
 
-				{(() => {
-					const visibleAdvanced = advancedFields.filter(isFieldVisible);
-					const ungrouped = visibleAdvanced.filter((f) => !f.group);
+				{visibleAdvanced.filter((f) => !f.group).map(renderField)}
+
+				{FIELD_GROUPS.map((group) => {
+					const groupFields = visibleAdvanced.filter(
+						(f) => f.group === group
+					);
+
+					if (groupFields.length === 0) {
+						return null;
+					}
 
 					return (
-						<>
-							{ungrouped.map(renderField)}
+						<div key={group}>
+							<h5>{Liferay.Language.get(`section.${group}`)}</h5>
 
-							{FIELD_GROUPS.map((group) => {
-								const groupFields = visibleAdvanced.filter(
-									(f) => f.group === group
-								);
+							<hr />
 
-								if (groupFields.length === 0) {
-									return null;
-								}
-
-								return (
-									<div key={group}>
-										<h5>
-											{Liferay.Language.get(`section.${group}`)}
-										</h5>
-
-										<hr />
-
-										{groupFields.map(renderField)}
-									</div>
-								);
-							})}
-						</>
+							{groupFields.map(renderField)}
+						</div>
 					);
-				})()}
+				})}
 			</div>
 
 			<ProgressBar
