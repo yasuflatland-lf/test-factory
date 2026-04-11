@@ -21,4 +21,17 @@ class ResourceCommandUtil {
 		responseJson.put("success", false);
 	}
 
+	static void validateCount(int count) {
+		if (count <= 0) {
+			throw new IllegalArgumentException("count must be greater than 0");
+		}
+	}
+
+	static void validatePositiveId(long id, String fieldName) {
+		if (id <= 0) {
+			throw new IllegalArgumentException(
+				fieldName + " must be greater than 0");
+		}
+	}
+
 }

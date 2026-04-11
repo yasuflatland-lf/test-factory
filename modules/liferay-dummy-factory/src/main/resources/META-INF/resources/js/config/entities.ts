@@ -67,6 +67,114 @@ const DOCUMENTS_CONFIG: EntityFormConfig = {
 	label: 'documents',
 };
 
+const MB_CATEGORY_CONFIG: EntityFormConfig = {
+	actionURL: '/ldf/mb-category',
+	entityType: ENTITY_TYPES.MB_CATEGORY,
+	fields: [
+		createCountField('number-of-categories'),
+		createBaseNameField('base-category-name'),
+		{
+			dataSource: '/ldf/data/sites',
+			label: 'site',
+			name: 'groupId',
+			required: true,
+			type: 'select',
+		},
+		{
+			advanced: true,
+			defaultValue: '',
+			label: 'description',
+			name: 'description',
+			required: false,
+			type: 'textarea',
+		},
+	],
+	helpText: 'mb-category-help-text',
+	icon: 'folder',
+	label: 'mb-categories',
+};
+
+const MB_THREAD_CONFIG: EntityFormConfig = {
+	actionURL: '/ldf/mb-thread',
+	entityType: ENTITY_TYPES.MB_THREAD,
+	fields: [
+		createCountField('number-of-threads'),
+		createBaseNameField('base-thread-subject'),
+		{
+			dataSource: '/ldf/data/sites',
+			label: 'site',
+			name: 'groupId',
+			required: true,
+			type: 'select',
+		},
+		{
+			dataSource: '/ldf/data/mb-categories',
+			dependsOn: {field: 'groupId', paramName: 'groupId'},
+			label: 'category',
+			name: 'categoryId',
+			required: true,
+			type: 'select',
+		},
+		{
+			defaultValue: 'This is a test message.',
+			label: 'body',
+			name: 'body',
+			required: true,
+			type: 'textarea',
+		},
+		{
+			defaultValue: 'html',
+			label: 'format',
+			name: 'format',
+			options: [
+				{label: 'html', value: 'html'},
+				{label: 'bbcode', value: 'bbcode'},
+			],
+			required: true,
+			type: 'select',
+		},
+	],
+	helpText: 'mb-thread-help-text',
+	icon: 'message',
+	label: 'mb-threads',
+};
+
+const MB_REPLY_CONFIG: EntityFormConfig = {
+	actionURL: '/ldf/mb-reply',
+	entityType: ENTITY_TYPES.MB_REPLY,
+	fields: [
+		createCountField('number-of-replies'),
+		{
+			dataSource: '/ldf/data/mb-threads',
+			label: 'thread',
+			name: 'threadId',
+			required: true,
+			type: 'select',
+		},
+		{
+			defaultValue: 'This is a test reply.',
+			label: 'body',
+			name: 'body',
+			required: true,
+			type: 'textarea',
+		},
+		{
+			defaultValue: 'html',
+			label: 'format',
+			name: 'format',
+			options: [
+				{label: 'html', value: 'html'},
+				{label: 'bbcode', value: 'bbcode'},
+			],
+			required: true,
+			type: 'select',
+		},
+	],
+	helpText: 'mb-reply-help-text',
+	icon: 'reply',
+	label: 'mb-replies',
+};
+
 const ORGANIZATION_CONFIG: EntityFormConfig = {
 	actionURL: '/ldf/org',
 	entityType: ENTITY_TYPES.ORGANIZATION,
@@ -640,6 +748,9 @@ const WCM_CONFIG: EntityFormConfig = {
 export const ENTITY_CONFIGS: Partial<Record<EntityType, EntityFormConfig>> = {
 	[ENTITY_TYPES.CATEGORY]: CATEGORY_CONFIG,
 	[ENTITY_TYPES.DOCUMENTS]: DOCUMENTS_CONFIG,
+	[ENTITY_TYPES.MB_CATEGORY]: MB_CATEGORY_CONFIG,
+	[ENTITY_TYPES.MB_REPLY]: MB_REPLY_CONFIG,
+	[ENTITY_TYPES.MB_THREAD]: MB_THREAD_CONFIG,
 	[ENTITY_TYPES.ORGANIZATION]: ORGANIZATION_CONFIG,
 	[ENTITY_TYPES.PAGES]: PAGES_CONFIG,
 	[ENTITY_TYPES.ROLES]: ROLE_CONFIG,

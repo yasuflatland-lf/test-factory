@@ -10,6 +10,9 @@
 <portlet:resourceURL id="/ldf/doc/upload" var="docUploadResourceURL" />
 <portlet:resourceURL id="/ldf/vocabulary" var="vocabularyURL" />
 <portlet:resourceURL id="/ldf/category" var="categoryURL" />
+<portlet:resourceURL id="/ldf/mb-category" var="mbCategoryURL" />
+<portlet:resourceURL id="/ldf/mb-thread" var="mbThreadURL" />
+<portlet:resourceURL id="/ldf/mb-reply" var="mbReplyURL" />
 <portlet:resourceURL id="/ldf/data" var="dataResourceURL" />
 <portlet:resourceURL id="/ldf/progress" var="progressResourceURL" />
 
@@ -37,6 +40,12 @@
 				"/ldf/vocabulary", vocabularyURL
 			).put(
 				"/ldf/category", categoryURL
+			).put(
+				"/ldf/mb-category", mbCategoryURL
+			).put(
+				"/ldf/mb-thread", mbThreadURL
+			).put(
+				"/ldf/mb-reply", mbReplyURL
 			).build()
 		).put(
 			"dataResourceURL", dataResourceURL
