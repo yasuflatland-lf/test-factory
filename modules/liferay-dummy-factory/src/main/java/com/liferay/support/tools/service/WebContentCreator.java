@@ -34,6 +34,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -201,13 +203,13 @@ public class WebContentCreator {
 						"' not found for group " + groupId);
 		}
 
-		Map<Locale, String> descriptionMap = Collections.singletonMap(
-			defaultLocale, baseName);
+		Map<Locale, String> descriptionMap = new HashMap<>();
+		descriptionMap.put(defaultLocale, baseName);
 
 		for (int i = 0; i < count; i++) {
 			final String title = BatchNaming.resolve(baseName, count, i);
-			final Map<Locale, String> titleMap = Collections.singletonMap(
-				defaultLocale, title);
+			final Map<Locale, String> titleMap = new HashMap<>();
+			titleMap.put(defaultLocale, title);
 
 			try {
 				TransactionInvokerUtil.invoke(
@@ -278,8 +280,8 @@ public class WebContentCreator {
 						"' not found for group " + groupId);
 		}
 
-		Map<Locale, String> descriptionMap = Collections.singletonMap(
-			defaultLocale, baseName);
+		Map<Locale, String> descriptionMap = new HashMap<>();
+		descriptionMap.put(defaultLocale, baseName);
 
 		for (int i = 0; i < count; i++) {
 			String randomTitle =
@@ -291,8 +293,8 @@ public class WebContentCreator {
 			}
 
 			final String titleFinal = randomTitle;
-			final Map<Locale, String> titleMap = Collections.singletonMap(
-				defaultLocale, titleFinal);
+			final Map<Locale, String> titleMap = new HashMap<>();
+			titleMap.put(defaultLocale, titleFinal);
 
 			try {
 				TransactionInvokerUtil.invoke(
@@ -373,13 +375,13 @@ public class WebContentCreator {
 				groupId, siteName, 0, count, _errorMessage(exception));
 		}
 
-		Map<Locale, String> descriptionMap = Collections.singletonMap(
-			defaultLocale, baseName);
+		Map<Locale, String> descriptionMap = new HashMap<>();
+		descriptionMap.put(defaultLocale, baseName);
 
 		for (int i = 0; i < count; i++) {
 			final String title = BatchNaming.resolve(baseName, count, i);
-			final Map<Locale, String> titleMap = Collections.singletonMap(
-				defaultLocale, title);
+			final Map<Locale, String> titleMap = new HashMap<>();
+			titleMap.put(defaultLocale, title);
 
 			try {
 				TransactionInvokerUtil.invoke(

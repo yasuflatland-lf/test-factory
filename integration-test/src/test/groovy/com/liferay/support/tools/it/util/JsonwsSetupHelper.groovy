@@ -65,37 +65,94 @@ class JsonwsSetupHelper {
 	}
 
 	Map createOrganization(String name) {
-		// OrganizationService.addOrganization has two overloads: a simple
-		// 10-arg (+ serviceContext) and a 15-arg (+ Lists + serviceContext).
-		// JSONWS can get confused picking between them, so we feed the 15-arg
-		// form with empty lists for the rich fields. Liferay happily matches
-		// this to addOrganization when the lists are present as empty JSON
-		// arrays.
-		Map response = _post(
-			'/api/jsonws/organization/add-organization',
-			[
-				'externalReferenceCode': '',
-				'parentOrganizationId': '0',
-				'name': name,
-				'type': 'organization',
-				'regionId': '0',
-				'countryId': '0',
-				'statusListTypeId': '0',
-				'comments': '',
-				'site': 'false',
-				'addresses': '[]',
-				'emailAddresses': '[]',
-				'orgLabors': '[]',
-				'phones': '[]',
-				'websites': '[]',
-				'serviceContext': '{}'
-			]) as Map
+		// OrganizationService.addOrganization has two overloads on CE 7.4
+		// GA132: a simple 10-arg form and a 15-arg form with rich
+		// contact-info Lists. Both take a ServiceContext. JSONWS on GA132
+		// consistently returns 404 for both shapes of form-encoded POST
+		// regardless of whether serviceContext is present, so we route
+		// through the headless-admin-user REST API, which uses a clean
+		// JSON body and a single "organizations" endpoint.
+		String body = "{\"name\":${_jsonQuote(name)}}"
+		Map response = _postJson(
+			'/o/headless-admin-user/v1.0/organizations', body) as Map
+
+		Long organizationId = response.id as Long
+
+		// The headless response nests the created entity; normalize the shape
+		// so callers see a consistent JSONWS-style "organizationId" key.
+		response.organizationId = organizationId
 
 		_tracked << new Tracked(
 			'organization', '/api/jsonws/organization/delete-organization',
-			'organizationId', response.organizationId as Long)
+			'organizationId', organizationId)
 
 		return response
+	}
+
+	private static String _jsonQuote(String value) {
+		String escaped = (value ?: '')
+			.replace('\\', '\\\\')
+			.replace('"', '\\"')
+
+		return "\"${escaped}\""
+	}
+
+	private Object _postJson(String path, String jsonBody) {
+		int lastStatus = 0
+		String lastResponseBody = ''
+
+		for (String password : _candidatePasswords) {
+			String authHeader = _basicAuthFor(password)
+
+			def conn = new URL(_baseUrl + path).openConnection() as HttpURLConnection
+
+			try {
+				conn.requestMethod = 'POST'
+				conn.connectTimeout = 10_000
+				conn.readTimeout = 30_000
+				conn.setRequestProperty('Authorization', authHeader)
+				conn.setRequestProperty('Accept', 'application/json')
+				conn.setRequestProperty('Content-Type', 'application/json')
+				conn.doOutput = true
+
+				conn.outputStream.withWriter('UTF-8') { writer ->
+					writer.write(jsonBody)
+				}
+
+				int status = conn.responseCode
+				String responseBody = (status < 400)
+					? (conn.inputStream?.text ?: '')
+					: (conn.errorStream?.text ?: '')
+
+				lastStatus = status
+				lastResponseBody = responseBody
+
+				if ((status == 401) || (status == 403)) {
+					continue
+				}
+
+				if (status >= 400) {
+					throw new IllegalStateException(
+						"Headless POST ${path} returned HTTP ${status}: " +
+							responseBody)
+				}
+
+				_authHeader = authHeader
+
+				if (!responseBody?.trim() || responseBody.trim() == 'null') {
+					return null
+				}
+
+				return new JsonSlurper().parseText(responseBody)
+			}
+			finally {
+				conn.disconnect()
+			}
+		}
+
+		throw new IllegalStateException(
+			"Headless POST ${path} returned HTTP ${lastStatus} for all " +
+				"candidate passwords: ${lastResponseBody}")
 	}
 
 	Map createSite(String name, String membershipType = 'open') {
