@@ -23,11 +23,26 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 	const [result, setResult] = useState<{message: string; type: 'success' | 'danger'} | null>(null);
 	const {percent, running} = useProgress(progressResourceURL);
 
+	const isFieldVisible = (field: FieldDefinition): boolean => {
+		if (!field.visibleWhen) {
+			return true;
+		}
+
+		const controlValue = values[field.visibleWhen.field] || '';
+		const allowedValues = Array.isArray(field.visibleWhen.value)
+			? field.visibleWhen.value
+			: [field.visibleWhen.value];
+
+		return allowedValues.includes(String(controlValue));
+	};
+
 	const requiredFields = config.fields.filter((f) => !f.advanced);
 	const advancedFields = config.fields.filter((f) => f.advanced);
 
 	const handleSubmit = async () => {
-		if (!validate()) {
+		const visibleFields = config.fields.filter(isFieldVisible);
+
+		if (!validate(visibleFields)) {
 			return;
 		}
 
@@ -76,12 +91,17 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 
 	const renderField = (field: FieldDefinition) => {
 		if (field.dataSource) {
+			const dependsOnValue = field.dependsOn
+				? String(values[field.dependsOn.field] || '')
+				: undefined;
+
 			return (
 				<DynamicSelect
 					dataResourceURL={dataResourceURL}
+					dependsOnValue={dependsOnValue}
 					error={errors[field.name]}
 					field={field}
-					key={field.name}
+					key={field.name + (dependsOnValue || '')}
 					onChange={setValue}
 					value={values[field.name] || ''}
 				/>
@@ -106,11 +126,11 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 			</div>
 
 			<div className="sheet-section">
-				{requiredFields.map(renderField)}
+				{requiredFields.filter(isFieldVisible).map(renderField)}
 
 				{advancedFields.length > 0 && (
 					<AdvancedOptions>
-						{advancedFields.map(renderField)}
+						{advancedFields.filter(isFieldVisible).map(renderField)}
 					</AdvancedOptions>
 				)}
 			</div>
