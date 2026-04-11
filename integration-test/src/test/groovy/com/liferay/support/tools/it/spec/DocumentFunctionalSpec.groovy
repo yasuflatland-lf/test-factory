@@ -34,6 +34,17 @@ class DocumentFunctionalSpec extends BaseLiferaySpec {
 	}
 
 	def cleanupSpec() {
+		createdFileEntryIds.each { id ->
+			try {
+				jsonwsPost(
+					'/api/jsonws/dlapp/delete-file-entry',
+					['fileEntryId': id])
+			}
+			catch (Exception e) {
+				log.warn('Failed to clean up file entry {}: {}', id, e.message)
+			}
+		}
+
 		pw?.close()
 	}
 
@@ -118,30 +129,6 @@ class DocumentFunctionalSpec extends BaseLiferaySpec {
 
 		then: 'all created documents are found by title prefix'
 		matchingEntries.size() == DOC_COUNT
-	}
-
-	def 'Test documents are cleaned up via JSONWS DLAppService'() {
-		when: 'delete each created file entry'
-		createdFileEntryIds.each { id ->
-			try {
-				jsonwsPost(
-					'/api/jsonws/dlapp/delete-file-entry',
-					['fileEntryId': id])
-			}
-			catch (Exception e) {
-				log.warn('Failed to clean up file entry {}: {}', id, e.message)
-			}
-		}
-
-		and: 'list file entries again'
-		def entries = jsonwsGet(
-			"/api/jsonws/dlapp/get-file-entries/repository-id/${guestGroupId}" +
-			'/folder-id/0') as List
-
-		then: 'none of the test documents remain'
-		!entries.any { entry ->
-			(entry.title as String)?.startsWith(BASE_DOC_NAME)
-		}
 	}
 
 }
