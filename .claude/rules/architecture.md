@@ -98,6 +98,47 @@ addCompany(Long companyId, String webId, String virtualHostname, String mx,
 
 No simpler 6-arg overload exists on `CompanyLocalService` in CE 7.4 GA132 (the 6-arg version lives on `CompanyService`, which is the blacklisted remote interface — see above). For dummy company creation, pass `addDefaultAdminUser=false` and all remaining admin fields as `null`. Reference implementation: `CompanyCreator.java`.
 
+### 5. `DefaultScreenNameValidator` character set is `[a-zA-Z0-9._-]` only
+
+Liferay CE 7.4 GA132's `com.liferay.portal.kernel.security.auth.DefaultScreenNameValidator` rejects any screen name containing characters outside the set `[a-zA-Z0-9._-]`. It also rejects email-address form and reserved words such as `postfix`. The error surfaces as `UserScreenNameException.MustValidate` with a message listing the allowed characters.
+
+Practical consequences:
+
+- Names from Datafaker locales that include apostrophes (`O'Conner`, `D'Angelo`), whitespace (`Mary Ann`), or non-ASCII characters (漢字, кириллица) will fail. The `en_US` locale appears safe until it isn't — Datafaker's `en_US` dataset still emits names like `O'Brien`.
+- Screen names are **not** required to contain a letter — purely numeric is rejected by a different rule, not this one. A sanitizer that strips all letters (e.g. `"山田2"` → `"2"`) will therefore fail downstream with a different `UserScreenNameException` subclass.
+- The caller must lowercase before validation; `DefaultScreenNameValidator` itself does not lowercase.
+
+For new Creator classes that consume external-generated names, reuse `com.liferay.support.tools.utils.ScreenNameSanitizer` (covered in the next entry).
+
+### 6. `com.liferay.support.tools.utils.ScreenNameSanitizer` — reuse for any external name source
+
+A pure static utility for converting arbitrary text (faker output, clipboard paste, external API result) into a Liferay-legal screen-name component. Contract:
+
+```java
+public static String sanitize(String input);
+```
+
+Behavior:
+1. `null` input → returns `"user"` (logged at WARN).
+2. Strips everything outside `[a-zA-Z0-9._-]`.
+3. Collapses `..` runs into a single `.`.
+4. Strips leading/trailing `._-`.
+5. Returns `"user"` as a fallback if the result is empty (logged at WARN).
+
+The caller is responsible for lowercasing and for appending any disambiguating index suffix. The method does NOT lowercase (to keep it composable with non-lowered use cases).
+
+Always use this for **external-generated** names. For **user-supplied** names such as `baseName` from the portlet form, prefer validation and rejection at the resource-command boundary — silently rewriting user input is a UX regression.
+
+### 7. `ResourceCommandUtil.setErrorResponse` writes `error`, not `errorMessage`
+
+The helper `com.liferay.support.tools.portlet.actions.ResourceCommandUtil.setErrorResponse` writes the failure message to the JSON field named `error`. New resource commands should use this helper (rather than hand-rolling a JSON error response) so the frontend `parseResponse` in `js/utils/api.ts` sees a single consistent field name. Do NOT invent alternate field names like `errorMessage`, `message`, `reason`, or `detail` — the frontend does not read them.
+
+### 8. Throw input-validation exceptions OUTSIDE `TransactionInvokerUtil.invoke(...)`
+
+When a Creator validates caller input (e.g. a regex check on `baseName` before looping), throw the validation exception **before** entering any `TransactionInvokerUtil.invoke(...)` call. No transaction has started, so no rollback is needed and no partial commit is possible. The `throws Throwable` signature on the Creator combined with the resource command's `catch (Throwable)` routes the exception directly to `ResourceCommandUtil.setErrorResponse` → `{success: false, error: "..."}`. No additional plumbing is required.
+
+Do NOT wrap the validation in `invoke(...)` just to match the per-entity calls. Doing so costs a meaningless null-rollback and hides the contract that input validation happens at the boundary, not per-entity.
+
 ## 6. Liferay Workspace Frontend Traps
 
 Non-obvious pitfalls hit while wiring the React frontend and its unit-test stack into a Liferay Workspace module.

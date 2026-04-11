@@ -136,6 +136,27 @@ The PortletTracker in CE 7.4 GA132 tracks `javax.portlet.Portlet` services, **no
 - Test helpers (render wrappers, fixture builders, mock factories) MUST stay inside the spec file that uses them. Do NOT create shared utility files under `test/js/utils/` or similar. If two specs need the same helper, copy it — the duplication is cheaper than the import graph and the coupling it creates.
 - The only exception is `test/setup.ts`, which is loaded globally by Vitest and is not a helper file in the usual sense.
 
+## Test Design: Deterministic Locks and Branch Coverage
+
+Principles that emerged from the `ScreenNameSanitizer` work. They are test-authoring rules, not framework config.
+
+- **Pair RNG-based assertions with deterministic pattern locks.** When a test exercises a code path that consumes random or faker-generated data, the assertion that "the output looks right" will only fail probabilistically if the sanitizer/validator is broken. For example, `UserCreationSpec`'s Datafaker case asserts that the returned `firstName` differs from the fallback baseName — that alone would still pass on a regression that produced `krystal.o'conner2`, because Datafaker doesn't always emit apostrophes. The deterministic lock is a paired regex assertion on the normalized output:
+
+	```groovy
+	and: 'all returned screen names match Liferay-legal characters'
+	(response.users as List).every {
+	    (it.screenName as String) ==~ /^[a-z0-9._-]+$/
+	}
+	```
+
+	The rule generalizes: **every test that depends on RNG should also assert a deterministic pattern that a regression would break 100% of the time.** The deterministic lock is the actual regression guard; the RNG assertion only demonstrates that the path is being exercised.
+
+- **Pure-utility unit tests land before integration-test coverage.** A JUnit 5 host-JVM test for a pure function (`ScreenNameSanitizer.sanitize`, `BatchNaming.resolve`, `RoleType.fromString`) runs in ~8 seconds and catches character-class regressions without ever starting a Liferay container. Integration tests should lock down **integration-specific** behavior (that a branch exists, that JSON flows end-to-end, that Liferay actually accepts the sanitized output), not the correctness of the pure logic inside. When adding new utility classes under `modules/liferay-dummy-factory/src/main/java/.../utils/`, a matching `*Test.java` under `src/test/java` is mandatory — it is the fast regression lock; the integration test is the slow integration lock. The two are complementary, not duplicative.
+
+- **Branching production changes require tests on both branches.** If a production change adds a new `if (fakerEnable)` / `else` split and the sanitize/validate logic differs between branches, integration tests must exercise **both** paths. An integration test that only sends `fakerEnable=true` does not cover the non-faker path's new `baseName` rejection logic, and a test that only sends clean `baseName` values does not lock down the rejection contract. Add at least one dirty-input feature method (e.g. `rejects non-faker baseName that contains invalid characters` with `baseName: "O'Brien"`) next to the happy-path method so both branches are under test.
+
+- **Response-shape assertions should lock the contract, not the current values.** When a Creator's response shape is part of the contract (`success`, `count`, `requested`, `skipped`, `error?`), tests should assert **presence and type** of each field on both the success and failure paths, not just the values seen in the happy case. A regression that silently drops the `skipped` field is currently undetectable by any spec because no assertion touches it — future-you will have to re-prove the contract. Where possible, add a one-line `response.containsKey('skipped')` check next to the value assertions.
+
 ## Vitest Migration Gotchas
 
 Lessons from the Jest → Vitest migration. These are easy to get wrong when mechanically porting Jest specs, and most of them fail silently (tests pass on a regression, or whole files are skipped without counting as failures).
