@@ -1,40 +1,21 @@
 import {render, screen} from '@testing-library/react';
 
 import EntityForm from '../../../src/main/resources/META-INF/resources/js/components/EntityForm';
+import {useFormState} from '../../../src/main/resources/META-INF/resources/js/hooks/useFormState';
+import {useProgress} from '../../../src/main/resources/META-INF/resources/js/hooks/useProgress';
 import {EntityFormConfig} from '../../../src/main/resources/META-INF/resources/js/types';
 
-const mockUseFormState = jest.fn();
-
 jest.mock(
-	'../../../src/main/resources/META-INF/resources/js/hooks/useFormState',
-	() => ({
-		useFormState: (...args: unknown[]) => mockUseFormState(...args),
-	})
+	'../../../src/main/resources/META-INF/resources/js/hooks/useFormState'
+);
+jest.mock(
+	'../../../src/main/resources/META-INF/resources/js/hooks/useProgress'
 );
 
-jest.mock(
-	'../../../src/main/resources/META-INF/resources/js/hooks/useProgress',
-	() => ({
-		useProgress: () => ({
-			percent: 0,
-			reset: jest.fn(),
-			running: false,
-			start: jest.fn(),
-		}),
-	})
-);
-
-jest.mock(
-	'../../../src/main/resources/META-INF/resources/js/hooks/useApiData',
-	() => ({
-		useApiData: () => ({
-			data: [],
-			error: null,
-			loading: false,
-			reload: jest.fn(),
-		}),
-	})
-);
+const mockedUseFormState = useFormState as jest.MockedFunction<
+	typeof useFormState
+>;
+const mockedUseProgress = useProgress as jest.MockedFunction<typeof useProgress>;
 
 const config: EntityFormConfig = {
 	actionURL: '/ldf/user',
@@ -45,26 +26,25 @@ const config: EntityFormConfig = {
 	label: 'user',
 };
 
-function formStateFor(submitting: boolean) {
-	return {
-		endSubmit: jest.fn(),
-		errors: {},
-		reset: jest.fn(),
-		setValue: jest.fn(),
-		startSubmit: jest.fn(),
+function mockFormStateSubmitting(submitting: boolean) {
+	mockedUseFormState.mockReturnValue({
 		submitting,
 		validate: jest.fn().mockReturnValue(true),
-		values: {},
-	};
+	} as unknown as ReturnType<typeof useFormState>);
 }
 
 describe('EntityForm i18n submit button', () => {
 	beforeEach(() => {
-		mockUseFormState.mockReset();
+		mockedUseFormState.mockReset();
+		mockedUseProgress.mockReset();
+
+		mockedUseProgress.mockReturnValue({
+			running: false,
+		} as unknown as ReturnType<typeof useProgress>);
 	});
 
 	it("renders the Run label via Liferay.Language.get('run') when idle", () => {
-		mockUseFormState.mockReturnValue(formStateFor(false));
+		mockFormStateSubmitting(false);
 
 		render(
 			<EntityForm
@@ -84,7 +64,7 @@ describe('EntityForm i18n submit button', () => {
 	});
 
 	it("renders the Running label via Liferay.Language.get('running') when submitting", () => {
-		mockUseFormState.mockReturnValue(formStateFor(true));
+		mockFormStateSubmitting(true);
 
 		render(
 			<EntityForm
