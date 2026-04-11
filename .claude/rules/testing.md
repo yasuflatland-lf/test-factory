@@ -16,7 +16,14 @@
 - Startup timeout: **8 minutes** (log-based wait strategy matching Catalina startup message).
 - Exposed ports: **8080** (HTTP) and **11311** (GoGo Shell). Access via `liferay.httpPort` / `liferay.gogoPort` (mapped ports).
 - Environment variables disable the setup wizard, terms-of-use prompt, and reminder queries so tests run unattended.
-- Container reuse is enabled (`withReuse(true)`) to speed up repeated local runs.
+- **Container reuse is disabled** (`withReuse(false)`). Every test run starts a fresh container so state from a previous run (created users, roles, sites, password changes) cannot leak into the next run and mask regressions. Do not flip this to `true` for local speedups — the resulting state drift has caused false passes in the past.
+
+## Verification Strategy: Prefer JSONWS
+
+- **Prefer Liferay JSONWS (`/api/jsonws/...`) over Playwright/UI navigation for verifying test outcomes.** JSONWS calls are faster, deterministic, and do not depend on Control Panel rendering or portlet UI state.
+- Use Playwright only when the behavior under test is genuinely UI-specific (rendering, client-side validation, navigation flows). For "did the entity actually get created / updated / deleted?" assertions, query JSONWS.
+- Authenticate JSONWS calls with Basic Auth using the default admin credentials (`test@liferay.com` / `test`). Include `credentials: 'include'` equivalents are not needed — Basic Auth is sufficient.
+- Existing examples: `BaseLiferaySpec`, `UserRoleAssignmentSpec`, `RoleFunctionalSpec`, `OrganizationFunctionalSpec`, `SiteFunctionalSpec` all use JSONWS for post-condition checks.
 
 ## Deploy Verification
 
