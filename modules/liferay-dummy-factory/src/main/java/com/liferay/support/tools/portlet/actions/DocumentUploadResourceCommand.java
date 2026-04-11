@@ -57,12 +57,21 @@ public class DocumentUploadResourceCommand extends BaseMVCResourceCommand {
 					responseJson.put("success", false);
 				}
 				else {
+					long groupId = ParamUtil.getLong(
+						uploadPortletRequest, "groupId");
+
+					if (groupId <= 0) {
+						responseJson.put("success", false);
+						responseJson.put("error", "groupId is required");
+						JSONPortletResponseUtil.writeJSON(
+							resourceRequest, resourceResponse, responseJson);
+						return;
+					}
+
 					InputStream inputStream =
 						uploadPortletRequest.getFileAsStream("file");
 					String mimeType = uploadPortletRequest.getContentType(
 						"file");
-
-					long groupId = _portal.getScopeGroupId(resourceRequest);
 
 					String tempFileName = TempFileEntryUtil.getTempFileName(
 						sourceFileName);
@@ -80,7 +89,16 @@ public class DocumentUploadResourceCommand extends BaseMVCResourceCommand {
 				String fileName = ParamUtil.getString(
 					uploadPortletRequest, "fileName");
 
-				long groupId = _portal.getScopeGroupId(resourceRequest);
+				long groupId = ParamUtil.getLong(
+					uploadPortletRequest, "groupId");
+
+				if (groupId <= 0) {
+					responseJson.put("success", false);
+					responseJson.put("error", "groupId is required");
+					JSONPortletResponseUtil.writeJSON(
+						resourceRequest, resourceResponse, responseJson);
+					return;
+				}
 
 				_dlAppService.deleteTempFileEntry(
 					groupId, 0, TEMP_FOLDER_NAME, fileName);
