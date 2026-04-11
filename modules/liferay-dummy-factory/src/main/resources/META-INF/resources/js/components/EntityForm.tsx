@@ -1,6 +1,6 @@
 import {useState} from 'react';
 
-import {EntityFormConfig, FieldDefinition} from '../types';
+import {EntityFormConfig, FIELD_GROUPS, FieldDefinition, MultiSiteResult} from '../types';
 import {useFormState} from '../hooks/useFormState';
 import {useProgress} from '../hooks/useProgress';
 import {postResource} from '../utils/api';
@@ -8,14 +8,6 @@ import DynamicSelect from './DynamicSelect';
 import FormField from './FormField';
 import ProgressBar from './ProgressBar';
 import ResultAlert from './ResultAlert';
-
-const GROUP_ORDER: NonNullable<FieldDefinition['group']>[] = [
-	'identity',
-	'generator',
-	'membership',
-	'layout',
-	'content',
-];
 
 interface EntityFormProps {
 	actionResourceURLs: Record<string, string>;
@@ -27,7 +19,11 @@ interface EntityFormProps {
 function EntityForm({actionResourceURLs, config, dataResourceURL, progressResourceURL}: EntityFormProps) {
 	const {endSubmit, errors, setValue, startSubmit, submitting, validate, values} =
 		useFormState(config.fields);
-	const [result, setResult] = useState<{message: string; type: 'success' | 'danger'} | null>(null);
+	const [result, setResult] = useState<{
+		message: string;
+		multiSite?: MultiSiteResult | null;
+		type: 'success' | 'warning' | 'danger';
+	} | null>(null);
 	const {percent, running} = useProgress(progressResourceURL);
 
 	const isFieldVisible = (field: FieldDefinition): boolean => {
@@ -82,7 +78,36 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 
 		endSubmit();
 
-		if (response.success) {
+		const payload = response.success
+			? ((response.data as unknown) as Partial<MultiSiteResult> | undefined)
+			: undefined;
+
+		if (payload && Array.isArray(payload.perSite)) {
+			const multiSite = payload as MultiSiteResult;
+
+			if (multiSite.ok) {
+				setResult({
+					message: Liferay.Language.get('execution-completed-successfully'),
+					multiSite,
+					type: 'success',
+				});
+			}
+			else if (multiSite.totalCreated > 0) {
+				setResult({
+					message: Liferay.Language.get('partial-execution'),
+					multiSite,
+					type: 'warning',
+				});
+			}
+			else {
+				setResult({
+					message: Liferay.Language.get('execution-failed'),
+					multiSite,
+					type: 'danger',
+				});
+			}
+		}
+		else if (response.success) {
 			setResult({
 				message: Liferay.Language.get('execution-completed-successfully'),
 				type: 'success',
@@ -90,7 +115,7 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 		}
 		else {
 			setResult({
-				message: response.error,
+				message: response.error ?? Liferay.Language.get('execution-failed'),
 				type: 'danger',
 			});
 		}
@@ -143,7 +168,7 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 						<>
 							{ungrouped.map(renderField)}
 
-							{GROUP_ORDER.map((group) => {
+							{FIELD_GROUPS.map((group) => {
 								const groupFields = visibleAdvanced.filter(
 									(f) => f.group === group
 								);
@@ -187,8 +212,9 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 			{result && (
 				<ResultAlert
 					message={result.message}
+					multiSite={result.multiSite}
 					onDismiss={() => setResult(null)}
-					type={result.type}
+					type={result.type === 'warning' ? 'danger' : result.type}
 				/>
 			)}
 		</div>
