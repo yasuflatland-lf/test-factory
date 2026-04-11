@@ -55,10 +55,10 @@ class PortletRenderSpec extends BaseLiferaySpec {
 		page.waitForLoadState()
 
 		then: 'React component renders'
-		page.locator('#count').waitFor(
+		page.locator('[data-testid="org-count-input"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
-		page.locator('#count').isVisible()
+		page.locator('[data-testid="org-count-input"]').isVisible()
 
 		and: 'no critical JavaScript errors in console'
 		jsErrors.findAll {
