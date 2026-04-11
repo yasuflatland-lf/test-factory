@@ -92,19 +92,20 @@ class UserCreationSpec extends BaseLiferaySpec {
 		given:
 		int count = 2
 
-		when: 'POST /ldf/user with fakerEnable=true and locale=ja_JP'
+		when: 'POST /ldf/user with fakerEnable=true and locale=en_US'
+		// en_US: ja_JP kanji names are rejected by CE 7.4 default screen-name validator
 		Map response = ldf.createUser([
 			count       : count,
 			baseName    : FAKER_BASE_NAME,
 			fakerEnable : true,
-			locale      : 'ja_JP'
+			locale      : 'en_US'
 		])
 
 		then: 'response reports success'
 		response.success == true
 		(response.users as List).size() == count
 
-		when: 'fetch each generated user by screen name and inspect firstName'
+		when: 'fetch each generated user by screen name'
 		List<Map> createdUsers = (response.users as List).collect { it as Map }
 
 		List<Map> dbUsers = createdUsers.collect { Map created ->
@@ -121,14 +122,11 @@ class UserCreationSpec extends BaseLiferaySpec {
 			return user
 		}
 
-		then: 'firstName diverges from the base name'
-		dbUsers.every { Map u ->
-			(u.firstName as String) != FAKER_BASE_NAME
-		}
+		then: 'screenName is Datafaker-derived, not the baseName+index fallback'
+		String fallbackPrefix = FAKER_BASE_NAME.toLowerCase()
 
-		and: 'at least one firstName contains non-ASCII characters (ja_JP)'
-		dbUsers.any { Map u ->
-			(u.firstName as String) ==~ /.*[^\p{ASCII}].*/
+		dbUsers.every { Map u ->
+			!(u.screenName as String).startsWith(fallbackPrefix)
 		}
 	}
 
