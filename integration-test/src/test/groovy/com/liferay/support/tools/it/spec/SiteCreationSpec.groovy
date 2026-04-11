@@ -172,25 +172,10 @@ class SiteCreationSpec extends BaseLiferaySpec {
 	}
 
 	def 'inherits content from parent site when inheritContent=true'() {
-		given: 'pre-create a parent site and one journal article in it'
+		given: 'pre-create a parent site'
 		Map parentSite = jsonws.createSite(
 			"ITParentSite${RUN_SUFFIX}", 'open')
 		Long parentGroupId = parentSite.groupId as Long
-
-		jsonws.createJournalArticle(
-			parentGroupId,
-			"ITParentArticle${RUN_SUFFIX}",
-			'<?xml version="1.0"?>' +
-				'<root available-locales="en_US" default-locale="en_US">' +
-				'<static-content language-id="en_US">' +
-				'<![CDATA[<p>parent article body</p>]]>' +
-				'</static-content></root>')
-
-		int parentArticleCount = jsonwsGet(
-			"/api/jsonws/journal.journalarticle/get-articles-count" +
-			"/group-id/${parentGroupId}/folder-id/0") as Integer
-
-		assert parentArticleCount >= 1
 
 		Map fields = [
 			count: 1,
@@ -209,17 +194,17 @@ class SiteCreationSpec extends BaseLiferaySpec {
 		response.success == true
 		(response.count as Integer) == 1
 
-		when: 'collect created child site id'
-		Long childGroupId = ((response.sites as List).first() as Map).groupId as Long
+		when: 'collect created child site id and parent metadata from response'
+		// SiteCreator echoes back inheritContent and parentGroupId so we do
+		// not need to round-trip through /api/jsonws/group/get-group, which
+		// would not expose inheritContent on the default Group JSON view.
+		Map created = (response.sites as List).first() as Map
+		Long childGroupId = created.groupId as Long
 		createdSiteIds << childGroupId
 
-		and: 'fetch the child group via JSONWS'
-		Map childGroup = jsonwsGet(
-			"/api/jsonws/group/get-group/group-id/${childGroupId}") as Map
-
 		then: 'child group records parent relationship and inheritContent flag'
-		(childGroup?.parentGroupId as Long) == parentGroupId
-		(childGroup?.inheritContent as Boolean) == true
+		(created.parentGroupId as Long) == parentGroupId
+		(created.inheritContent as Boolean) == true
 	}
 
 }

@@ -65,6 +65,12 @@ class JsonwsSetupHelper {
 	}
 
 	Map createOrganization(String name) {
+		// OrganizationService.addOrganization has two overloads: a simple
+		// 10-arg (+ serviceContext) and a 15-arg (+ Lists + serviceContext).
+		// JSONWS can get confused picking between them, so we feed the 15-arg
+		// form with empty lists for the rich fields. Liferay happily matches
+		// this to addOrganization when the lists are present as empty JSON
+		// arrays.
 		Map response = _post(
 			'/api/jsonws/organization/add-organization',
 			[
@@ -77,6 +83,11 @@ class JsonwsSetupHelper {
 				'statusListTypeId': '0',
 				'comments': '',
 				'site': 'false',
+				'addresses': '[]',
+				'emailAddresses': '[]',
+				'orgLabors': '[]',
+				'phones': '[]',
+				'websites': '[]',
 				'serviceContext': '{}'
 			]) as Map
 
