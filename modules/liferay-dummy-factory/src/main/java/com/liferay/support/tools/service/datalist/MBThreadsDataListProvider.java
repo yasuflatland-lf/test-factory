@@ -1,7 +1,9 @@
 package com.liferay.support.tools.service.datalist;
 
+import com.liferay.message.boards.model.MBCategory;
 import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.model.MBThread;
+import com.liferay.message.boards.service.MBCategoryLocalService;
 import com.liferay.message.boards.service.MBMessageLocalService;
 import com.liferay.message.boards.service.MBThreadLocalService;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
@@ -40,11 +42,7 @@ public class MBThreadsDataListProvider implements DataListProvider {
 		long groupId = ParamUtil.getLong(httpServletRequest, "groupId", 0);
 
 		if (groupId > 0) {
-			_addThreads(
-				jsonArray,
-				_mbThreadLocalService.getThreads(
-					groupId, 0L, WorkflowConstants.STATUS_ANY,
-					QueryUtil.ALL_POS, QueryUtil.ALL_POS));
+			_addAllGroupThreads(jsonArray, groupId);
 
 			return jsonArray;
 		}
@@ -53,14 +51,32 @@ public class MBThreadsDataListProvider implements DataListProvider {
 			companyId, GroupConstants.DEFAULT_PARENT_GROUP_ID, true);
 
 		for (Group group : groups) {
-			_addThreads(
-				jsonArray,
-				_mbThreadLocalService.getThreads(
-					group.getGroupId(), 0L, WorkflowConstants.STATUS_ANY,
-					QueryUtil.ALL_POS, QueryUtil.ALL_POS));
+			_addAllGroupThreads(jsonArray, group.getGroupId());
 		}
 
 		return jsonArray;
+	}
+
+	private void _addAllGroupThreads(JSONArray jsonArray, long groupId)
+		throws Exception {
+
+		_addThreads(
+			jsonArray,
+			_mbThreadLocalService.getThreads(
+				groupId, 0L, WorkflowConstants.STATUS_ANY, QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS));
+
+		List<MBCategory> categories = _mbCategoryLocalService.getCategories(
+			groupId);
+
+		for (MBCategory category : categories) {
+			_addThreads(
+				jsonArray,
+				_mbThreadLocalService.getThreads(
+					groupId, category.getCategoryId(),
+					WorkflowConstants.STATUS_ANY, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS));
+		}
 	}
 
 	@Override
@@ -82,6 +98,9 @@ public class MBThreadsDataListProvider implements DataListProvider {
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private MBCategoryLocalService _mbCategoryLocalService;
 
 	@Reference
 	private MBMessageLocalService _mbMessageLocalService;
