@@ -123,37 +123,36 @@ class MBReplyFunctionalSpec extends BaseLiferaySpec {
 		page.waitForLoadState()
 
 		and: 'select MB Replies entity type'
-		page.locator('.nav-link:has-text("mb-replies")').click()
+		page.locator('[data-testid="entity-selector-MB_REPLY"]').click()
 
 		and: 'wait for MB Replies form to render'
-		page.locator('.sheet-header h2:has-text("mb-replies")').waitFor(
-			new Locator.WaitForOptions().setTimeout(15_000)
-		)
-		page.locator('#count').waitFor(
+		page.locator('[data-testid="mb-reply-count-input"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
 
 		and: 'fill count'
-		page.locator('#count').fill("${REPLY_COUNT}")
+		page.locator('[data-testid="mb-reply-count-input"]').fill("${REPLY_COUNT}")
 
-		and: 'wait for threadId dropdown to populate with prereq thread'
-		page.locator("#threadId option[value=\"${prereqThreadId}\"]").waitFor(
+		and: 'wait for thread dropdown to populate with prereq thread'
+		page.locator(
+			"[data-testid=\"mb-reply-thread-id-select\"] option[value=\"${prereqThreadId}\"]"
+		).waitFor(
 			new Locator.WaitForOptions()
 				.setState(com.microsoft.playwright.options.WaitForSelectorState.ATTACHED)
 				.setTimeout(15_000)
 		)
 
 		and: 'select prereq thread'
-		page.locator('#threadId').selectOption("${prereqThreadId}")
+		page.locator('[data-testid="mb-reply-thread-id-select"]').selectOption("${prereqThreadId}")
 
 		and: 'click Run button'
-		page.locator('.sheet-footer button.btn-primary').click()
+		page.locator('[data-testid="mb-reply-submit"]').click()
 
 		then: 'success alert appears'
-		page.locator('.alert-success').waitFor(
+		page.locator('[data-testid="mb-reply-result"].alert-success').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
-		page.locator('.alert-success').isVisible()
+		page.locator('[data-testid="mb-reply-result"].alert-success').isVisible()
 
 		when: 'query headless delivery API for messages under the thread'
 		def response = headlessGet(
