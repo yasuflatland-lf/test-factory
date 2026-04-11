@@ -74,29 +74,29 @@ class MBCategoryFunctionalSpec extends BaseLiferaySpec {
 		page.waitForLoadState()
 
 		and: 'select MB Categories entity type'
-		page.locator('.nav-link:has-text("mb-categories")').click()
+		page.locator('[data-testid="entity-selector-MB_CATEGORY"]').click()
 
 		and: 'wait for MB Categories form to render'
-		page.locator('.sheet-header h2:has-text("mb-categories")').waitFor(
+		page.locator('[data-testid="mb-category-submit"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
-		page.locator('#count').waitFor(
+		page.locator('[data-testid="mb-category-count-input"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
 
 		and: 'fill in the MB categories form'
-		page.locator('#count').fill("${MB_CATEGORY_COUNT}")
-		page.locator('#baseName').fill(BASE_MB_CATEGORY_NAME)
-		page.locator('#groupId').selectOption("${guestGroupId}")
+		page.locator('[data-testid="mb-category-count-input"]').fill("${MB_CATEGORY_COUNT}")
+		page.locator('[data-testid="mb-category-base-name-input"]').fill(BASE_MB_CATEGORY_NAME)
+		page.locator('[data-testid="mb-category-group-id-select"]').selectOption("${guestGroupId}")
 
 		and: 'click Run button'
-		page.locator('.sheet-footer button.btn-primary').click()
+		page.locator('[data-testid="mb-category-submit"]').click()
 
 		then: 'success alert appears'
-		page.locator('.alert-success').waitFor(
+		page.locator('[data-testid="mb-category-result"].alert-success').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
-		page.locator('.alert-success').isVisible()
+		page.locator('[data-testid="mb-category-result"].alert-success').isVisible()
 
 		when: 'query headless delivery API for created MB categories'
 		def response = headlessGet(

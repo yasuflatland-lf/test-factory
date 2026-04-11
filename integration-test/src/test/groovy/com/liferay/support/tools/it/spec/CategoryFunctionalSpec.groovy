@@ -102,41 +102,43 @@ class CategoryFunctionalSpec extends BaseLiferaySpec {
 		page.waitForLoadState()
 
 		and: 'select Categories entity type'
-		page.locator('.nav-link:text-is("categories")').click()
+		page.locator('[data-testid="entity-selector-CATEGORY"]').click()
 
 		and: 'wait for Categories form to render'
-		page.locator('.sheet-header h2:text-is("categories")').waitFor(
+		page.locator('[data-testid="category-submit"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
-		page.locator('#count').waitFor(
+		page.locator('[data-testid="category-count-input"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
 
 		and: 'fill count and baseName'
-		page.locator('#count').fill("${CATEGORY_COUNT}")
-		page.locator('#baseName').fill(BASE_CATEGORY_NAME)
+		page.locator('[data-testid="category-count-input"]').fill("${CATEGORY_COUNT}")
+		page.locator('[data-testid="category-base-name-input"]').fill(BASE_CATEGORY_NAME)
 
 		and: 'select Guest site which triggers vocabulary dropdown load'
-		page.locator('#groupId').selectOption("${guestGroupId}")
+		page.locator('[data-testid="category-group-id-select"]').selectOption("${guestGroupId}")
 
 		and: 'wait for vocabulary dropdown to populate with prereq vocab'
-		page.locator("#vocabularyId option[value=\"${prereqVocabularyId}\"]").waitFor(
+		page.locator(
+			"[data-testid=\"category-vocabulary-id-select\"] option[value=\"${prereqVocabularyId}\"]"
+		).waitFor(
 			new Locator.WaitForOptions()
 				.setState(com.microsoft.playwright.options.WaitForSelectorState.ATTACHED)
 				.setTimeout(15_000)
 		)
 
 		and: 'select prereq vocabulary'
-		page.locator('#vocabularyId').selectOption("${prereqVocabularyId}")
+		page.locator('[data-testid="category-vocabulary-id-select"]').selectOption("${prereqVocabularyId}")
 
 		and: 'click Run button'
-		page.locator('.sheet-footer button.btn-primary').click()
+		page.locator('[data-testid="category-submit"]').click()
 
 		then: 'success alert appears'
-		page.locator('.alert-success').waitFor(
+		page.locator('[data-testid="category-result"].alert-success').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
-		page.locator('.alert-success').isVisible()
+		page.locator('[data-testid="category-result"].alert-success').isVisible()
 
 		when: 'query headless taxonomy API for created categories'
 		def response = headlessGet(
