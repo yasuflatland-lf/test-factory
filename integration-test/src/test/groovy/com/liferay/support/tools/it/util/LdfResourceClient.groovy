@@ -122,6 +122,18 @@ class LdfResourceClient implements Closeable {
 		return post('/ldf/wcm', fields)
 	}
 
+	/**
+	 * Forces the internal login / password-change flow without invoking any
+	 * MVC resource command. Callers that need to prime the admin password to
+	 * the post-reset value before other helpers (JsonwsSetupHelper) fire can
+	 * call this from {@code setupSpec()}.
+	 */
+	String login() {
+		_ensureLoggedIn()
+
+		return _password
+	}
+
 	@Override
 	synchronized void close() {
 		try {

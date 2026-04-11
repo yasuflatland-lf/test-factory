@@ -44,6 +44,13 @@ class WebContentCreationSpec extends BaseLiferaySpec {
 		ensureBundleActive()
 
 		ldf = new LdfResourceClient(liferay.baseUrl)
+
+		// Prime the admin password by running Playwright's login + forced
+		// password-change flow before any JSONWS helper call, so that
+		// JsonwsSetupHelper can authenticate straight away on a fresh
+		// container regardless of which spec runs first.
+		ldf.login()
+
 		jsonws = new JsonwsSetupHelper(liferay.baseUrl)
 	}
 

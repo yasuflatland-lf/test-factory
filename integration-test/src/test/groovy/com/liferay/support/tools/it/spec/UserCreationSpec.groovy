@@ -37,6 +37,13 @@ class UserCreationSpec extends BaseLiferaySpec {
 		ensureBundleActive()
 
 		ldf = new LdfResourceClient(liferay.baseUrl)
+
+		// Prime the admin password via Playwright's login + password-change
+		// flow so JsonwsSetupHelper (which authenticates via Basic Auth to
+		// JSONWS) can succeed on a fresh container regardless of which spec
+		// runs first.
+		ldf.login()
+
 		jsonws = new JsonwsSetupHelper(liferay.baseUrl)
 	}
 

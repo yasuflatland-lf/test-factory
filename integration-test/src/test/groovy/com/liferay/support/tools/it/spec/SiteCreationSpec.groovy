@@ -38,7 +38,15 @@ class SiteCreationSpec extends BaseLiferaySpec {
 		ensureBundleActive()
 
 		ldf = new LdfResourceClient("http://localhost:${liferay.httpPort}")
-		jsonws = new JsonwsSetupHelper("http://localhost:${liferay.httpPort}")
+
+		// Prime the admin password via Playwright's login + password-change
+		// flow so JsonwsSetupHelper (which authenticates via Basic Auth to
+		// JSONWS) can succeed on a fresh container regardless of which spec
+		// runs first.
+		ldf.login()
+
+		jsonws = new JsonwsSetupHelper(
+			"http://localhost:${liferay.httpPort}")
 	}
 
 	def cleanupSpec() {
