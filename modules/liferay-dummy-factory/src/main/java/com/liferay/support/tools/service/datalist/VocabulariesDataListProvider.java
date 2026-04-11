@@ -4,8 +4,6 @@ import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.service.AssetVocabularyLocalService;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.support.tools.service.DataListProvider;
@@ -27,8 +25,9 @@ public class VocabulariesDataListProvider implements DataListProvider {
 
 	@Override
 	public JSONArray getOptions(
-		long companyId, String type,
-		HttpServletRequest httpServletRequest) {
+			long companyId, String type,
+			HttpServletRequest httpServletRequest)
+		throws Exception {
 
 		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
 
@@ -38,23 +37,14 @@ public class VocabulariesDataListProvider implements DataListProvider {
 			return jsonArray;
 		}
 
-		try {
-			List<AssetVocabulary> vocabularies =
-				_assetVocabularyLocalService.getGroupVocabularies(groupId);
+		List<AssetVocabulary> vocabularies =
+			_assetVocabularyLocalService.getGroupVocabularies(groupId);
 
-			for (AssetVocabulary vocabulary : vocabularies) {
-				jsonArray.put(
-					createOption(
-						vocabulary.getTitle(LocaleUtil.getDefault()),
-						vocabulary.getVocabularyId()));
-			}
-		}
-		catch (Exception exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(
-					"Failed to load vocabularies for group " + groupId,
-					exception);
-			}
+		for (AssetVocabulary vocabulary : vocabularies) {
+			jsonArray.put(
+				createOption(
+					vocabulary.getTitle(LocaleUtil.getDefault()),
+					vocabulary.getVocabularyId()));
 		}
 
 		return jsonArray;
@@ -64,9 +54,6 @@ public class VocabulariesDataListProvider implements DataListProvider {
 	public String[] getSupportedTypes() {
 		return new String[] {"vocabularies"};
 	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		VocabulariesDataListProvider.class);
 
 	@Reference
 	private AssetVocabularyLocalService _assetVocabularyLocalService;

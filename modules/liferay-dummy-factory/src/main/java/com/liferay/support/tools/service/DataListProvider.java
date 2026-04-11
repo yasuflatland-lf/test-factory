@@ -17,11 +17,12 @@ public interface DataListProvider {
 		return jsonObject;
 	}
 
-	JSONArray getOptions(long companyId, String type);
+	JSONArray getOptions(long companyId, String type) throws Exception;
 
 	default JSONArray getOptions(
-		long companyId, String type,
-		HttpServletRequest httpServletRequest) {
+			long companyId, String type,
+			HttpServletRequest httpServletRequest)
+		throws Exception {
 
 		return getOptions(companyId, type);
 	}
