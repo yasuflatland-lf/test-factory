@@ -25,6 +25,12 @@
 - Authenticate JSONWS calls with Basic Auth using the default admin credentials (`test@liferay.com` / `test`).
 - See `BaseLiferaySpec` for `jsonwsGet` / `jsonwsPost` helpers, and any `*FunctionalSpec` under `integration-test/.../spec/` for usage.
 
+### JSON-WS exposure: only remote *Service, minus blacklist
+
+- Liferay exposes remote `*Service` classes via `/api/jsonws/`, NOT `*LocalService`. If a service method only exists on `*LocalService`, it cannot be called from a test.
+- Some remote services are explicitly blacklisted via `portal.properties` `json.service.invalid.class.names`. `CompanyServiceUtil` is one such entry — every JSON-WS path to `/api/jsonws/company/*` returns HTTP 404 regardless of method or parameter format.
+- Before writing cleanup/verification code for a new entity type, check both (a) is there a remote `*Service` class with the method I need, and (b) is that class blacklisted?
+
 ## Deploy Verification
 
 1. The module JAR is copied into the container at `/opt/liferay/deploy/` using `liferay.deployJar(path)`.
@@ -79,6 +85,14 @@ The PortletTracker in CE 7.4 GA132 tracks `javax.portlet.Portlet` services, **no
 	```
 
 	The `message-board-sections` listing endpoint is DB-backed, not ES-backed, so there is no indexing lag.
+
+## Cleanup
+
+### Acceptable to skip cleanup when the deletion API is unreachable
+
+- `withReuse(false)` means a fresh Liferay container every test run. State from one run cannot leak into the next.
+- If an entity has no working deletion path (no REST API, no JSON-WS exposure, no helpful `*LocalService` method), it is acceptable to skip `cleanupSpec` deletion entirely — just leave a one-line comment stating why. Example from `CompanyFunctionalSpec.groovy`: `// CompanyService is blacklisted from JSON-WS; container is disposable, so no explicit cleanup is needed.`
+- Do NOT introduce best-effort cleanup code that logs warnings and swallows errors — it produces noise in test output and implies a bug. Either fix the cleanup or drop it with a comment.
 
 - **Headless API and Java API use different names for the same Message Boards entities.** The `id` values are identical between the two layers, so you can create via one and verify/delete via the other.
 
