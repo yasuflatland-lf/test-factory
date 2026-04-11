@@ -4,6 +4,7 @@ import com.liferay.document.library.kernel.exception.DuplicateFileEntryException
 import com.liferay.document.library.kernel.exception.FileNameException;
 import com.liferay.document.library.kernel.exception.FileSizeException;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -16,6 +17,7 @@ import com.liferay.portal.kernel.transaction.TransactionConfig;
 import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.TempFileEntryUtil;
+import com.liferay.support.tools.portlet.actions.DocumentUploadResourceCommand;
 
 import java.nio.charset.StandardCharsets;
 
@@ -44,74 +46,87 @@ public class DocumentCreator {
 		List<FileEntry> tempFileEntries = _loadTempFiles(
 			groupId, userId, uploadedFiles);
 
-		for (int i = 0; i < count; i++) {
-			final String title = BatchNaming.resolve(
-				baseName, count, i, " ");
+		try {
+			for (int i = 0; i < count; i++) {
+				final String title = BatchNaming.resolve(
+					baseName, count, i, " ");
 
-			try {
-				FileEntry fileEntry;
+				try {
+					FileEntry fileEntry;
 
-				if (tempFileEntries.isEmpty()) {
-					final String sourceFileName = title + ".txt";
-					final byte[] content =
-						("Test document: " + title).getBytes(
-							StandardCharsets.UTF_8);
+					if (tempFileEntries.isEmpty()) {
+						final String sourceFileName = title + ".txt";
+						final byte[] content =
+							("Test document: " + title).getBytes(
+								StandardCharsets.UTF_8);
 
-					fileEntry = TransactionInvokerUtil.invoke(
-						_transactionConfig,
-						() -> {
-							ServiceContext serviceContext =
-								new ServiceContext();
+						fileEntry = TransactionInvokerUtil.invoke(
+							_transactionConfig,
+							() -> {
+								ServiceContext serviceContext =
+									new ServiceContext();
 
-							serviceContext.setUserId(userId);
+								serviceContext.setUserId(userId);
 
-							return _dlAppLocalService.addFileEntry(
-								null, userId, groupId, folderId,
-								sourceFileName, ContentTypes.TEXT_PLAIN, title,
-								"", description, "", content, null, null, null,
-								serviceContext);
-						});
+								return _dlAppLocalService.addFileEntry(
+									null, userId, groupId, folderId,
+									sourceFileName, ContentTypes.TEXT_PLAIN,
+									title, "", description, "", content, null,
+									null, null, serviceContext);
+							});
+					}
+					else {
+						final FileEntry tf = _getRandomFileEntry(
+							tempFileEntries);
+						final String fileName =
+							title + "." + tf.getExtension();
+
+						fileEntry = TransactionInvokerUtil.invoke(
+							_transactionConfig,
+							() -> {
+								ServiceContext serviceContext =
+									new ServiceContext();
+
+								serviceContext.setUserId(userId);
+
+								return _dlAppLocalService.addFileEntry(
+									null, userId, groupId, folderId, fileName,
+									tf.getMimeType(), fileName, "", description,
+									"", tf.getContentStream(), tf.getSize(),
+									null, null, null, serviceContext);
+							});
+					}
+
+					JSONObject docJson = JSONFactoryUtil.createJSONObject();
+
+					docJson.put("fileEntryId", fileEntry.getFileEntryId());
+					docJson.put("title", fileEntry.getTitle());
+
+					created.put(docJson);
 				}
-				else {
-					final FileEntry tf = _getRandomFileEntry(tempFileEntries);
-					final String fileName = title + "." + tf.getExtension();
+				catch (DuplicateFileEntryException | FileNameException |
+						FileSizeException e) {
 
-					fileEntry = TransactionInvokerUtil.invoke(
-						_transactionConfig,
-						() -> {
-							ServiceContext serviceContext =
-								new ServiceContext();
+					_log.warn(
+						"Document '" + title + "' could not be created: " +
+							e.getMessage(),
+						e);
 
-							serviceContext.setUserId(userId);
-
-							return _dlAppLocalService.addFileEntry(
-								null, userId, groupId, folderId, fileName,
-								tf.getMimeType(), fileName, "", description, "",
-								tf.getContentStream(), tf.getSize(), null, null,
-								null, serviceContext);
-						});
+					skipped++;
 				}
+				catch (PortalException e) {
+					_log.warn(
+						"Document '" + title + "' could not be created: " +
+							e.getMessage(),
+						e);
 
-				JSONObject docJson = JSONFactoryUtil.createJSONObject();
-
-				docJson.put("fileEntryId", fileEntry.getFileEntryId());
-				docJson.put("title", fileEntry.getTitle());
-
-				created.put(docJson);
-			}
-			catch (DuplicateFileEntryException | FileNameException |
-					FileSizeException e) {
-
-				_log.warn(
-					"Document '" + title + "' could not be created: " +
-						e.getMessage(),
-					e);
-
-				skipped++;
+					skipped++;
+				}
 			}
 		}
-
-		_cleanupTempFiles(tempFileEntries);
+		finally {
+			_cleanupTempFiles(tempFileEntries);
+		}
 
 		int createdCount = created.length();
 
@@ -169,7 +184,8 @@ public class DocumentCreator {
 			try {
 				entries.add(
 					TempFileEntryUtil.getTempFileEntry(
-						groupId, userId, _TEMP_FOLDER_NAME, name));
+						groupId, userId,
+						DocumentUploadResourceCommand.TEMP_FOLDER_NAME, name));
 			}
 			catch (Exception e) {
 				_log.warn(
@@ -181,9 +197,6 @@ public class DocumentCreator {
 
 		return entries;
 	}
-
-	private static final String _TEMP_FOLDER_NAME =
-		"DocumentUploadResourceCommand_DUMMY_FACTORY";
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		DocumentCreator.class);
