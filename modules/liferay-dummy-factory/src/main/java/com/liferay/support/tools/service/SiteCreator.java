@@ -12,6 +12,9 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.transaction.TransactionConfig;
+import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.sites.kernel.util.Sites;
 
@@ -30,89 +33,104 @@ public class SiteCreator {
 			SiteMembershipType membershipType, long parentGroupId,
 			long siteTemplateId, boolean manualMembership,
 			boolean inheritContent, boolean active, String description)
-		throws Exception {
+		throws Throwable {
 
-		int count = batchSpec.count();
-		String baseName = batchSpec.baseName();
+		return TransactionInvokerUtil.invoke(
+			_transactionConfig, () -> {
+				int count = batchSpec.count();
+				String baseName = batchSpec.baseName();
 
-		JSONObject result = JSONFactoryUtil.createJSONObject();
-		JSONArray created = JSONFactoryUtil.createJSONArray();
+				JSONObject result = JSONFactoryUtil.createJSONObject();
+				JSONArray created = JSONFactoryUtil.createJSONArray();
 
-		int type = membershipType.toLiferayConstant();
+				int type = membershipType.toLiferayConstant();
 
-		Map<Locale, String> descriptionMap = Collections.singletonMap(
-			LocaleUtil.getDefault(), description);
+				Map<Locale, String> descriptionMap =
+					Collections.singletonMap(
+						LocaleUtil.getDefault(), description);
 
-		ServiceContext serviceContext = new ServiceContext();
+				ServiceContext serviceContext = new ServiceContext();
 
-		serviceContext.setCompanyId(companyId);
-		serviceContext.setUserId(userId);
+				serviceContext.setCompanyId(companyId);
+				serviceContext.setUserId(userId);
 
-		for (int i = 0; i < count; i++) {
-			String siteName = BatchNaming.resolve(baseName, count, i);
+				for (int i = 0; i < count; i++) {
+					String siteName = BatchNaming.resolve(
+						baseName, count, i);
 
-			Map<Locale, String> nameMap = Collections.singletonMap(
-				LocaleUtil.getDefault(), siteName);
+					Map<Locale, String> nameMap = Collections.singletonMap(
+						LocaleUtil.getDefault(), siteName);
 
-			Group group;
+					Group group;
 
-			try {
-				group = _groupLocalService.addGroup(
-					userId, parentGroupId, null, 0,
-					GroupConstants.DEFAULT_LIVE_GROUP_ID, nameMap,
-					descriptionMap, type, manualMembership,
-					GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION,
-					StringPool.BLANK, true, inheritContent, active,
-					serviceContext);
-			}
-			catch (DuplicateGroupException e) {
-				_log.warn(
-					"Site '" + siteName + "' already exists, skipping");
+					try {
+						group = _groupLocalService.addGroup(
+							userId, parentGroupId, null, 0,
+							GroupConstants.DEFAULT_LIVE_GROUP_ID, nameMap,
+							descriptionMap, type, manualMembership,
+							GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION,
+							StringPool.BLANK, true, inheritContent, active,
+							serviceContext);
+					}
+					catch (DuplicateGroupException e) {
+						_log.warn(
+							"Site '" + siteName +
+								"' already exists, skipping");
 
-				continue;
-			}
-			catch (GroupKeyException e) {
-				_log.warn(
-					"Invalid site name '" + siteName + "', skipping");
+						continue;
+					}
+					catch (GroupKeyException e) {
+						_log.warn(
+							"Invalid site name '" + siteName +
+								"', skipping");
 
-				continue;
-			}
+						continue;
+					}
 
-			if (siteTemplateId > 0) {
-				try {
-					_sites.updateLayoutSetPrototypesLinks(
-						group, siteTemplateId, 0, true, false);
+					if (siteTemplateId > 0) {
+						try {
+							_sites.updateLayoutSetPrototypesLinks(
+								group, siteTemplateId, 0, true, false);
+						}
+						catch (Exception e) {
+							_log.error(
+								"Failed to apply site template " +
+									siteTemplateId + " to site '" +
+									siteName + "'",
+								e);
+						}
+					}
+
+					JSONObject siteJson =
+						JSONFactoryUtil.createJSONObject();
+
+					siteJson.put("groupId", group.getGroupId());
+					siteJson.put("name", siteName);
+
+					created.put(siteJson);
 				}
-				catch (Exception e) {
-					_log.error(
-						"Failed to apply site template " + siteTemplateId +
-						" to site '" + siteName + "'", e);
+
+				result.put("count", created.length());
+				result.put("sites", created);
+				result.put("success", created.length() > 0);
+
+				if (created.length() == 0) {
+					result.put(
+						"error",
+						"No sites were created (all names may already " +
+							"exist)");
 				}
-			}
 
-			JSONObject siteJson = JSONFactoryUtil.createJSONObject();
-
-			siteJson.put("groupId", group.getGroupId());
-			siteJson.put("name", siteName);
-
-			created.put(siteJson);
-		}
-
-		result.put("count", created.length());
-		result.put("sites", created);
-		result.put("success", created.length() > 0);
-
-		if (created.length() == 0) {
-			result.put(
-				"error",
-				"No sites were created (all names may already exist)");
-		}
-
-		return result;
+				return result;
+			});
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		SiteCreator.class);
+
+	private static final TransactionConfig _transactionConfig =
+		TransactionConfig.Factory.create(
+			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private GroupLocalService _groupLocalService;
