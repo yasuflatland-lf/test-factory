@@ -7,9 +7,11 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
@@ -171,6 +173,35 @@ public class UserCreator {
 			userJson.put("screenName", user.getScreenName());
 			userJson.put("userId", user.getUserId());
 
+			if (generatePersonalSiteLayouts) {
+				Group personalSite = user.getGroup();
+
+				if (personalSite != null) {
+					long personalGroupId = personalSite.getGroupId();
+
+					userJson.put("groupId", personalGroupId);
+
+					LayoutSet publicLayoutSet =
+						_layoutSetLocalService.fetchLayoutSet(
+							personalGroupId, false);
+					LayoutSet privateLayoutSet =
+						_layoutSetLocalService.fetchLayoutSet(
+							personalGroupId, true);
+
+					if (publicLayoutSet != null) {
+						userJson.put(
+							"publicLayoutSetPrototypeUuid",
+							publicLayoutSet.getLayoutSetPrototypeUuid());
+					}
+
+					if (privateLayoutSet != null) {
+						userJson.put(
+							"privateLayoutSetPrototypeUuid",
+							privateLayoutSet.getLayoutSetPrototypeUuid());
+					}
+				}
+			}
+
 			created.put(userJson);
 		}
 
@@ -200,6 +231,9 @@ public class UserCreator {
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private LayoutSetLocalService _layoutSetLocalService;
 
 	@Reference
 	private LayoutSetPrototypeLinker _layoutSetPrototypeLinker;

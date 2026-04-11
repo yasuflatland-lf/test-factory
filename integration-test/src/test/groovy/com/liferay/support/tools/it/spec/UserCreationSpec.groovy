@@ -229,10 +229,12 @@ class UserCreationSpec extends BaseLiferaySpec {
 		long userId = createdUser.userId as Long
 		createdUserIds << userId
 
-		and: 'fetch the user to obtain the personal site groupId'
-		Map user = jsonwsGet(
-			"/api/jsonws/user/get-user-by-id/user-id/${userId}") as Map
-		long userGroupId = user.groupId as Long
+		and: 'take the personal site groupId from the creator response'
+		// The User entity has no persistent groupId column, so JSONWS's
+		// get-user-by-id does not echo it. UserCreator echoes the personal
+		// site groupId on its response when generatePersonalSiteLayouts is
+		// on.
+		long userGroupId = createdUser.groupId as Long
 
 		and: 'query public and private layouts via JSONWS'
 		List publicLayouts = jsonwsGet(
@@ -276,20 +278,12 @@ class UserCreationSpec extends BaseLiferaySpec {
 		long userId = createdUser.userId as Long
 		createdUserIds << userId
 
-		and: 'fetch user to get personal site groupId'
-		Map user = jsonwsGet(
-			"/api/jsonws/user/get-user-by-id/user-id/${userId}") as Map
-		long userGroupId = user.groupId as Long
-
-		and: 'fetch the public layout set via JSONWS'
-		Map layoutSet = jsonwsGet(
-			"/api/jsonws/layoutset/get-layout-set" +
-			"/group-id/${userGroupId}/private-layout/false"
-		) as Map
-
-		then: 'layoutSetPrototypeUuid matches the prototype uuid'
-		layoutSet != null
-		(layoutSet.layoutSetPrototypeUuid as String) == prototypeUuid
+		then: 'layoutSetPrototypeUuid echoed by the creator matches the ' +
+			'prototype uuid'
+		// LayoutSetService does not expose getLayoutSet via JSONWS, so the
+		// UserCreator now echoes back the linked prototype uuid on the
+		// created-user JSON when generatePersonalSiteLayouts is on.
+		(createdUser.publicLayoutSetPrototypeUuid as String) == prototypeUuid
 	}
 
 }
