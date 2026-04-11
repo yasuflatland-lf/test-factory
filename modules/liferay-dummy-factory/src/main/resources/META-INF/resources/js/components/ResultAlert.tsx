@@ -1,19 +1,6 @@
 import {useEffect} from 'react';
 
-interface PerSiteResult {
-	created: number;
-	error?: string;
-	failed: number;
-	groupId: number;
-	siteName: string;
-}
-
-interface MultiSiteResult {
-	ok: boolean;
-	perSite: PerSiteResult[];
-	totalCreated: number;
-	totalRequested: number;
-}
+import {MultiSiteResult, PerSiteResult} from '../types';
 
 interface ResultAlertProps {
 	message: string | null;
@@ -23,10 +10,14 @@ interface ResultAlertProps {
 }
 
 function ResultAlert({message, multiSite, onDismiss, type}: ResultAlertProps) {
+	const entries: PerSiteResult[] = Array.isArray(multiSite?.perSite) ? multiSite!.perSite : [];
+	const totalCreated = multiSite?.totalCreated ?? 0;
+	const totalRequested = multiSite?.totalRequested ?? 0;
+
 	const effectiveType: 'success' | 'danger' | 'warning' = multiSite
 		? multiSite.ok
 			? 'success'
-			: multiSite.totalCreated > 0
+			: totalCreated > 0
 				? 'warning'
 				: 'danger'
 		: type;
@@ -62,14 +53,14 @@ function ResultAlert({message, multiSite, onDismiss, type}: ResultAlertProps) {
 				<>
 					<div>
 						{Liferay.Language.get('per-site-results')}{' '}
-						{multiSite.totalCreated}/{multiSite.totalRequested}
+						{totalCreated}/{totalRequested}
 					</div>
 
 					<ul className="list-unstyled">
-						{multiSite.perSite.map((entry) => (
+						{entries.map((entry) => (
 							<li key={entry.groupId}>
-								{entry.siteName}: {entry.created}/
-								{entry.created + entry.failed}
+								{entry.siteName ?? entry.groupId}: {entry.created ?? 0}/
+								{(entry.created ?? 0) + (entry.failed ?? 0)}
 								{entry.error ? ` — ${entry.error}` : ''}
 							</li>
 						))}
