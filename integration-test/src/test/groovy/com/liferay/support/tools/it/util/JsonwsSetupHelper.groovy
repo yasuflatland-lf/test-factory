@@ -42,11 +42,10 @@ class JsonwsSetupHelper {
 				'className': 'com.liferay.portal.kernel.model.Role',
 				'classPK': '0',
 				'name': name,
-				'titleMap': '{}',
+				'titleMap': _localizedJson(name),
 				'descriptionMap': '{}',
 				'type': type,
-				'subtype': '',
-				'serviceContext': '{}'
+				'subtype': ''
 			]) as Map
 
 		_tracked << new Tracked(
@@ -68,8 +67,7 @@ class JsonwsSetupHelper {
 				'countryId': '0',
 				'statusListTypeId': '0',
 				'comments': '',
-				'site': 'false',
-				'serviceContext': '{}'
+				'site': 'false'
 			]) as Map
 
 		_tracked << new Tracked(
@@ -97,8 +95,7 @@ class JsonwsSetupHelper {
 				'friendlyURL': '/' + name.toLowerCase().replaceAll(/[^a-z0-9]+/, '-'),
 				'site': 'true',
 				'inheritContent': 'false',
-				'active': 'true',
-				'serviceContext': '{}'
+				'active': 'true'
 			]) as Map
 
 		_tracked << new Tracked(
@@ -115,8 +112,7 @@ class JsonwsSetupHelper {
 				'nameMap': _localizedJson(name),
 				'descriptionMap': _localizedJson(''),
 				'active': 'true',
-				'layoutsUpdateable': 'true',
-				'serviceContext': '{}'
+				'layoutsUpdateable': 'true'
 			]) as Map
 
 		_tracked << new Tracked(
