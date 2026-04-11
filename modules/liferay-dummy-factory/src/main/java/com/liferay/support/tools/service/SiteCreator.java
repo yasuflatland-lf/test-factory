@@ -70,14 +70,21 @@ public class SiteCreator {
 							StringPool.BLANK, true, inheritContent, active,
 							serviceContext);
 
-						if (siteTemplateId > 0) {
-							_sites.updateLayoutSetPrototypesLinks(
-								newGroup, siteTemplateId, 0, true, false);
-						}
+						long resolvedPublicLayoutSetPrototypeId =
+							(publicLayoutSetPrototypeId > 0) ?
+								publicLayoutSetPrototypeId : siteTemplateId;
 
-						_layoutSetPrototypeLinker.linkSite(
-							newGroup, publicLayoutSetPrototypeId,
-							privateLayoutSetPrototypeId);
+						boolean publicEnabled =
+							resolvedPublicLayoutSetPrototypeId != 0;
+						boolean privateEnabled =
+							privateLayoutSetPrototypeId != 0;
+
+						if (publicEnabled || privateEnabled) {
+							_sites.updateLayoutSetPrototypesLinks(
+								newGroup, resolvedPublicLayoutSetPrototypeId,
+								privateLayoutSetPrototypeId, publicEnabled,
+								privateEnabled);
+						}
 
 						return newGroup;
 					});
@@ -121,9 +128,6 @@ public class SiteCreator {
 
 	@Reference
 	private GroupLocalService _groupLocalService;
-
-	@Reference
-	private LayoutSetPrototypeLinker _layoutSetPrototypeLinker;
 
 	@Reference
 	private Sites _sites;
