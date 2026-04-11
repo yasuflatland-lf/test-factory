@@ -55,10 +55,7 @@ public class MBCategoryResourceCommand extends BaseMVCResourceCommand {
 
 			long groupId = GetterUtil.getLong(data.getString("groupId"));
 
-			if (groupId <= 0) {
-				throw new IllegalArgumentException(
-					"groupId must be greater than 0");
-			}
+			ResourceCommandUtil.validatePositiveId(groupId, "groupId");
 
 			String description = GetterUtil.getString(
 				data.getString("description"));

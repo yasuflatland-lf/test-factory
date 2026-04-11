@@ -58,15 +58,9 @@ public class MBReplyResourceCommand extends BaseMVCResourceCommand {
 			String format = GetterUtil.getString(
 				data.getString("format"), "html");
 
-			if (count <= 0) {
-				throw new IllegalArgumentException(
-					"count must be greater than 0");
-			}
+			ResourceCommandUtil.validate(count);
 
-			if (threadId <= 0) {
-				throw new IllegalArgumentException(
-					"threadId must be greater than 0");
-			}
+			ResourceCommandUtil.validatePositiveId(threadId, "threadId");
 
 			long userId = _portal.getUserId(resourceRequest);
 

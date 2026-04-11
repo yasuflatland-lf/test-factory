@@ -61,10 +61,7 @@ public class MBThreadResourceCommand extends BaseMVCResourceCommand {
 			String format = GetterUtil.getString(
 				data.getString("format"), "html");
 
-			if (groupId <= 0) {
-				throw new IllegalArgumentException(
-					"groupId must be greater than 0");
-			}
+			ResourceCommandUtil.validatePositiveId(groupId, "groupId");
 
 			if (categoryId < 0) {
 				throw new IllegalArgumentException(
