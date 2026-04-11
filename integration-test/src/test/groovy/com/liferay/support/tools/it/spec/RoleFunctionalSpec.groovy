@@ -71,22 +71,22 @@ class RoleFunctionalSpec extends BaseLiferaySpec {
 
 		and: 'select Roles entity type'
 		page.locator('[data-testid="entity-selector-ROLES"]').click()
-		page.locator('#count').waitFor(
+		page.locator('[data-testid="roles-count-input"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
 
 		and: 'fill in the role form'
-		page.locator('#count').fill("${ROLE_COUNT}")
-		page.locator('#baseName').fill(BASE_ROLE_NAME)
+		page.locator('[data-testid="roles-count-input"]').fill("${ROLE_COUNT}")
+		page.locator('[data-testid="roles-base-name-input"]').fill(BASE_ROLE_NAME)
 
 		and: 'click Run button'
-		page.locator('.sheet-footer button.btn-primary').click()
+		page.locator('[data-testid="roles-submit"]').click()
 
 		then: 'success alert appears'
-		page.locator('.alert-success').waitFor(
+		page.locator('[data-testid="roles-result"].alert-success').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
-		page.locator('.alert-success').isVisible()
+		page.locator('[data-testid="roles-result"].alert-success').isVisible()
 	}
 
 	def 'Created roles are visible via JSONWS RoleService'() {
