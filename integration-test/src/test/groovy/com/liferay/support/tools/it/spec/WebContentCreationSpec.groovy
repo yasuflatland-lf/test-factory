@@ -49,6 +49,7 @@ class WebContentCreationSpec extends BaseLiferaySpec {
 
 	def cleanupSpec() {
 		jsonws?.cleanupAll()
+		ldf?.close()
 	}
 
 	def 'creates articles with simple content type in a single site'() {

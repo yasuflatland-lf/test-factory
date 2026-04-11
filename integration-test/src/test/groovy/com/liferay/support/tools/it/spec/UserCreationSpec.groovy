@@ -53,6 +53,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 		}
 
 		jsonws?.cleanupAll()
+		ldf?.close()
 	}
 
 	def 'creates users with basic fields'() {

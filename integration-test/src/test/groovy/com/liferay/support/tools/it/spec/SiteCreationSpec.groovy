@@ -54,6 +54,7 @@ class SiteCreationSpec extends BaseLiferaySpec {
 		}
 
 		jsonws?.cleanupAll()
+		ldf?.close()
 	}
 
 	def 'creates sites with basic fields and open membership'() {
