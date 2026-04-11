@@ -1,5 +1,6 @@
 package com.liferay.support.tools.portlet.actions;
 
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
@@ -164,9 +165,21 @@ public class WcmResourceCommand extends BaseMVCResourceCommand {
 			}
 		}
 
-		Locale defaultLocale = _portal.getSiteDefaultLocale(groupId);
+		try {
+			Locale defaultLocale = _portal.getSiteDefaultLocale(groupId);
 
-		return new String[] {LocaleUtil.toLanguageId(defaultLocale)};
+			return new String[] {LocaleUtil.toLanguageId(defaultLocale)};
+		}
+		catch (PortalException portalException) {
+			_log.warn(
+				"Unable to resolve site default locale for groupId " +
+					groupId + ", falling back to portal default",
+				portalException);
+
+			return new String[] {
+				LocaleUtil.toLanguageId(LocaleUtil.getDefault())
+			};
+		}
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
