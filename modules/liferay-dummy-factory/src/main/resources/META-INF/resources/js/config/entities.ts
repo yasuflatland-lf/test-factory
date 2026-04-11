@@ -454,6 +454,52 @@ const SITE_CONFIG: EntityFormConfig = {
 	label: 'sites',
 };
 
+const VOCABULARY_CONFIG: EntityFormConfig = {
+	actionURL: '/ldf/vocabulary',
+	entityType: ENTITY_TYPES.VOCABULARY,
+	fields: [
+		createCountField('number-of-vocabularies'),
+		createBaseNameField('base-vocabulary-name'),
+		{
+			dataSource: '/ldf/data/sites',
+			label: 'site',
+			name: 'groupId',
+			required: true,
+			type: 'select',
+		},
+	],
+	helpText: 'vocabulary-help-text',
+	icon: 'categories',
+	label: 'vocabularies',
+};
+
+const CATEGORY_CONFIG: EntityFormConfig = {
+	actionURL: '/ldf/category',
+	entityType: ENTITY_TYPES.CATEGORY,
+	fields: [
+		createCountField('number-of-categories'),
+		createBaseNameField('base-category-name'),
+		{
+			dataSource: '/ldf/data/sites',
+			label: 'site',
+			name: 'groupId',
+			required: true,
+			type: 'select',
+		},
+		{
+			dataSource: '/ldf/data/vocabularies',
+			dependsOn: {field: 'groupId', paramName: 'groupId'},
+			label: 'vocabulary',
+			name: 'vocabularyId',
+			required: true,
+			type: 'select',
+		},
+	],
+	helpText: 'category-help-text',
+	icon: 'categories',
+	label: 'categories',
+};
+
 const WCM_CONFIG: EntityFormConfig = {
 	actionURL: '/ldf/wcm',
 	entityType: ENTITY_TYPES.WCM,
@@ -592,12 +638,14 @@ const WCM_CONFIG: EntityFormConfig = {
 };
 
 export const ENTITY_CONFIGS: Partial<Record<EntityType, EntityFormConfig>> = {
+	[ENTITY_TYPES.CATEGORY]: CATEGORY_CONFIG,
 	[ENTITY_TYPES.DOCUMENTS]: DOCUMENTS_CONFIG,
 	[ENTITY_TYPES.ORGANIZATION]: ORGANIZATION_CONFIG,
 	[ENTITY_TYPES.PAGES]: PAGES_CONFIG,
 	[ENTITY_TYPES.ROLES]: ROLE_CONFIG,
 	[ENTITY_TYPES.SITES]: SITE_CONFIG,
 	[ENTITY_TYPES.USERS]: USER_CONFIG,
+	[ENTITY_TYPES.VOCABULARY]: VOCABULARY_CONFIG,
 	[ENTITY_TYPES.WCM]: WCM_CONFIG,
 };
 

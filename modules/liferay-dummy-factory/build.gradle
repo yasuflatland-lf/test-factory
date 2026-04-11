@@ -1,3 +1,5 @@
+apply plugin: 'jacoco'
+
 dependencies {
 	compileOnly group: "com.liferay.portal", name: "release.portal.api", version: "default"
 
@@ -15,10 +17,24 @@ java {
 	targetCompatibility = JavaVersion.VERSION_17
 }
 
+jacoco {
+	toolVersion = '0.8.14'
+}
+
 test {
 	useJUnitPlatform()
 	jvmArgs '--add-opens=java.base/java.lang=ALL-UNNAMED',
 		'--add-opens=java.base/java.lang.reflect=ALL-UNNAMED',
 		'--add-opens=java.base/java.lang.invoke=ALL-UNNAMED',
 		'--add-opens=java.base/java.util=ALL-UNNAMED'
+}
+
+test.finalizedBy jacocoTestReport
+
+jacocoTestReport {
+	reports {
+		xml.required = true
+		html.required = true
+		csv.required = false
+	}
 }
