@@ -1,6 +1,7 @@
 package com.liferay.support.tools.portlet.actions;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
@@ -17,6 +18,8 @@ import com.liferay.support.tools.constants.LDFPortletKeys;
 import com.liferay.support.tools.service.BatchSpec;
 import com.liferay.support.tools.service.WebContentCreator;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 import javax.portlet.ResourceRequest;
@@ -55,16 +58,16 @@ public class WcmResourceCommand extends BaseMVCResourceCommand {
 
 			BatchSpec batchSpec = ResourceCommandUtil.parseBatchSpec(data);
 
-			long groupId = GetterUtil.getLong(data.getString("groupId"));
+			long[] groupIds = _parseGroupIds(data);
 
-			if (groupId <= 0) {
+			if (groupIds.length == 0) {
 				throw new IllegalArgumentException(
-					"groupId must be a positive number");
+					"groupIds must contain at least one positive group id");
 			}
 
 			long folderId = GetterUtil.getLong(data.getString("folderId"));
 			String[] locales = _parseLocales(
-				data.getString("locales"), groupId);
+				data.getString("locales"), groupIds[0]);
 			boolean neverExpire = GetterUtil.getBoolean(
 				data.getString("neverExpire"), true);
 			boolean neverReview = GetterUtil.getBoolean(
@@ -75,16 +78,13 @@ public class WcmResourceCommand extends BaseMVCResourceCommand {
 
 			long userId = _portal.getUserId(resourceRequest);
 
-			int count = batchSpec.count();
-			String baseName = batchSpec.baseName();
-
 			if (createContentsType == 0) {
 				String baseArticle = GetterUtil.getString(
 					data.getString("baseArticle"));
 
 				responseJson = _webContentCreator.createSimple(
-					userId, groupId, count, baseName, baseArticle, folderId,
-					locales, neverExpire, neverReview);
+					userId, groupIds, batchSpec, baseArticle, folderId, locales,
+					neverExpire, neverReview);
 			}
 			else if (createContentsType == 1) {
 				int titleWords = GetterUtil.getInteger(
@@ -97,9 +97,9 @@ public class WcmResourceCommand extends BaseMVCResourceCommand {
 					data.getString("linkLists"));
 
 				responseJson = _webContentCreator.createDummy(
-					userId, groupId, count, baseName, folderId, locales,
-					titleWords, totalParagraphs, randomAmount, linkLists,
-					neverExpire, neverReview);
+					userId, groupIds, batchSpec, folderId, locales, titleWords,
+					totalParagraphs, randomAmount, linkLists, neverExpire,
+					neverReview);
 			}
 			else if (createContentsType == 2) {
 				long ddmStructureId = GetterUtil.getLong(
@@ -118,7 +118,7 @@ public class WcmResourceCommand extends BaseMVCResourceCommand {
 				}
 
 				responseJson = _webContentCreator.createWithStructureTemplate(
-					userId, groupId, count, baseName, folderId, locales,
+					userId, groupIds, batchSpec, folderId, locales,
 					ddmStructureId, ddmTemplateId, neverExpire, neverReview);
 			}
 			else {
@@ -138,6 +138,50 @@ public class WcmResourceCommand extends BaseMVCResourceCommand {
 
 		JSONPortletResponseUtil.writeJSON(
 			resourceRequest, resourceResponse, responseJson);
+	}
+
+	private long[] _parseGroupIds(JSONObject data) {
+		JSONArray jsonArray = data.getJSONArray("groupIds");
+
+		if ((jsonArray != null) && (jsonArray.length() > 0)) {
+			List<Long> parsed = new ArrayList<>();
+
+			for (int i = 0; i < jsonArray.length(); i++) {
+				long value = GetterUtil.getLong(jsonArray.get(i));
+
+				if (value > 0) {
+					parsed.add(value);
+				}
+			}
+
+			return _toLongArray(parsed);
+		}
+
+		String groupIdsString = data.getString("groupIds");
+
+		if (Validator.isNotNull(groupIdsString)) {
+			List<Long> parsed = new ArrayList<>();
+
+			for (String token : groupIdsString.split(",")) {
+				if ((token != null) && !token.trim().isEmpty()) {
+					long value = GetterUtil.getLong(token.trim());
+
+					if (value > 0) {
+						parsed.add(value);
+					}
+				}
+			}
+
+			return _toLongArray(parsed);
+		}
+
+		long legacyGroupId = GetterUtil.getLong(data.getString("groupId"));
+
+		if (legacyGroupId > 0) {
+			return new long[] {legacyGroupId};
+		}
+
+		return new long[0];
 	}
 
 	private String[] _parseLocales(String localesCsv, long groupId) {
@@ -180,6 +224,16 @@ public class WcmResourceCommand extends BaseMVCResourceCommand {
 				LocaleUtil.toLanguageId(LocaleUtil.getDefault())
 			};
 		}
+	}
+
+	private long[] _toLongArray(List<Long> values) {
+		long[] result = new long[values.size()];
+
+		for (int i = 0; i < values.size(); i++) {
+			result[i] = values.get(i);
+		}
+
+		return result;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

@@ -9,7 +9,9 @@ import com.liferay.journal.service.JournalArticleLocalService;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -40,13 +42,144 @@ import org.osgi.service.component.annotations.Reference;
 public class WebContentCreator {
 
 	public JSONObject createSimple(
-			long userId, long groupId, int count, String baseName,
-			String baseArticle, long folderId, String[] locales,
+			long userId, long[] groupIds, BatchSpec spec, String baseArticle,
+			long folderId, String[] locales, boolean neverExpire,
+			boolean neverReview)
+		throws Throwable {
+
+		int count = spec.count();
+		String baseName = spec.baseName();
+
+		List<PerSiteResult> perSiteResults = new ArrayList<>();
+
+		for (long groupId : groupIds) {
+			PerSiteResult siteResult = _createSimpleForSite(
+				userId, groupId, count, baseName, baseArticle, folderId,
+				locales, neverExpire, neverReview);
+
+			perSiteResults.add(siteResult);
+		}
+
+		return _buildResponse(count, groupIds.length, perSiteResults);
+	}
+
+	public JSONObject createDummy(
+			long userId, long[] groupIds, BatchSpec spec, long folderId,
+			String[] locales, int titleWords, int totalParagraphs,
+			int randomAmount, String linkLists, boolean neverExpire,
+			boolean neverReview)
+		throws Throwable {
+
+		int count = spec.count();
+		String baseName = spec.baseName();
+
+		List<PerSiteResult> perSiteResults = new ArrayList<>();
+
+		for (long groupId : groupIds) {
+			PerSiteResult siteResult = _createDummyForSite(
+				userId, groupId, count, baseName, folderId, locales, titleWords,
+				totalParagraphs, randomAmount, linkLists, neverExpire,
+				neverReview);
+
+			perSiteResults.add(siteResult);
+		}
+
+		return _buildResponse(count, groupIds.length, perSiteResults);
+	}
+
+	public JSONObject createWithStructureTemplate(
+			long userId, long[] groupIds, BatchSpec spec, long folderId,
+			String[] locales, long ddmStructureId, long ddmTemplateId,
 			boolean neverExpire, boolean neverReview)
 		throws Throwable {
 
+		int count = spec.count();
+		String baseName = spec.baseName();
+
+		List<PerSiteResult> perSiteResults = new ArrayList<>();
+
+		for (long groupId : groupIds) {
+			PerSiteResult siteResult = _createWithStructureTemplateForSite(
+				userId, groupId, count, baseName, folderId, locales,
+				ddmStructureId, ddmTemplateId, neverExpire, neverReview);
+
+			perSiteResults.add(siteResult);
+		}
+
+		return _buildResponse(count, groupIds.length, perSiteResults);
+	}
+
+	static String resolveImageLinks(
+		RandomizeContentGenerator generator, ImageSource imageSource,
+		String linkLists, int randomAmount) {
+
+		String safeLinkLists = (linkLists == null) ? "" : linkLists;
+
+		if (randomAmount <= 0) {
+			return safeLinkLists;
+		}
+
+		List<String> userLinks = safeLinkLists.isBlank() ?
+			Collections.emptyList() : generator.generateLinks(safeLinkLists);
+
+		if (userLinks.size() >= randomAmount) {
+			return safeLinkLists;
+		}
+
+		List<String> merged = new ArrayList<>(userLinks);
+
+		merged.addAll(
+			imageSource.supply(
+				ImageRequest.of(randomAmount - userLinks.size())));
+
+		return String.join(LDFPortletKeys.EOL, merged);
+	}
+
+	private JSONObject _buildResponse(
+		int count, int groupCount, List<PerSiteResult> perSiteResults) {
+
 		JSONObject result = JSONFactoryUtil.createJSONObject();
-		JSONArray created = JSONFactoryUtil.createJSONArray();
+		JSONArray perSite = JSONFactoryUtil.createJSONArray();
+
+		int totalCreated = 0;
+		boolean allOk = true;
+
+		for (PerSiteResult siteResult : perSiteResults) {
+			JSONObject entry = JSONFactoryUtil.createJSONObject();
+
+			entry.put("groupId", siteResult.groupId());
+			entry.put("siteName", siteResult.siteName());
+			entry.put("created", siteResult.created());
+			entry.put("failed", siteResult.failed());
+
+			if (siteResult.error() != null) {
+				entry.put("error", siteResult.error());
+			}
+
+			totalCreated += siteResult.created();
+
+			if ((siteResult.failed() > 0) || (siteResult.error() != null)) {
+				allOk = false;
+			}
+
+			perSite.put(entry);
+		}
+
+		result.put("ok", allOk);
+		result.put("totalRequested", count * groupCount);
+		result.put("totalCreated", totalCreated);
+		result.put("perSite", perSite);
+
+		return result;
+	}
+
+	private PerSiteResult _createSimpleForSite(
+		long userId, long groupId, int count, String baseName,
+		String baseArticle, long folderId, String[] locales,
+		boolean neverExpire, boolean neverReview) {
+
+		String siteName = _resolveSiteName(groupId);
+		int created = 0;
 
 		Locale defaultLocale = _resolveDefaultLocale(locales);
 
@@ -57,15 +190,11 @@ public class WebContentCreator {
 				LDFPortletKeys.DDM_STRUCTURE_KEY);
 
 		if (ddmStructure == null) {
-			result.put("count", 0);
-			result.put("success", false);
-			result.put(
-				"error",
+			return new PerSiteResult(
+				groupId, siteName, 0, count,
 				"Basic Web Content structure '" +
 					LDFPortletKeys.DDM_STRUCTURE_KEY +
 						"' not found for group " + groupId);
-
-			return result;
 		}
 
 		Map<Locale, String> descriptionMap = Collections.singletonMap(
@@ -75,10 +204,9 @@ public class WebContentCreator {
 			final String title = BatchNaming.resolve(baseName, count, i);
 			final Map<Locale, String> titleMap = Collections.singletonMap(
 				defaultLocale, title);
-			final int idx = i;
 
 			try {
-				JournalArticle article = TransactionInvokerUtil.invoke(
+				TransactionInvokerUtil.invoke(
 					_transactionConfig,
 					() -> {
 						String content = _journalUtils.buildFields(
@@ -99,32 +227,25 @@ public class WebContentCreator {
 							added, serviceContext, neverExpire, neverReview);
 					});
 
-				created.put(_toJson(article));
+				created++;
 			}
-			catch (Exception e) {
-				throw new Exception(
-					"Failed to create web content '" + title + "' (" +
-						(idx + 1) + " of " + count + "): " + e.getMessage(),
-					e);
+			catch (Throwable throwable) {
+				return new PerSiteResult(
+					groupId, siteName, created, count - created,
+					_errorMessage(throwable));
 			}
 		}
 
-		result.put("articles", created);
-		result.put("count", created.length());
-		result.put("success", created.length() > 0);
-
-		return result;
+		return new PerSiteResult(groupId, siteName, created, 0, null);
 	}
 
-	public JSONObject createDummy(
-			long userId, long groupId, int count, String baseName,
-			long folderId, String[] locales, int titleWords,
-			int totalParagraphs, int randomAmount, String linkLists,
-			boolean neverExpire, boolean neverReview)
-		throws Throwable {
+	private PerSiteResult _createDummyForSite(
+		long userId, long groupId, int count, String baseName, long folderId,
+		String[] locales, int titleWords, int totalParagraphs, int randomAmount,
+		String linkLists, boolean neverExpire, boolean neverReview) {
 
-		JSONObject result = JSONFactoryUtil.createJSONObject();
-		JSONArray created = JSONFactoryUtil.createJSONArray();
+		String siteName = _resolveSiteName(groupId);
+		int created = 0;
 
 		Locale defaultLocale = _resolveDefaultLocale(locales);
 		String language = defaultLocale.getLanguage();
@@ -136,23 +257,17 @@ public class WebContentCreator {
 				LDFPortletKeys.DDM_STRUCTURE_KEY);
 
 		if (ddmStructure == null) {
-			result.put("count", 0);
-			result.put("success", false);
-			result.put(
-				"error",
+			return new PerSiteResult(
+				groupId, siteName, 0, count,
 				"Basic Web Content structure '" +
 					LDFPortletKeys.DDM_STRUCTURE_KEY +
 						"' not found for group " + groupId);
-
-			return result;
 		}
 
 		Map<Locale, String> descriptionMap = Collections.singletonMap(
 			defaultLocale, baseName);
 
 		for (int i = 0; i < count; i++) {
-			final int idx = i;
-
 			String randomTitle =
 				_randomizeContentGenerator.generateRandomTitleString(
 					language, titleWords);
@@ -166,7 +281,7 @@ public class WebContentCreator {
 				defaultLocale, titleFinal);
 
 			try {
-				JournalArticle article = TransactionInvokerUtil.invoke(
+				TransactionInvokerUtil.invoke(
 					_transactionConfig,
 					() -> {
 						String mergedLinks = resolveImageLinks(
@@ -196,42 +311,44 @@ public class WebContentCreator {
 							added, serviceContext, neverExpire, neverReview);
 					});
 
-				created.put(_toJson(article));
+				created++;
 			}
-			catch (Exception e) {
-				throw new Exception(
-					"Failed to create random web content '" + titleFinal +
-						"' (" + (idx + 1) + " of " + count + "): " +
-							e.getMessage(),
-					e);
+			catch (Throwable throwable) {
+				return new PerSiteResult(
+					groupId, siteName, created, count - created,
+					_errorMessage(throwable));
 			}
 		}
 
-		result.put("articles", created);
-		result.put("count", created.length());
-		result.put("success", created.length() > 0);
-
-		return result;
+		return new PerSiteResult(groupId, siteName, created, 0, null);
 	}
 
-	public JSONObject createWithStructureTemplate(
-			long userId, long groupId, int count, String baseName,
-			long folderId, String[] locales, long ddmStructureId,
-			long ddmTemplateId, boolean neverExpire, boolean neverReview)
-		throws Throwable {
+	private PerSiteResult _createWithStructureTemplateForSite(
+		long userId, long groupId, int count, String baseName, long folderId,
+		String[] locales, long ddmStructureId, long ddmTemplateId,
+		boolean neverExpire, boolean neverReview) {
 
-		JSONObject result = JSONFactoryUtil.createJSONObject();
-		JSONArray created = JSONFactoryUtil.createJSONArray();
+		String siteName = _resolveSiteName(groupId);
+		int created = 0;
 
 		Locale defaultLocale = _resolveDefaultLocale(locales);
 
-		DDMStructure ddmStructure = _ddmStructureLocalService.getStructure(
-			ddmStructureId);
+		final DDMStructure ddmStructure;
+		final String templateKey;
 
-		DDMTemplate ddmTemplate = _ddmTemplateLocalService.getTemplate(
-			ddmTemplateId);
+		try {
+			ddmStructure = _ddmStructureLocalService.getStructure(
+				ddmStructureId);
 
-		final String templateKey = ddmTemplate.getTemplateKey();
+			DDMTemplate ddmTemplate = _ddmTemplateLocalService.getTemplate(
+				ddmTemplateId);
+
+			templateKey = ddmTemplate.getTemplateKey();
+		}
+		catch (Exception exception) {
+			return new PerSiteResult(
+				groupId, siteName, 0, count, _errorMessage(exception));
+		}
 
 		Map<Locale, String> descriptionMap = Collections.singletonMap(
 			defaultLocale, baseName);
@@ -240,10 +357,9 @@ public class WebContentCreator {
 			final String title = BatchNaming.resolve(baseName, count, i);
 			final Map<Locale, String> titleMap = Collections.singletonMap(
 				defaultLocale, title);
-			final int idx = i;
 
 			try {
-				JournalArticle article = TransactionInvokerUtil.invoke(
+				TransactionInvokerUtil.invoke(
 					_transactionConfig,
 					() -> {
 						String content = _journalUtils.buildFields(
@@ -263,47 +379,26 @@ public class WebContentCreator {
 							added, serviceContext, neverExpire, neverReview);
 					});
 
-				created.put(_toJson(article));
+				created++;
 			}
-			catch (Exception e) {
-				throw new Exception(
-					"Failed to create web content '" + title + "' (" +
-						(idx + 1) + " of " + count + "): " + e.getMessage(),
-					e);
+			catch (Throwable throwable) {
+				return new PerSiteResult(
+					groupId, siteName, created, count - created,
+					_errorMessage(throwable));
 			}
 		}
 
-		result.put("articles", created);
-		result.put("count", created.length());
-		result.put("success", created.length() > 0);
-
-		return result;
+		return new PerSiteResult(groupId, siteName, created, 0, null);
 	}
 
-	static String resolveImageLinks(
-		RandomizeContentGenerator generator, ImageSource imageSource,
-		String linkLists, int randomAmount) {
+	private String _errorMessage(Throwable throwable) {
+		String message = throwable.getMessage();
 
-		String safeLinkLists = (linkLists == null) ? "" : linkLists;
-
-		if (randomAmount <= 0) {
-			return safeLinkLists;
+		if ((message != null) && !message.isEmpty()) {
+			return message;
 		}
 
-		List<String> userLinks = safeLinkLists.isBlank() ?
-			Collections.emptyList() : generator.generateLinks(safeLinkLists);
-
-		if (userLinks.size() >= randomAmount) {
-			return safeLinkLists;
-		}
-
-		List<String> merged = new ArrayList<>(userLinks);
-
-		merged.addAll(
-			imageSource.supply(
-				ImageRequest.of(randomAmount - userLinks.size())));
-
-		return String.join(LDFPortletKeys.EOL, merged);
+		return throwable.getClass().getSimpleName();
 	}
 
 	private ServiceContext _newServiceContext(long userId, long groupId)
@@ -335,16 +430,18 @@ public class WebContentCreator {
 		return LocaleUtil.getDefault();
 	}
 
-	private JSONObject _toJson(JournalArticle article) {
-		JSONObject json = JSONFactoryUtil.createJSONObject();
+	private String _resolveSiteName(long groupId) {
+		try {
+			Group group = _groupLocalService.fetchGroup(groupId);
 
-		json.put("articleId", article.getArticleId());
-		json.put("groupId", article.getGroupId());
-		json.put("resourcePrimKey", article.getResourcePrimKey());
-		json.put("title", article.getTitle());
-		json.put("version", article.getVersion());
+			if (group != null) {
+				return group.getDescriptiveName();
+			}
+		}
+		catch (Exception exception) {
+		}
 
-		return json;
+		return String.valueOf(groupId);
 	}
 
 	private JournalArticle _updateArticleLifecycle(
@@ -473,6 +570,9 @@ public class WebContentCreator {
 	private DDMTemplateLocalService _ddmTemplateLocalService;
 
 	@Reference
+	private GroupLocalService _groupLocalService;
+
+	@Reference
 	private ImageSource _imageSource;
 
 	@Reference
@@ -489,5 +589,9 @@ public class WebContentCreator {
 
 	@Reference
 	private UserLocalService _userLocalService;
+
+	private record PerSiteResult(
+		long groupId, String siteName, int created, int failed, String error) {
+	}
 
 }
