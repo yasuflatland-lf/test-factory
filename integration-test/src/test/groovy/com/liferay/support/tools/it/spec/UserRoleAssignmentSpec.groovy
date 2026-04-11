@@ -108,8 +108,7 @@ class UserRoleAssignmentSpec extends BaseLiferaySpec {
 		page.locator('#count').fill('1')
 		page.locator('#baseName').fill(BASE_USER_NAME)
 
-		and: 'expand advanced options'
-		page.locator('button.btn-link:has-text("advanced")').click()
+		and: 'wait for advanced field to render (section is open-by-default after EntityForm refactor)'
 		page.locator('#organizationIds').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
