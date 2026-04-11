@@ -1,5 +1,9 @@
+import {cleanup} from '@testing-library/react';
 import {readFileSync} from 'fs';
 import {resolve} from 'path';
+import {afterEach} from 'vitest';
+
+const __dirname = import.meta.dirname;
 
 const languagePropertiesPath = resolve(
 	__dirname,
@@ -29,7 +33,7 @@ function loadLanguageProperties(path: string): Map<string, string> {
 
 const languageMap = loadLanguageProperties(languagePropertiesPath);
 
-(global as any).Liferay = {
+(globalThis as any).Liferay = {
 	authToken: 'test-auth-token',
 	Language: {
 		get(key: string): string {
@@ -37,3 +41,7 @@ const languageMap = loadLanguageProperties(languagePropertiesPath);
 		},
 	},
 };
+
+afterEach(() => {
+	cleanup();
+});
