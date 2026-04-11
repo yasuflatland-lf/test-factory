@@ -12,7 +12,7 @@
 		"@vitejs/plugin-react": "4.3.4",
 		"esbuild": "0.24.2",
 		"jsdom": "25.0.1",
-		"typescript": "5.9.2",
+		"typescript": "5.9.3",
 		"vite": "6.2.7",
 		"vitest": "2.1.8"
 	},
