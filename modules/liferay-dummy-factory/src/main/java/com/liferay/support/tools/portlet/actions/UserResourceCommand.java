@@ -49,11 +49,7 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 		try {
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
-			int count = GetterUtil.getInteger(
-				data.getString("count"));
-			String baseName = data.getString("baseName");
-
-			BatchSpec batchSpec = new BatchSpec(count, baseName);
+			BatchSpec batchSpec = ResourceCommandUtil.parseBatchSpec(data);
 
 			String emailDomain = GetterUtil.getString(
 				data.getString("emailDomain"), "liferay.com");

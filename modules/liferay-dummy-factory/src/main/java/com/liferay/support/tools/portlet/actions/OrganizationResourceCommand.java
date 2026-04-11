@@ -48,16 +48,11 @@ public class OrganizationResourceCommand extends BaseMVCResourceCommand {
 		try {
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
-			int count = GetterUtil.getInteger(
-				data.getString("count"));
-			String baseName = data.getString("baseName");
-
-			BatchSpec batchSpec = new BatchSpec(count, baseName);
+			BatchSpec batchSpec = ResourceCommandUtil.parseBatchSpec(data);
 
 			long parentOrganizationId = GetterUtil.getLong(
 				data.getString("parentOrganizationId"));
-			boolean site = GetterUtil.getBoolean(
-				data.getString("site"));
+			boolean site = GetterUtil.getBoolean(data.getString("site"));
 
 			long userId = _portal.getUserId(resourceRequest);
 

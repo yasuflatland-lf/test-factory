@@ -49,17 +49,10 @@ public class SiteResourceCommand extends BaseMVCResourceCommand {
 		try {
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
-			int count = GetterUtil.getInteger(
-				data.getString("count"));
-			String baseName = data.getString("baseName");
+			BatchSpec batchSpec = ResourceCommandUtil.parseBatchSpec(data);
 
-			BatchSpec batchSpec = new BatchSpec(count, baseName);
-
-			String membershipTypeString = GetterUtil.getString(
-				data.getString("membershipType"), "open");
-
-			SiteMembershipType membershipType =
-				SiteMembershipType.fromString(membershipTypeString);
+			SiteMembershipType membershipType = SiteMembershipType.fromString(
+				GetterUtil.getString(data.getString("membershipType"), "open"));
 
 			long parentGroupId = GetterUtil.getLong(
 				data.getString("parentGroupId"));
