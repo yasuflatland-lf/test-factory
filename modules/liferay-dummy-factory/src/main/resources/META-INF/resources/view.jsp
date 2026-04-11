@@ -6,6 +6,8 @@
 <portlet:resourceURL id="/ldf/site" var="siteResourceURL" />
 <portlet:resourceURL id="/ldf/user" var="userResourceURL" />
 <portlet:resourceURL id="/ldf/wcm" var="wcmResourceURL" />
+<portlet:resourceURL id="/ldf/doc" var="docResourceURL" />
+<portlet:resourceURL id="/ldf/doc/upload" var="docUploadResourceURL" />
 <portlet:resourceURL id="/ldf/data" var="dataResourceURL" />
 <portlet:resourceURL id="/ldf/progress" var="progressResourceURL" />
 
@@ -25,6 +27,10 @@
 				"/ldf/user", userResourceURL
 			).put(
 				"/ldf/wcm", wcmResourceURL
+			).put(
+				"/ldf/doc", docResourceURL
+			).put(
+				"/ldf/doc/upload", docUploadResourceURL
 			).build()
 		).put(
 			"dataResourceURL", dataResourceURL
