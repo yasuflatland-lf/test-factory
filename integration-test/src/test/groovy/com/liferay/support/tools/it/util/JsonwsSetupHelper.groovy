@@ -19,10 +19,14 @@ class JsonwsSetupHelper {
 	/** Matches {@code com.liferay.portal.kernel.model.role.RoleConstants#TYPE_REGULAR}. */
 	public static final int ROLE_TYPE_REGULAR = 1
 
+	private static final String NEW_PASSWORD = 'Test12345'
+
 	private static final Logger _log = LoggerFactory.getLogger(JsonwsSetupHelper)
 
 	private final String _baseUrl
-	private final String _authHeader
+	private final String _username
+	private String _authHeader
+	private final List<String> _candidatePasswords
 	private final List<Tracked> _tracked = []
 
 	JsonwsSetupHelper(
@@ -30,8 +34,13 @@ class JsonwsSetupHelper {
 		String password = 'test') {
 
 		_baseUrl = baseUrl.endsWith('/') ? baseUrl[0..-2] : baseUrl
-		_authHeader =
-			'Basic ' + "${username}:${password}".bytes.encodeBase64().toString()
+		_username = username
+		_candidatePasswords = [password, NEW_PASSWORD].findAll { it != null }.unique()
+		_authHeader = _basicAuthFor(password)
+	}
+
+	private String _basicAuthFor(String password) {
+		return 'Basic ' + "${_username}:${password}".bytes.encodeBase64().toString()
 	}
 
 	Map createRole(String name, int type = ROLE_TYPE_REGULAR) {
@@ -113,7 +122,8 @@ class JsonwsSetupHelper {
 				'nameMap': _localizedJson(name),
 				'descriptionMap': _localizedJson(''),
 				'active': 'true',
-				'layoutsUpdateable': 'true'
+				'layoutsUpdateable': 'true',
+				'serviceContext': '{}'
 			]) as Map
 
 		_tracked << new Tracked(
@@ -271,34 +281,54 @@ class JsonwsSetupHelper {
 	}
 
 	private Object _get(String path) {
-		def conn = new URL(_baseUrl + path).openConnection() as HttpURLConnection
+		int lastStatus = 0
+		String lastResponseBody = ''
 
-		try {
-			conn.requestMethod = 'GET'
-			conn.connectTimeout = 10_000
-			conn.readTimeout = 30_000
-			conn.setRequestProperty('Authorization', _authHeader)
-			conn.setRequestProperty('Accept', 'application/json')
+		for (String password : _candidatePasswords) {
+			String authHeader = _basicAuthFor(password)
 
-			int status = conn.responseCode
-			String body = (status < 400)
-				? (conn.inputStream?.text ?: '')
-				: (conn.errorStream?.text ?: '')
+			def conn = new URL(_baseUrl + path).openConnection() as HttpURLConnection
 
-			if (status >= 400) {
-				throw new IllegalStateException(
-					"JSONWS GET ${path} returned HTTP ${status}: ${body}")
+			try {
+				conn.requestMethod = 'GET'
+				conn.connectTimeout = 10_000
+				conn.readTimeout = 30_000
+				conn.setRequestProperty('Authorization', authHeader)
+				conn.setRequestProperty('Accept', 'application/json')
+
+				int status = conn.responseCode
+				String body = (status < 400)
+					? (conn.inputStream?.text ?: '')
+					: (conn.errorStream?.text ?: '')
+
+				lastStatus = status
+				lastResponseBody = body
+
+				if ((status == 401) || (status == 403)) {
+					continue
+				}
+
+				if (status >= 400) {
+					throw new IllegalStateException(
+						"JSONWS GET ${path} returned HTTP ${status}: ${body}")
+				}
+
+				_authHeader = authHeader
+
+				if (!body?.trim() || body.trim() == 'null') {
+					return null
+				}
+
+				return new JsonSlurper().parseText(body)
 			}
-
-			if (!body?.trim() || body.trim() == 'null') {
-				return null
+			finally {
+				conn.disconnect()
 			}
+		}
 
-			return new JsonSlurper().parseText(body)
-		}
-		finally {
-			conn.disconnect()
-		}
+		throw new IllegalStateException(
+			"JSONWS GET ${path} returned HTTP ${lastStatus} for all " +
+				"candidate passwords: ${lastResponseBody}")
 	}
 
 	private Object _post(String path, Map<String, Object> params) {
@@ -307,41 +337,66 @@ class JsonwsSetupHelper {
 				"${URLEncoder.encode(v == null ? '' : v.toString(), 'UTF-8')}"
 		}.join('&')
 
-		def conn = new URL(_baseUrl + path).openConnection() as HttpURLConnection
+		int lastStatus = 0
+		String lastResponseBody = ''
 
-		try {
-			conn.requestMethod = 'POST'
-			conn.connectTimeout = 10_000
-			conn.readTimeout = 30_000
-			conn.setRequestProperty('Authorization', _authHeader)
-			conn.setRequestProperty('Accept', 'application/json')
-			conn.setRequestProperty(
-				'Content-Type', 'application/x-www-form-urlencoded')
-			conn.doOutput = true
+		for (String password : _candidatePasswords) {
+			String authHeader = _basicAuthFor(password)
 
-			conn.outputStream.withWriter('UTF-8') { writer ->
-				writer.write(body)
+			def conn = new URL(_baseUrl + path).openConnection() as HttpURLConnection
+
+			try {
+				conn.requestMethod = 'POST'
+				conn.connectTimeout = 10_000
+				conn.readTimeout = 30_000
+				conn.setRequestProperty('Authorization', authHeader)
+				conn.setRequestProperty('Accept', 'application/json')
+				conn.setRequestProperty(
+					'Content-Type', 'application/x-www-form-urlencoded')
+				conn.doOutput = true
+
+				conn.outputStream.withWriter('UTF-8') { writer ->
+					writer.write(body)
+				}
+
+				int status = conn.responseCode
+				String responseBody = (status < 400)
+					? (conn.inputStream?.text ?: '')
+					: (conn.errorStream?.text ?: '')
+
+				lastStatus = status
+				lastResponseBody = responseBody
+
+				// 401/403 with this password may mean the admin's password has
+				// been rotated (e.g. by the Playwright login flow in
+				// LdfResourceClient). Retry with the other candidate password.
+				if ((status == 401) || (status == 403)) {
+					continue
+				}
+
+				if (status >= 400) {
+					throw new IllegalStateException(
+						"JSONWS POST ${path} returned HTTP ${status}: ${responseBody}")
+				}
+
+				// Remember the password that actually worked so subsequent
+				// calls go straight to it.
+				_authHeader = authHeader
+
+				if (!responseBody?.trim() || responseBody.trim() == 'null') {
+					return null
+				}
+
+				return new JsonSlurper().parseText(responseBody)
 			}
-
-			int status = conn.responseCode
-			String responseBody = (status < 400)
-				? (conn.inputStream?.text ?: '')
-				: (conn.errorStream?.text ?: '')
-
-			if (status >= 400) {
-				throw new IllegalStateException(
-					"JSONWS POST ${path} returned HTTP ${status}: ${responseBody}")
+			finally {
+				conn.disconnect()
 			}
-
-			if (!responseBody?.trim() || responseBody.trim() == 'null') {
-				return null
-			}
-
-			return new JsonSlurper().parseText(responseBody)
 		}
-		finally {
-			conn.disconnect()
-		}
+
+		throw new IllegalStateException(
+			"JSONWS POST ${path} returned HTTP ${lastStatus} for all " +
+				"candidate passwords: ${lastResponseBody}")
 	}
 
 	private static class Tracked {

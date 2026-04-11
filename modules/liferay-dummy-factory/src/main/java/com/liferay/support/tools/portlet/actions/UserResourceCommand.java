@@ -51,14 +51,21 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 
 			BatchSpec batchSpec = ResourceCommandUtil.parseBatchSpec(data);
 
-			String emailDomain = GetterUtil.getString(
-				data.getString("emailDomain"), "liferay.com");
-			String password = GetterUtil.getString(
-				data.getString("password"), "test");
-			boolean male = GetterUtil.getBoolean(
-				data.getString("male"), true);
-			String jobTitle = GetterUtil.getString(
-				data.getString("jobTitle"), "");
+			String emailDomain = data.getString("emailDomain", "liferay.com");
+
+			if (emailDomain.isEmpty()) {
+				emailDomain = "liferay.com";
+			}
+
+			String password = data.getString("password", "test");
+
+			if (password.isEmpty()) {
+				password = "test";
+			}
+
+			boolean male = data.has("male") ?
+				data.getBoolean("male") : true;
+			String jobTitle = data.getString("jobTitle", "");
 
 			long[] organizationIds = _toLongArray(
 				data.getJSONArray("organizationIds"));
