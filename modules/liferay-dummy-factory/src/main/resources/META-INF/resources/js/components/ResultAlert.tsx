@@ -14,13 +14,19 @@ function ResultAlert({message, multiSite, onDismiss, type}: ResultAlertProps) {
 	const totalCreated = multiSite?.totalCreated ?? 0;
 	const totalRequested = multiSite?.totalRequested ?? 0;
 
-	const effectiveType: 'success' | 'danger' | 'warning' = multiSite
-		? multiSite.ok
-			? 'success'
-			: totalCreated > 0
-				? 'warning'
-				: 'danger'
-		: type;
+	let effectiveType: 'success' | 'danger' | 'warning' = type;
+
+	if (multiSite) {
+		if (multiSite.ok) {
+			effectiveType = 'success';
+		}
+		else if (totalCreated > 0) {
+			effectiveType = 'warning';
+		}
+		else {
+			effectiveType = 'danger';
+		}
+	}
 
 	const hasContent = Boolean(message) || Boolean(multiSite);
 
