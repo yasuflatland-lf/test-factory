@@ -4,6 +4,7 @@ import FileUploadArea from './FileUploadArea';
 interface FormFieldProps {
 	error?: string;
 	field: FieldDefinition;
+	formValues?: Record<string, string>;
 	onChange: (name: string, value: string) => void;
 	options?: SelectOption[];
 	uploadURL?: string;
@@ -31,6 +32,7 @@ function FieldError({error}: {error?: string}) {
 function FormField({
 	error,
 	field,
+	formValues,
 	onChange,
 	options,
 	uploadURL,
@@ -141,8 +143,11 @@ function FormField({
 	}
 
 	if (field.type === 'file') {
+		const groupId = String(formValues?.['groupId'] ?? '');
+
 		return (
 			<FileUploadArea
+				groupId={groupId}
 				key={field.name}
 				onChange={(name, newValue) => onChange(field.name, newValue)}
 				uploadURL={uploadURL ?? ''}

@@ -145,6 +145,7 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 			<FormField
 				error={errors[field.name]}
 				field={field}
+				formValues={values}
 				key={field.name}
 				onChange={setValue}
 				value={values[field.name] || ''}

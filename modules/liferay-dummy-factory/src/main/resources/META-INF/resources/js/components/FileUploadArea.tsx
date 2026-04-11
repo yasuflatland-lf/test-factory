@@ -1,6 +1,7 @@
 import {useState} from 'react';
 
 interface FileUploadAreaProps {
+	groupId: string;
 	onChange: (name: string, value: string) => void;
 	uploadURL: string;
 	value: string;
@@ -8,7 +9,7 @@ interface FileUploadAreaProps {
 
 const FIELD_NAME = 'uploadedFiles';
 
-function FileUploadArea({onChange, uploadURL, value}: FileUploadAreaProps) {
+function FileUploadArea({groupId, onChange, uploadURL, value}: FileUploadAreaProps) {
 	const [uploadingNames, setUploadingNames] = useState<string[]>([]);
 	const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -18,6 +19,7 @@ function FileUploadArea({onChange, uploadURL, value}: FileUploadAreaProps) {
 		const formData = new FormData();
 
 		formData.append('cmd', 'add_temp');
+		formData.append('groupId', groupId);
 		formData.append('file', file);
 
 		try {
@@ -104,6 +106,7 @@ function FileUploadArea({onChange, uploadURL, value}: FileUploadAreaProps) {
 			const formData = new FormData();
 
 			formData.append('cmd', 'delete_temp');
+			formData.append('groupId', groupId);
 			formData.append('fileName', fileName);
 
 			const response = await fetch(uploadURL, {
@@ -115,19 +118,29 @@ function FileUploadArea({onChange, uploadURL, value}: FileUploadAreaProps) {
 				method: 'POST',
 			});
 
-			if (!response.ok) {
-				console.error(
-					`Failed to delete temp file ${fileName}: server error ${response.status}`
-				);
+			const data = await response.json();
+
+			if (response.ok && data.success) {
+				const next = fileNames.filter((name) => name !== fileName);
+
+				onChange(FIELD_NAME, next.join(','));
+			}
+			else {
+				setErrors((prev) => ({
+					...prev,
+					[fileName]:
+						data.error || Liferay.Language.get('upload-failed'),
+				}));
 			}
 		}
 		catch (error) {
 			console.error(`Failed to delete temp file ${fileName}`, error);
+
+			setErrors((prev) => ({
+				...prev,
+				[fileName]: Liferay.Language.get('upload-failed'),
+			}));
 		}
-
-		const next = fileNames.filter((name) => name !== fileName);
-
-		onChange(FIELD_NAME, next.join(','));
 	};
 
 	const errorEntries = Object.entries(errors);
