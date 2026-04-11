@@ -20,12 +20,16 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.support.tools.constants.LDFPortletKeys;
+import com.liferay.support.tools.service.image.ImageRequest;
+import com.liferay.support.tools.service.image.ImageSource;
 import com.liferay.support.tools.utils.JournalUtils;
 import com.liferay.support.tools.utils.RandomizeContentGenerator;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -165,10 +169,14 @@ public class WebContentCreator {
 				JournalArticle article = TransactionInvokerUtil.invoke(
 					_transactionConfig,
 					() -> {
+						String mergedLinks = resolveImageLinks(
+							_randomizeContentGenerator, _imageSource,
+							linkLists, randomAmount);
+
 						String randomArticle =
 							_randomizeContentGenerator.generateRandomContents(
 								language, totalParagraphs, randomAmount,
-								linkLists);
+								mergedLinks);
 
 						String content = _journalUtils.buildFields(
 							groupId, locales, randomArticle);
@@ -270,6 +278,41 @@ public class WebContentCreator {
 		result.put("success", created.length() > 0);
 
 		return result;
+	}
+
+	static String resolveImageLinks(
+		RandomizeContentGenerator generator, ImageSource imageSource,
+		String linkLists, int randomAmount) {
+
+		if (randomAmount <= 0) {
+			return (linkLists == null) ? "" : linkLists;
+		}
+
+		List<String> userLinks;
+
+		if ((linkLists == null) || linkLists.isBlank()) {
+			userLinks = Collections.emptyList();
+		}
+		else {
+			userLinks = generator.generateLinks(linkLists);
+		}
+
+		if (userLinks.size() >= randomAmount) {
+			return (linkLists == null) ? "" : linkLists;
+		}
+
+		int shortfall = randomAmount - userLinks.size();
+
+		List<String> picsumLinks = imageSource.supply(
+			ImageRequest.of(shortfall));
+
+		List<String> merged = new ArrayList<>(
+			userLinks.size() + picsumLinks.size());
+
+		merged.addAll(userLinks);
+		merged.addAll(picsumLinks);
+
+		return String.join(LDFPortletKeys.EOL, merged);
 	}
 
 	private ServiceContext _newServiceContext(long userId, long groupId)
@@ -437,6 +480,9 @@ public class WebContentCreator {
 
 	@Reference
 	private DDMTemplateLocalService _ddmTemplateLocalService;
+
+	@Reference
+	private ImageSource _imageSource;
 
 	@Reference
 	private JournalArticleLocalService _journalArticleLocalService;
