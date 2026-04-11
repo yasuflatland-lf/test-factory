@@ -23,6 +23,7 @@ import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.support.tools.constants.LDFPortletKeys;
 import com.liferay.support.tools.service.image.ImageRequest;
 import com.liferay.support.tools.service.image.ImageSource;
@@ -463,8 +464,21 @@ public class WebContentCreator {
 		try {
 			Group group = _groupLocalService.fetchGroup(groupId);
 
-			if (group != null) {
-				return group.getDescriptiveName();
+			if (group == null) {
+				_log.warn(
+					"Group " + groupId +
+						" not found; using id as site name");
+			}
+			else {
+				String descriptiveName = group.getDescriptiveName();
+
+				if (Validator.isNotNull(descriptiveName)) {
+					return descriptiveName;
+				}
+
+				_log.warn(
+					"Group " + groupId +
+						" has no descriptive name; using id as site name");
 			}
 		}
 		catch (Exception exception) {
