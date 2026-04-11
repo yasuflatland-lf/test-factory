@@ -86,29 +86,26 @@ class PagesFunctionalSpec extends BaseLiferaySpec {
 		page.waitForLoadState()
 
 		and: 'select Pages entity type'
-		page.locator('.nav-link:has-text("pages")').click()
+		page.locator('[data-testid="entity-selector-PAGES"]').click()
 
 		and: 'wait for Pages form to render'
-		page.locator('.sheet-header h2:has-text("pages")').waitFor(
-			new Locator.WaitForOptions().setTimeout(15_000)
-		)
-		page.locator('#count').waitFor(
+		page.locator('[data-testid="pages-count-input"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
 
 		and: 'fill in the pages form'
-		page.locator('#count').fill("${PAGE_COUNT}")
-		page.locator('#baseName').fill(BASE_PAGE_NAME)
-		page.locator('#groupId').selectOption("${guestGroupId}")
+		page.locator('[data-testid="pages-count-input"]').fill("${PAGE_COUNT}")
+		page.locator('[data-testid="pages-base-name-input"]').fill(BASE_PAGE_NAME)
+		page.locator('[data-testid="pages-group-id-select"]').selectOption("${guestGroupId}")
 
 		and: 'click Run button'
-		page.locator('.sheet-footer button.btn-primary').click()
+		page.locator('[data-testid="pages-submit"]').click()
 
 		then: 'success alert appears'
-		page.locator('.alert-success').waitFor(
+		page.locator('[data-testid="pages-result"].alert-success').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
-		page.locator('.alert-success').isVisible()
+		page.locator('[data-testid="pages-result"].alert-success').isVisible()
 	}
 
 	def 'Created pages are visible via JSONWS LayoutService'() {
