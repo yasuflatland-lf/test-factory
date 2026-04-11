@@ -62,14 +62,8 @@ public class DocumentResourceCommand extends BaseMVCResourceCommand {
 				data.getString("description"), "");
 			String uploadedFilesStr = data.getString("uploadedFiles");
 
-			String[] uploadedFiles;
-
-			if (Validator.isNotNull(uploadedFilesStr)) {
-				uploadedFiles = uploadedFilesStr.split(",");
-			}
-			else {
-				uploadedFiles = new String[0];
-			}
+			String[] uploadedFiles = Validator.isNotNull(uploadedFilesStr) ?
+				uploadedFilesStr.split(",") : new String[0];
 
 			long userId = _portal.getUserId(resourceRequest);
 
