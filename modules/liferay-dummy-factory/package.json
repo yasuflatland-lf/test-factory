@@ -1,20 +1,22 @@
 {
 	"dependencies": {
-		"react": "18.2.0",
-		"react-dom": "18.2.0"
+		"react": "19.2.5",
+		"react-dom": "19.2.5"
 	},
 	"devDependencies": {
 		"@liferay/npm-scripts": "51.2.0",
 		"@testing-library/jest-dom": "6.6.3",
 		"@testing-library/react": "16.3.0",
 		"@testing-library/user-event": "14.5.1",
-		"@types/jest": "26.0.14",
-		"@types/react": "18.2.0",
+		"@types/react": "19.2.5",
+		"@types/react-dom": "19.2.3",
+		"@vitejs/plugin-react": "4.3.4",
+		"@vitest/coverage-v8": "2.1.8",
 		"esbuild": "0.24.2",
-		"jest": "27.5.1",
-		"jest-environment-jsdom": "27.5.1",
-		"jest-fetch-mock": "3.0.3",
-		"typescript": "5.9.2"
+		"jsdom": "25.0.1",
+		"typescript": "5.9.2",
+		"vite": "6.2.7",
+		"vitest": "2.1.8"
 	},
 	"main": "js/index.ts",
 	"name": "liferay-dummy-factory",
@@ -23,7 +25,8 @@
 		"build": "node scripts/build.mjs",
 		"checkFormat": "liferay-npm-scripts format --check",
 		"format": "liferay-npm-scripts format",
-		"test": "jest"
+		"test": "vitest run",
+		"test:watch": "vitest"
 	},
 	"version": "1.0.0"
 }
