@@ -2,8 +2,10 @@ package com.liferay.support.tools.service;
 
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.transaction.TransactionConfig;
+import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 
 import java.util.ArrayList;
@@ -20,7 +22,7 @@ public class CategoryCreator {
 
 	public List<AssetCategory> create(
 			long userId, long groupId, long vocabularyId, BatchSpec batchSpec)
-		throws PortalException {
+		throws Throwable {
 
 		int count = batchSpec.count();
 		String baseName = batchSpec.baseName();
@@ -32,20 +34,27 @@ public class CategoryCreator {
 		serviceContext.setScopeGroupId(groupId);
 
 		for (int i = 0; i < count; i++) {
-			String name = BatchNaming.resolve(baseName, count, i, " ");
+			final String name = BatchNaming.resolve(baseName, count, i, " ");
 
-			Map<Locale, String> titleMap = Collections.singletonMap(
+			final Map<Locale, String> titleMap = Collections.singletonMap(
 				LocaleUtil.getDefault(), name);
 
-			AssetCategory category = _assetCategoryLocalService.addCategory(
-				null, userId, groupId, 0L, titleMap, Collections.emptyMap(),
-				vocabularyId, new String[0], serviceContext);
+			AssetCategory category = TransactionInvokerUtil.invoke(
+				_transactionConfig,
+				() -> _assetCategoryLocalService.addCategory(
+					null, userId, groupId, 0L, titleMap,
+					Collections.emptyMap(), vocabularyId, new String[0],
+					serviceContext));
 
 			categories.add(category);
 		}
 
 		return categories;
 	}
+
+	private static final TransactionConfig _transactionConfig =
+		TransactionConfig.Factory.create(
+			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private AssetCategoryLocalService _assetCategoryLocalService;

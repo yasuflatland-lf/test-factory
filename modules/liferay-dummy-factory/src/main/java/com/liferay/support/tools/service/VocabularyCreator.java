@@ -2,8 +2,10 @@ package com.liferay.support.tools.service;
 
 import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.service.AssetVocabularyLocalService;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.transaction.TransactionConfig;
+import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +18,7 @@ public class VocabularyCreator {
 
 	public List<AssetVocabulary> create(
 			long userId, long groupId, BatchSpec batchSpec)
-		throws PortalException {
+		throws Throwable {
 
 		int count = batchSpec.count();
 		String baseName = batchSpec.baseName();
@@ -28,17 +30,22 @@ public class VocabularyCreator {
 		List<AssetVocabulary> vocabularies = new ArrayList<>(count);
 
 		for (int i = 0; i < count; i++) {
-			String name = BatchNaming.resolve(baseName, count, i, " ");
+			final String name = BatchNaming.resolve(baseName, count, i, " ");
 
-			AssetVocabulary vocabulary =
-				_assetVocabularyLocalService.addVocabulary(
-					userId, groupId, name, serviceContext);
+			AssetVocabulary vocabulary = TransactionInvokerUtil.invoke(
+				_transactionConfig,
+				() -> _assetVocabularyLocalService.addVocabulary(
+					userId, groupId, name, serviceContext));
 
 			vocabularies.add(vocabulary);
 		}
 
 		return vocabularies;
 	}
+
+	private static final TransactionConfig _transactionConfig =
+		TransactionConfig.Factory.create(
+			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private AssetVocabularyLocalService _assetVocabularyLocalService;
