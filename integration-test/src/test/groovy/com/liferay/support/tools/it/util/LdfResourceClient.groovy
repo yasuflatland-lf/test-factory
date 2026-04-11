@@ -41,6 +41,8 @@ class LdfResourceClient implements Closeable {
 	private static final String CONTROL_PANEL_PATH =
 		'/group/control_panel/manage'
 
+	private static final String NEW_PASSWORD = 'Test12345'
+
 	private static final int REQUEST_TIMEOUT_MS = 60_000
 	private static final int NAV_TIMEOUT_MS = 30_000
 
@@ -48,7 +50,7 @@ class LdfResourceClient implements Closeable {
 
 	private final String _baseUrl
 	private final String _username
-	private final String _password
+	private String _password
 
 	private Playwright _playwright
 	private Browser _browser
@@ -168,25 +170,63 @@ class LdfResourceClient implements Closeable {
 
 		String initialAuthToken = _page.evaluate('() => Liferay.authToken') as String
 
-		APIResponse loginResponse = _page.request().post(
-			"${_baseUrl}/c/portal/login",
-			RequestOptions.create()
-				.setHeader('Content-Type', 'application/x-www-form-urlencoded')
-				.setHeader('x-csrf-token', initialAuthToken ?: '')
-				.setData(
-					"login=${_encode(_username)}" +
-					"&password=${_encode(_password)}" +
-					'&rememberMe=true'))
+		// Try the initial password first, fall back to the post-reset password
+		// so the helper survives both fresh containers (password == 'test')
+		// and ones where we already ran through the password-change flow
+		// (password == NEW_PASSWORD).
+		List<String> candidatePasswords = [_password, NEW_PASSWORD]
+			.findAll { it != null }
+			.unique()
 
-		int loginStatus = loginResponse.status()
+		boolean loggedInOk = false
 
-		if ((loginStatus < 200) || (loginStatus >= 400)) {
+		for (String pwd : candidatePasswords) {
+			APIResponse loginResponse = _page.request().post(
+				"${_baseUrl}/c/portal/login",
+				RequestOptions.create()
+					.setHeader('Content-Type', 'application/x-www-form-urlencoded')
+					.setHeader('x-csrf-token', initialAuthToken ?: '')
+					.setData(
+						"login=${_encode(_username)}" +
+						"&password=${_encode(pwd)}" +
+						'&rememberMe=true'))
+
+			if (loginResponse.status() == 200) {
+				_password = pwd
+				loggedInOk = true
+				break
+			}
+		}
+
+		if (!loggedInOk) {
 			throw new RuntimeException(
-				"Login failed for ${_username}: HTTP ${loginStatus}")
+				"Login failed for ${_username} with all candidate passwords")
 		}
 
 		_page.navigate("${_baseUrl}/")
 		_page.waitForLoadState()
+
+		// Liferay forces a password change on first login for the default admin
+		// even when passwords.default.policy.change.required=false: the reset
+		// happens because the admin's password has never been changed. Fill the
+		// form with a stable value so subsequent navigations reach the portlet.
+		if (_page.title()?.contains('New Password')) {
+			_page.locator('#password1').fill(NEW_PASSWORD)
+			_page.locator('#password2').fill(NEW_PASSWORD)
+			_page.waitForNavigation({ ->
+				_page.locator('[type=submit], button.btn-primary').first().click()
+			})
+			_password = NEW_PASSWORD
+		}
+
+		// Ignore the reminder-query prompt that some builds still render even
+		// with users.reminder.query.enabled=false.
+		if (_page.locator('#reminderQueryAnswer').isVisible()) {
+			_page.locator('#reminderQueryAnswer').fill('test')
+			_page.waitForNavigation({ ->
+				_page.locator('[type=submit], button.btn-primary').first().click()
+			})
+		}
 
 		_authToken = _page.evaluate('() => Liferay.authToken') as String
 		_loggedIn = true
