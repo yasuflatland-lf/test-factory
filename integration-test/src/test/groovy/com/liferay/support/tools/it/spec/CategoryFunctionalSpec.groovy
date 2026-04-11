@@ -102,10 +102,10 @@ class CategoryFunctionalSpec extends BaseLiferaySpec {
 		page.waitForLoadState()
 
 		and: 'select Categories entity type'
-		page.locator('.nav-link:has-text("categories")').click()
+		page.locator('.nav-link:text-is("categories")').click()
 
 		and: 'wait for Categories form to render'
-		page.locator('.sheet-header h2:has-text("categories")').waitFor(
+		page.locator('.sheet-header h2:text-is("categories")').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
 		page.locator('#count').waitFor(
