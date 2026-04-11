@@ -70,7 +70,7 @@ class CompanyFunctionalSpec extends BaseLiferaySpec {
 		page.locator('[data-testid="company-submit"]').click()
 
 		then: 'success alert appears'
-		page.locator('[data-testid="company-result"]').waitFor(
+		page.locator('[data-testid="company-result"].alert-success').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
 		page.locator('[data-testid="company-result"].alert-success').isVisible()
