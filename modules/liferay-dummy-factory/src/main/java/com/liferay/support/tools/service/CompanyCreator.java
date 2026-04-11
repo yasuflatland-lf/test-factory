@@ -25,17 +25,13 @@ public class CompanyCreator {
 		for (int i = 0; i < count; i++) {
 			String prefix = (count > 1) ? String.valueOf(i + 1) : "";
 
-			String currentWebId = prefix + webId;
-			String currentVirtualHostname = prefix + virtualHostname;
-			String currentMx = prefix + mx;
-
 			companies.add(
 				TransactionInvokerUtil.invoke(
 					_transactionConfig,
 					() -> _companyLocalService.addCompany(
-						null, currentWebId, currentVirtualHostname, currentMx,
-						maxUsers, active, false, null, null, null, null, null,
-						null)));
+						null, prefix + webId, prefix + virtualHostname,
+						prefix + mx, maxUsers, active, false, null, null, null,
+						null, null, null)));
 		}
 
 		return companies;
