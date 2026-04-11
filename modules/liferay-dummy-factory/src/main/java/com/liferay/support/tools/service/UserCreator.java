@@ -9,6 +9,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
@@ -17,8 +18,11 @@ import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.TransactionConfig;
 import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.support.tools.utils.CommonUtil;
 
 import java.util.Calendar;
+
+import net.datafaker.Faker;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -31,19 +35,41 @@ public class UserCreator {
 			String emailDomain, String password,
 			boolean male, String jobTitle, long[] organizationIds,
 			long[] roleIds, long[] userGroupIds,
-			long[] siteRoleIds, long[] orgRoleIds)
+			long[] siteRoleIds, long[] orgRoleIds, boolean fakerEnable,
+			String locale, boolean generatePersonalSiteLayouts,
+			long publicLayoutSetPrototypeId, long privateLayoutSetPrototypeId,
+			long[] groupIds)
 		throws Throwable {
 
 		int count = batchSpec.count();
 		String baseName = batchSpec.baseName();
 
+		final Faker faker = fakerEnable ?
+			_commonUtil.createFaker(locale) : null;
+
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		JSONArray created = JSONFactoryUtil.createJSONArray();
 
 		for (int i = 0; i < count; i++) {
-			final String screenName = baseName.toLowerCase() + (i + 1);
-			final String emailAddress = screenName + "@" + emailDomain;
 			final int idx = i;
+
+			final String firstName;
+			final String lastName;
+			final String screenName;
+
+			if (fakerEnable) {
+				firstName = faker.name().firstName();
+				lastName = faker.name().lastName();
+				screenName =
+					(firstName + "." + lastName + (idx + 1)).toLowerCase();
+			}
+			else {
+				firstName = baseName;
+				lastName = String.valueOf(idx + 1);
+				screenName = baseName.toLowerCase() + (idx + 1);
+			}
+
+			final String emailAddress = screenName + "@" + emailDomain;
 
 			final ServiceContext serviceContext = new ServiceContext();
 
@@ -59,8 +85,8 @@ public class UserCreator {
 						User u = _userLocalService.addUserWithWorkflow(
 							creatorUserId, companyId, false, password,
 							password, false, screenName, emailAddress,
-							LocaleUtil.getDefault(), baseName, "",
-							String.valueOf(idx + 1), 0L, 0L, male,
+							LocaleUtil.getDefault(), firstName, "",
+							lastName, 0L, 0L, male,
 							Calendar.JANUARY, 1, 1970, jobTitle, 0,
 							new long[0], organizationIds, roleIds,
 							userGroupIds, false, serviceContext);
@@ -97,6 +123,23 @@ public class UserCreator {
 								}
 							}
 						}
+
+						if ((groupIds != null) && (groupIds.length > 0)) {
+							for (long groupId : groupIds) {
+								if (groupId > 0) {
+									_groupLocalService.addUserGroup(
+										u.getUserId(), groupId);
+								}
+							}
+						}
+
+						if (generatePersonalSiteLayouts) {
+							_userLayoutInitializer.init(u);
+						}
+
+						_layoutSetPrototypeLinker.linkUserPersonalSite(
+							u, publicLayoutSetPrototypeId,
+							privateLayoutSetPrototypeId);
 
 						return u;
 					});
@@ -147,10 +190,22 @@ public class UserCreator {
 			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
+	private CommonUtil _commonUtil;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private LayoutSetPrototypeLinker _layoutSetPrototypeLinker;
+
+	@Reference
 	private OrganizationLocalService _organizationLocalService;
 
 	@Reference
 	private UserGroupRoleLocalService _userGroupRoleLocalService;
+
+	@Reference
+	private UserLayoutInitializer _userLayoutInitializer;
 
 	@Reference
 	private UserLocalService _userLocalService;
