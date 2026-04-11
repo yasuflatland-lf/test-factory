@@ -30,7 +30,19 @@ class VocabularyFunctionalSpec extends BaseLiferaySpec {
 
 	def setupSpec() {
 		ensureBundleActive()
+
 		pw = new PlaywrightLifecycle()
+
+		// Prime admin password via Playwright login so that headless API
+		// calls can authenticate with the active credentials immediately.
+		loginAsAdmin(pw)
+
+		// Discover Guest site groupId for vocabulary creation.
+		def group = jsonwsGet(
+			"/api/jsonws/group/get-group/company-id/${companyId}" +
+			'/group-key/Guest') as Map
+
+		guestGroupId = group.groupId as Long
 	}
 
 	def cleanupSpec() {
@@ -45,28 +57,6 @@ class VocabularyFunctionalSpec extends BaseLiferaySpec {
 		}
 
 		pw?.close()
-	}
-
-	def 'Login to Liferay as admin'() {
-		expect:
-		loginAsAdmin(pw)
-	}
-
-	def 'Discover Guest site groupId'() {
-		when:
-		def group = jsonwsGet(
-			"/api/jsonws/group/get-group/company-id/${companyId}" +
-			'/group-key/Guest') as Map
-
-		then:
-		group != null
-		group.groupId != null
-
-		when:
-		guestGroupId = group.groupId as Long
-
-		then:
-		guestGroupId > 0
 	}
 
 	def 'Vocabularies are created via portlet UI'() {
