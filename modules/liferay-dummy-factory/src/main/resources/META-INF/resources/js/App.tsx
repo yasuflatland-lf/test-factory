@@ -25,6 +25,7 @@ function App({actionResourceURLs, dataResourceURL, progressResourceURL}: AppProp
 					<EntitySelector
 						onSelect={setSelectedEntity}
 						selected={selectedEntity}
+						testId="entity-selector"
 					/>
 				</div>
 

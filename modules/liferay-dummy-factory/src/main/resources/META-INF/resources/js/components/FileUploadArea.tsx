@@ -3,13 +3,14 @@ import {useState} from 'react';
 interface FileUploadAreaProps {
 	groupId: string;
 	onChange: (name: string, value: string) => void;
+	testId?: string;
 	uploadURL: string;
 	value: string;
 }
 
 const FIELD_NAME = 'uploadedFiles';
 
-function FileUploadArea({groupId, onChange, uploadURL, value}: FileUploadAreaProps) {
+function FileUploadArea({groupId, onChange, testId, uploadURL, value}: FileUploadAreaProps) {
 	const [uploadingNames, setUploadingNames] = useState<string[]>([]);
 	const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -153,6 +154,7 @@ function FileUploadArea({groupId, onChange, uploadURL, value}: FileUploadAreaPro
 
 			<input
 				className="form-control"
+				data-testid={testId ? `${testId}-input` : undefined}
 				id="ldf-file-upload-area"
 				multiple
 				onChange={(e) => _handleFileChange(e.target)}
@@ -168,7 +170,12 @@ function FileUploadArea({groupId, onChange, uploadURL, value}: FileUploadAreaPro
 			)}
 
 			{fileNames.length > 0 && (
-				<ul className="list-inline mt-2">
+				<ul
+					className="list-inline mt-2"
+					data-testid={
+						testId ? `${testId}-uploaded-list` : undefined
+					}
+				>
 					{fileNames.map((fileName) => (
 						<li className="list-inline-item" key={fileName}>
 							<span className="label label-secondary">
@@ -182,6 +189,11 @@ function FileUploadArea({groupId, onChange, uploadURL, value}: FileUploadAreaPro
 											'remove'
 										)}
 										className="btn btn-unstyled"
+										data-testid={
+											testId
+												? `${testId}-remove-${fileName}`
+												: undefined
+										}
 										onClick={() => _handleRemove(fileName)}
 										type="button"
 									>
