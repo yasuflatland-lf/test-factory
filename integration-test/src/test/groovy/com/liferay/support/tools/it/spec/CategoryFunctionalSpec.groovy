@@ -121,7 +121,9 @@ class CategoryFunctionalSpec extends BaseLiferaySpec {
 
 		and: 'wait for vocabulary dropdown to populate with prereq vocab'
 		page.locator("#vocabularyId option[value=\"${prereqVocabularyId}\"]").waitFor(
-			new Locator.WaitForOptions().setTimeout(15_000)
+			new Locator.WaitForOptions()
+				.setState(com.microsoft.playwright.options.WaitForSelectorState.ATTACHED)
+				.setTimeout(15_000)
 		)
 
 		and: 'select prereq vocabulary'
