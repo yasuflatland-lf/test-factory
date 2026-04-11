@@ -8,13 +8,8 @@ import com.microsoft.playwright.Page
 import spock.lang.Shared
 import spock.lang.Stepwise
 
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-
 @Stepwise
 class CompanyFunctionalSpec extends BaseLiferaySpec {
-
-	private static final Logger log = LoggerFactory.getLogger(CompanyFunctionalSpec)
 
 	private static final int COMPANY_COUNT = 1
 	private static final String COMPANY_WEB_ID = 'ittestco'
@@ -37,19 +32,10 @@ class CompanyFunctionalSpec extends BaseLiferaySpec {
 	}
 
 	def cleanupSpec() {
-		if (createdCompanyId != null) {
-			try {
-				jsonwsPost(
-					'/api/jsonws/company/delete-company',
-					[companyId: createdCompanyId])
-			}
-			catch (Exception e) {
-				log.warn(
-					'Failed to clean up company {}: {}',
-					createdCompanyId, e.message)
-			}
-		}
-
+		// CompanyService is excluded from JSON-WS by Liferay's default
+		// json.service.invalid.class.names, so there is no remote delete path.
+		// The Testcontainers instance is not reused (withReuse(false)), so the
+		// created company is discarded with the container at the end of the run.
 		pw?.close()
 	}
 
