@@ -72,10 +72,10 @@ public class LayoutResourceCommand extends BaseMVCResourceCommand {
 			ResourceCommandUtil.setErrorResponse(
 				responseJson, illegalArgumentException);
 		}
-		catch (Throwable throwable) {
-			_log.error("Failed to create layouts", throwable);
+		catch (Exception exception) {
+			_log.error("Failed to create layouts", exception);
 
-			ResourceCommandUtil.setErrorResponse(responseJson, throwable);
+			ResourceCommandUtil.setErrorResponse(responseJson, exception);
 		}
 
 		JSONPortletResponseUtil.writeJSON(
