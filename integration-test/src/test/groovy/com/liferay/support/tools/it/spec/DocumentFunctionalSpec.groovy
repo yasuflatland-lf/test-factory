@@ -1,0 +1,134 @@
+package com.liferay.support.tools.it.spec
+
+import com.liferay.support.tools.it.util.PlaywrightLifecycle
+
+import com.microsoft.playwright.Locator
+import com.microsoft.playwright.Page
+
+import spock.lang.Shared
+import spock.lang.Stepwise
+
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
+@Stepwise
+class DocumentFunctionalSpec extends BaseLiferaySpec {
+
+	private static final Logger log = LoggerFactory.getLogger(DocumentFunctionalSpec)
+
+	private static final String BASE_DOC_NAME = 'ITTestDoc'
+	private static final int DOC_COUNT = 3
+
+	@Shared
+	PlaywrightLifecycle pw
+
+	@Shared
+	long guestGroupId
+
+	@Shared
+	List<Long> createdFileEntryIds = []
+
+	def setupSpec() {
+		ensureBundleActive()
+		pw = new PlaywrightLifecycle()
+	}
+
+	def cleanupSpec() {
+		createdFileEntryIds.each { id ->
+			try {
+				jsonwsPost(
+					'/api/jsonws/dlapp/delete-file-entry',
+					['fileEntryId': id])
+			}
+			catch (Exception e) {
+				log.warn('Failed to clean up file entry {}: {}', id, e.message)
+			}
+		}
+
+		pw?.close()
+	}
+
+	def 'Login to Liferay as admin'() {
+		expect:
+		loginAsAdmin(pw)
+	}
+
+	def 'Discover Guest site groupId'() {
+		when:
+		def group = jsonwsGet(
+			"/api/jsonws/group/get-group/company-id/${companyId}" +
+			'/group-key/Guest') as Map
+
+		then:
+		group != null
+		group.groupId != null
+
+		when:
+		guestGroupId = group.groupId as Long
+
+		then:
+		guestGroupId > 0
+	}
+
+	def 'Documents are created via portlet UI'() {
+		given:
+		Page page = pw.page
+
+		when: 'navigate to portlet'
+		page.navigate(
+			"${liferay.baseUrl}/group/control_panel/manage" +
+			"?p_p_id=${PORTLET_ID}" +
+			'&p_p_lifecycle=0' +
+			'&p_p_state=maximized'
+		)
+		page.waitForLoadState()
+
+		and: 'select Documents entity type'
+		page.locator('.nav-link:has-text("documents")').click()
+
+		and: 'wait for Documents form to render'
+		page.locator('.sheet-header h2:has-text("documents")').waitFor(
+			new Locator.WaitForOptions().setTimeout(15_000)
+		)
+		page.locator('#count').waitFor(
+			new Locator.WaitForOptions().setTimeout(15_000)
+		)
+
+		and: 'fill in the documents form'
+		page.locator('#count').fill("${DOC_COUNT}")
+		page.locator('#baseName').fill(BASE_DOC_NAME)
+		page.locator('#groupId').selectOption("${guestGroupId}")
+
+		and: 'click Run button'
+		page.locator('.sheet-footer button.btn-primary').click()
+
+		then: 'success alert appears'
+		page.locator('.alert-success').waitFor(
+			new Locator.WaitForOptions().setTimeout(30_000)
+		)
+		page.locator('.alert-success').isVisible()
+	}
+
+	def 'Created documents are visible via JSONWS DLAppService'() {
+		when:
+		def entries = jsonwsGet(
+			"/api/jsonws/dlapp/get-file-entries/repository-id/${guestGroupId}" +
+			'/folder-id/0') as List
+
+		then:
+		entries != null
+
+		when:
+		def matchingEntries = entries.findAll { entry ->
+			(entry.title as String)?.startsWith(BASE_DOC_NAME)
+		}
+
+		createdFileEntryIds.addAll(
+			matchingEntries.collect { it.fileEntryId as Long }
+		)
+
+		then: 'all created documents are found by title prefix'
+		matchingEntries.size() == DOC_COUNT
+	}
+
+}

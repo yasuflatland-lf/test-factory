@@ -56,7 +56,8 @@ public class DataListResourceCommand extends BaseMVCResourceCommand {
 		}
 		else {
 			try {
-				jsonArray = provider.getOptions(companyId, type);
+				jsonArray = provider.getOptions(
+					companyId, type, httpServletRequest);
 			}
 			catch (Exception exception) {
 				_log.error(

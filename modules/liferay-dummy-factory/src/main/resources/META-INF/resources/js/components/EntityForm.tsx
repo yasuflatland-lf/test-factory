@@ -41,6 +41,7 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 
 	const requiredFields = config.fields.filter((f) => !f.advanced);
 	const advancedFields = config.fields.filter((f) => f.advanced);
+	const uploadURL = actionResourceURLs['/ldf/doc/upload'] ?? '';
 
 	const handleSubmit = async () => {
 		const visibleFields = config.fields.filter(isFieldVisible);
@@ -144,9 +145,11 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 			<FormField
 				error={errors[field.name]}
 				field={field}
+				formValues={values}
 				key={field.name}
 				onChange={setValue}
 				value={values[field.name] || ''}
+				uploadURL={uploadURL}
 			/>
 		);
 	};
