@@ -64,10 +64,10 @@ class SiteFunctionalSpec extends BaseLiferaySpec {
 		page.waitForLoadState()
 
 		and: 'select Sites entity type'
-		page.locator('.nav-link:has-text("sites")').click()
+		page.locator('[data-testid="entity-selector-SITES"]').click()
 
 		and: 'wait for Sites form to render'
-		page.locator('.sheet-header h2:has-text("sites")').waitFor(
+		page.locator('[data-testid="sites-submit"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
 		page.locator('#count').waitFor(
