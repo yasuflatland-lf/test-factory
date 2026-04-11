@@ -57,6 +57,21 @@ The PortletTracker in CE 7.4 GA132 tracks `javax.portlet.Portlet` services, **no
 - Set explicit timeouts on waits: `waitForURL(..., new Page.WaitForURLOptions().setTimeout(30_000))`, `waitFor(new Locator.WaitForOptions().setTimeout(15_000))`.
 - Close the `PlaywrightLifecycle` instance in `cleanupSpec()` using safe-navigation: `pw?.close()`.
 
+## Playwright Java vs Node Version Skew
+
+- **Playwright Java (`com.microsoft.playwright:playwright` on Maven Central) and Playwright Node/CLI (`playwright` on npm) ship on separate release cycles.** The same `1.x.y` number can exist on one side and not the other.
+- As of 2026-04, npm publishes `1.59.1` as the latest stable, while Maven Central's latest is `1.59.0` — `1.59.1`, `1.59.2`, and `1.60.x` all return HTTP 404 from the Maven repo.
+- The Playwright project recommends keeping the **client (Java) and driver (CLI) on the same version**, so bumping one side ahead of the other invites protocol skew and must be avoided.
+- Before bumping the Java side, **always confirm the version actually exists on Maven Central** with a direct POM fetch:
+
+	```bash
+	curl -s -o /dev/null -w "%{http_code}" \
+	    https://repo.maven.apache.org/maven2/com/microsoft/playwright/playwright/<version>/playwright-<version>.pom
+	```
+
+	`200` means the artifact is published; `404` means it is not yet available. Do **not** rely on the Maven Search API (`search.maven.org/solrsearch`) for this check — its index lags behind the repo and will miss recent releases. The direct URL is authoritative.
+- `gradle.properties`' `test.playwright.version` and the workflow's `npx playwright@<version>` invocation must be **pinned to the same version in the same commit**. Never update one without updating the other.
+
 ## Playwright Success Assertion Pattern
 
 - **Always AND the success class onto the result `data-testid` selector.** `ResultAlert` emits the same `data-testid="<entity>-result"` regardless of state (success / danger / warning), because the alert region is a single element whose class flips between `alert-success` and `alert-danger`. Waiting on the testId alone therefore also passes on failure — a tautology that was actually shipped and caught in review.

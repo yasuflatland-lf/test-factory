@@ -129,3 +129,17 @@ withEnv([                          // Environment variables
   - `env/portal-ext.properties` -- Test properties
 - Testcontainers source: `/home/yasuflatland/tmp/testcontainers-java`
 - Detailed implementation plan: `.claude/plan/integrationtest.md`
+
+## Release Cadence Caveat
+
+Playwright Java (`com.microsoft.playwright:playwright` on Maven Central) and Playwright Node/CLI (`playwright` on npm) follow independent release cadences. A given `1.x.y` tag does not necessarily exist on both channels. For example, as of 2026-04 the latest stable on npm is `1.59.1`, while the latest on Maven Central is `1.59.0`; `1.59.1` and `1.60.0` have not yet been published to Maven Central.
+
+The Playwright project recommends keeping the client library and the driver pinned to the same version because the wire protocol is only guaranteed to be compatible within a single release. Mixing a Java client with a different Node driver version can fail at runtime with opaque protocol errors.
+
+When bumping the Playwright version, always confirm the target POM actually exists on Maven Central before changing any build file. A HEAD against the pom URL is the most reliable check:
+
+```
+curl -s -o /dev/null -w "%{http_code}" https://repo.maven.apache.org/maven2/com/microsoft/playwright/playwright/<version>/playwright-<version>.pom
+```
+
+A `200` response means the artifact is available; anything else (typically `404`) means the version is npm-only and must not be adopted on the Java side yet. The `test.playwright.version` property in `gradle.properties` and the `npx playwright@<version>` invocation in the CI workflow must always reference the same version so the Java client and the Node driver stay in lockstep.
