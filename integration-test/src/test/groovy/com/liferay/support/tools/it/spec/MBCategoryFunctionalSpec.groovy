@@ -102,8 +102,7 @@ class MBCategoryFunctionalSpec extends BaseLiferaySpec {
 		def response = headlessGet(
 			"/o/headless-delivery/v1.0/sites/${guestGroupId}" +
 			"/message-board-sections" +
-			"?search=${URLEncoder.encode(BASE_MB_CATEGORY_NAME, 'UTF-8')}" +
-			'&pageSize=100')
+			'?pageSize=100')
 
 		then:
 		response != null
