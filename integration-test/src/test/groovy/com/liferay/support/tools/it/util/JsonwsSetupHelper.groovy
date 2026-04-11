@@ -95,7 +95,8 @@ class JsonwsSetupHelper {
 				'friendlyURL': '/' + name.toLowerCase().replaceAll(/[^a-z0-9]+/, '-'),
 				'site': 'true',
 				'inheritContent': 'false',
-				'active': 'true'
+				'active': 'true',
+				'serviceContext': '{}'
 			]) as Map
 
 		_tracked << new Tracked(
