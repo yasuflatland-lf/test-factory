@@ -23,6 +23,50 @@ function createBaseNameField(label: string): FieldDefinition {
 	};
 }
 
+const DOCUMENTS_CONFIG: EntityFormConfig = {
+	actionURL: '/ldf/doc',
+	entityType: ENTITY_TYPES.DOCUMENTS,
+	fields: [
+		createCountField('number-of-documents'),
+		createBaseNameField('base-document-title'),
+		{
+			dataSource: '/ldf/data/sites',
+			label: 'site',
+			name: 'groupId',
+			required: true,
+			type: 'select',
+		},
+		{
+			dataSource: '/ldf/data/folders',
+			defaultValue: '0',
+			dependsOn: {field: 'groupId', paramName: 'groupId'},
+			label: 'folder',
+			name: 'folderId',
+			required: false,
+			type: 'select',
+		},
+		{
+			advanced: true,
+			defaultValue: '',
+			label: 'description',
+			name: 'description',
+			required: false,
+			type: 'textarea',
+		},
+		{
+			advanced: true,
+			defaultValue: '',
+			label: 'upload-template-files',
+			name: 'uploadedFiles',
+			required: false,
+			type: 'file',
+		},
+	],
+	helpText: 'documents-help-text',
+	icon: 'documents-and-media',
+	label: 'documents',
+};
+
 const ORGANIZATION_CONFIG: EntityFormConfig = {
 	actionURL: '/ldf/org',
 	entityType: ENTITY_TYPES.ORGANIZATION,
@@ -548,6 +592,7 @@ const WCM_CONFIG: EntityFormConfig = {
 };
 
 export const ENTITY_CONFIGS: Partial<Record<EntityType, EntityFormConfig>> = {
+	[ENTITY_TYPES.DOCUMENTS]: DOCUMENTS_CONFIG,
 	[ENTITY_TYPES.ORGANIZATION]: ORGANIZATION_CONFIG,
 	[ENTITY_TYPES.PAGES]: PAGES_CONFIG,
 	[ENTITY_TYPES.ROLES]: ROLE_CONFIG,
