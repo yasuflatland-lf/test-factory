@@ -25,28 +25,27 @@ public class CategoryCreator {
 		throws Throwable {
 
 		int count = batchSpec.count();
-		String baseName = batchSpec.baseName();
-
-		List<AssetCategory> categories = new ArrayList<>(count);
 
 		ServiceContext serviceContext = new ServiceContext();
 
 		serviceContext.setScopeGroupId(groupId);
 
-		for (int i = 0; i < count; i++) {
-			final String name = BatchNaming.resolve(baseName, count, i, " ");
+		List<AssetCategory> categories = new ArrayList<>(count);
 
-			final Map<Locale, String> titleMap = Collections.singletonMap(
+		for (int i = 0; i < count; i++) {
+			String name = BatchNaming.resolve(
+				batchSpec.baseName(), count, i, " ");
+
+			Map<Locale, String> titleMap = Collections.singletonMap(
 				LocaleUtil.getDefault(), name);
 
-			AssetCategory category = TransactionInvokerUtil.invoke(
-				_transactionConfig,
-				() -> _assetCategoryLocalService.addCategory(
-					null, userId, groupId, 0L, titleMap,
-					Collections.emptyMap(), vocabularyId, new String[0],
-					serviceContext));
-
-			categories.add(category);
+			categories.add(
+				TransactionInvokerUtil.invoke(
+					_transactionConfig,
+					() -> _assetCategoryLocalService.addCategory(
+						null, userId, groupId, 0L, titleMap,
+						Collections.emptyMap(), vocabularyId, new String[0],
+						serviceContext)));
 		}
 
 		return categories;

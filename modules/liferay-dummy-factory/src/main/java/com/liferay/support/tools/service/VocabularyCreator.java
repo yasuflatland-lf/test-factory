@@ -21,7 +21,6 @@ public class VocabularyCreator {
 		throws Throwable {
 
 		int count = batchSpec.count();
-		String baseName = batchSpec.baseName();
 
 		ServiceContext serviceContext = new ServiceContext();
 
@@ -30,14 +29,14 @@ public class VocabularyCreator {
 		List<AssetVocabulary> vocabularies = new ArrayList<>(count);
 
 		for (int i = 0; i < count; i++) {
-			final String name = BatchNaming.resolve(baseName, count, i, " ");
+			String name = BatchNaming.resolve(
+				batchSpec.baseName(), count, i, " ");
 
-			AssetVocabulary vocabulary = TransactionInvokerUtil.invoke(
-				_transactionConfig,
-				() -> _assetVocabularyLocalService.addVocabulary(
-					userId, groupId, name, serviceContext));
-
-			vocabularies.add(vocabulary);
+			vocabularies.add(
+				TransactionInvokerUtil.invoke(
+					_transactionConfig,
+					() -> _assetVocabularyLocalService.addVocabulary(
+						userId, groupId, name, serviceContext)));
 		}
 
 		return vocabularies;
