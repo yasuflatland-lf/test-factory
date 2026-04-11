@@ -6,7 +6,6 @@
 <portlet:resourceURL id="/ldf/user" var="userResourceURL" />
 <portlet:resourceURL id="/ldf/wcm" var="wcmResourceURL" />
 <portlet:resourceURL id="/ldf/data" var="dataResourceURL" />
-<portlet:resourceURL id="/ldf/image/list" var="imageLinkResourceURL" />
 <portlet:resourceURL id="/ldf/progress" var="progressResourceURL" />
 
 <react:component
@@ -23,8 +22,6 @@
 				"/ldf/user", userResourceURL
 			).put(
 				"/ldf/wcm", wcmResourceURL
-			).put(
-				"/ldf/image/list", imageLinkResourceURL
 			).build()
 		).put(
 			"dataResourceURL", dataResourceURL
