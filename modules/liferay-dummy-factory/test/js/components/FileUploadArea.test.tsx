@@ -1,10 +1,12 @@
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import type {Mock} from 'vitest';
 
 import FileUploadArea from '../../../src/main/resources/META-INF/resources/js/components/FileUploadArea';
 
-type MockFetch = jest.Mock<Promise<Partial<Response>>, [RequestInfo, RequestInit?]>;
+type MockFetch = Mock<Promise<Partial<Response>>, [RequestInfo, RequestInit?]>;
 
-const mockFetch: MockFetch = jest.fn();
+const mockFetch: MockFetch = vi.fn();
 
 beforeEach(() => {
 	(global as unknown as {fetch: MockFetch}).fetch = mockFetch;
@@ -16,7 +18,7 @@ function renderComponent(
 ) {
 	const props: React.ComponentProps<typeof FileUploadArea> = {
 		groupId: '20121',
-		onChange: jest.fn(),
+		onChange: vi.fn(),
 		testId: 'file-upload',
 		uploadURL: '/o/ldf/upload',
 		value: '',

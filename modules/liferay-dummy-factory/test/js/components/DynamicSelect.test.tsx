@@ -1,11 +1,12 @@
 import {render, screen} from '@testing-library/react';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 
 import DynamicSelect from '../../../src/main/resources/META-INF/resources/js/components/DynamicSelect';
 import {FieldDefinition} from '../../../src/main/resources/META-INF/resources/js/types';
 
-const mockUseApiData = jest.fn();
+const mockUseApiData = vi.fn();
 
-jest.mock(
+vi.mock(
 	'../../../src/main/resources/META-INF/resources/js/hooks/useApiData',
 	() => ({
 		useApiData: (...args: unknown[]) => mockUseApiData(...args),
@@ -37,7 +38,7 @@ function idleApiData() {
 		data: [],
 		error: null,
 		loading: false,
-		reload: jest.fn(),
+		reload: vi.fn(),
 	};
 }
 
@@ -54,7 +55,7 @@ describe('DynamicSelect i18n', () => {
 				dataResourceURL="/o/data"
 				dependsOnValue=""
 				field={dependentField}
-				onChange={jest.fn()}
+				onChange={vi.fn()}
 				value=""
 			/>
 		);
@@ -74,7 +75,7 @@ describe('DynamicSelect i18n', () => {
 				dataResourceURL="/o/data"
 				dependsOnValue={undefined}
 				field={dependentField}
-				onChange={jest.fn()}
+				onChange={vi.fn()}
 				testId="org-role-select"
 				value=""
 			/>
@@ -94,7 +95,7 @@ describe('DynamicSelect i18n', () => {
 			<DynamicSelect
 				dataResourceURL="/o/data"
 				field={baseField}
-				onChange={jest.fn()}
+				onChange={vi.fn()}
 				value=""
 			/>
 		);
@@ -115,7 +116,7 @@ describe('DynamicSelect i18n', () => {
 				dataResourceURL="/o/data"
 				dependsOnValue="123"
 				field={dependentField}
-				onChange={jest.fn()}
+				onChange={vi.fn()}
 				value=""
 			/>
 		);
@@ -132,14 +133,14 @@ describe('DynamicSelect i18n', () => {
 			data: [],
 			error: null,
 			loading: true,
-			reload: jest.fn(),
+			reload: vi.fn(),
 		});
 
 		const {container} = render(
 			<DynamicSelect
 				dataResourceURL="/o/data"
 				field={baseField}
-				onChange={jest.fn()}
+				onChange={vi.fn()}
 				value=""
 			/>
 		);

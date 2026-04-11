@@ -1,4 +1,5 @@
 import {render, screen} from '@testing-library/react';
+import {describe, expect, it} from 'vitest';
 
 import ResultAlert from '../../../src/main/resources/META-INF/resources/js/components/ResultAlert';
 
