@@ -78,3 +78,22 @@ addCategory(String externalReferenceCode, long userId, long parentCategoryId,
 ```
 
 Pass `externalReferenceCode=null` and `parentCategoryId=0L` for top-level categories. The 5-arg overload (without externalReferenceCode) referenced in some older plans does not exist.
+
+### 3. `CompanyService` is blacklisted from JSON-WS
+
+`portal.properties` lists `com.liferay.portal.kernel.service.CompanyServiceUtil` in the `json.service.invalid.class.names` entry. As a result, every path under `/api/jsonws/company/*` returns HTTP 404 regardless of method or parameter format — `CompanyService.deleteCompany(long)` is defined but cannot be invoked via JSON-WS.
+
+For tests, there is no working remote delete path in CE 7.4 GA132. The workaround is to rely on `withReuse(false)` and skip cleanup (see `.claude/rules/testing.md`).
+
+### 4. `CompanyLocalService.addCompany` only exposes the 13-arg overload
+
+Signature:
+```java
+addCompany(Long companyId, String webId, String virtualHostname, String mx,
+           int maxUsers, boolean active, boolean addDefaultAdminUser,
+           String defaultAdminPassword, String defaultAdminScreenName,
+           String defaultAdminEmailAddress, String defaultAdminFirstName,
+           String defaultAdminMiddleName, String defaultAdminLastName)
+```
+
+No simpler 6-arg overload exists on `CompanyLocalService` in CE 7.4 GA132 (the 6-arg version lives on `CompanyService`, which is the blacklisted remote interface — see above). For dummy company creation, pass `addDefaultAdminUser=false` and all remaining admin fields as `null`. Reference implementation: `CompanyCreator.java`.
