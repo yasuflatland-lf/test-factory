@@ -30,6 +30,10 @@
 - CSRF protection: include `'x-csrf-token': Liferay.authToken` in the headers of fetch requests to Liferay API endpoints when required.
 - API calls use `portlet:resourceURL` with `credentials: 'include'`. GET requests pass parameters as URL query strings; POST requests use `application/x-www-form-urlencoded` body with JSON data in a `data` parameter.
 - Build tooling is `@liferay/npm-scripts` -- do not add webpack/babel config manually.
+- **Playwright selector strategy** -- Prefer `getByRole` → `aria-label` (when the key is i18n-stable) → `data-testid`. Never select by visible text (`has-text`, `getByText`) because `Liferay.Language.get(...)` values change per locale.
+- **`data-testid` naming** -- kebab-case domain-term + role, e.g. `organization-create-submit`, `user-count-input`, `role-type-select`. Do NOT use UI-positional names (`btn1`, `submit-2`) or BEM-style names (`Form__submit`).
+- **Placement scope** -- only add `data-testid` on elements that Playwright actually interacts with: buttons, text inputs, selects, result/alert regions, tabs. Do not decorate links, icons, or purely visual elements.
+- **Reusable components** -- generic components such as `FormField`, `DynamicSelect`, `ResultAlert` MUST accept an optional `testId?: string` prop and output `data-testid={testId}` only when provided (no attribute at all when undefined). The parent passes the concrete id (e.g. `<FormField testId="user-count-input" />`) so the same component can be reused in multiple screens without id collisions.
 
 ## General
 
