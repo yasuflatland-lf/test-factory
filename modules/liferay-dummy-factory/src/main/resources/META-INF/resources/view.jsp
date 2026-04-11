@@ -4,7 +4,9 @@
 <portlet:resourceURL id="/ldf/role" var="roleResourceURL" />
 <portlet:resourceURL id="/ldf/site" var="siteResourceURL" />
 <portlet:resourceURL id="/ldf/user" var="userResourceURL" />
+<portlet:resourceURL id="/ldf/wcm" var="wcmResourceURL" />
 <portlet:resourceURL id="/ldf/data" var="dataResourceURL" />
+<portlet:resourceURL id="/ldf/progress" var="progressResourceURL" />
 
 <react:component
 	module="{App} from liferay-dummy-factory"
@@ -18,13 +20,15 @@
 				"/ldf/site", siteResourceURL
 			).put(
 				"/ldf/user", userResourceURL
+			).put(
+				"/ldf/wcm", wcmResourceURL
 			).build()
 		).put(
 			"dataResourceURL", dataResourceURL
 		).put(
 			"namespace", renderResponse.getNamespace()
 		).put(
-			"progressResourceURL", ""
+			"progressResourceURL", progressResourceURL
 		).build()
 	%>'
 />

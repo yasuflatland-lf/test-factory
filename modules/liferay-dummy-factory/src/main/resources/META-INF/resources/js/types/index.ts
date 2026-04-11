@@ -9,12 +9,20 @@ export interface FieldDefinition {
 	advanced?: boolean;
 	dataSource?: string;
 	defaultValue?: unknown;
+	dependsOn?: {
+		field: string;
+		paramName: string;
+	};
 	label: string;
 	name: string;
 	options?: SelectOption[];
 	required: boolean;
 	type: FieldType;
 	validators?: Validator[];
+	visibleWhen?: {
+		field: string;
+		value: string | string[];
+	};
 }
 
 export interface Validator {

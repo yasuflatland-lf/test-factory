@@ -5,14 +5,39 @@ import FormField from './FormField';
 
 interface DynamicSelectProps {
 	dataResourceURL?: string;
+	dependsOnValue?: string;
 	error?: string;
 	field: FieldDefinition;
 	onChange: (name: string, value: string) => void;
 	value: string;
 }
 
-function DynamicSelect({dataResourceURL, error, field, onChange, value}: DynamicSelectProps) {
-	const {data, loading} = useApiData(dataResourceURL, field.dataSource);
+function DynamicSelect({dataResourceURL, dependsOnValue, error, field, onChange, value}: DynamicSelectProps) {
+	const extraParams = field.dependsOn
+		? {[field.dependsOn.paramName]: dependsOnValue ?? ''}
+		: undefined;
+
+	const {data, loading} = useApiData(dataResourceURL, field.dataSource, extraParams);
+
+	if (field.dependsOn && !dependsOnValue) {
+		return (
+			<div className="form-group">
+				<label htmlFor={field.name}>
+					{Liferay.Language.get(field.label)}
+				</label>
+
+				<select
+					className="form-control"
+					disabled
+					id={field.name}
+				>
+					<option>
+						{Liferay.Language.get('please-select-parent-first')}
+					</option>
+				</select>
+			</div>
+		);
+	}
 
 	if (loading) {
 		return (

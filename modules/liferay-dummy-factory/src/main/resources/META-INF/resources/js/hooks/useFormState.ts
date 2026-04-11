@@ -56,8 +56,9 @@ export function useFormState(fields: FieldDefinition[]) {
 		dispatch({field, type: 'SET_VALUE', value});
 	}, []);
 
-	const validate = useCallback((): boolean => {
-		const errors = validateForm(state.values, fields);
+	const validate = useCallback((visibleFields?: FieldDefinition[]): boolean => {
+		const fieldsToValidate = visibleFields || fields;
+		const errors = validateForm(state.values, fieldsToValidate);
 
 		dispatch({errors, type: 'SET_ERRORS'});
 

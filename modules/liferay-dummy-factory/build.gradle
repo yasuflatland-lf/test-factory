@@ -1,8 +1,18 @@
 dependencies {
 	compileOnly group: "com.liferay.portal", name: "release.portal.api", version: "default"
 
+	compileOnly group: "com.liferay", name: "com.liferay.journal.api"
+	compileOnly group: "com.liferay", name: "com.liferay.dynamic.data.mapping.api"
+
+	compileInclude group: "net.datafaker", name: "datafaker", version: "2.5.4"
+
 	testImplementation group: "com.liferay.portal", name: "release.portal.api", version: "default"
 	testImplementation group: "org.junit.jupiter", name: "junit-jupiter", version: "5.10.2"
+}
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_17
+	targetCompatibility = JavaVersion.VERSION_17
 }
 
 test {
