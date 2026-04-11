@@ -50,6 +50,72 @@ const ORGANIZATION_CONFIG: EntityFormConfig = {
 	label: 'organizations',
 };
 
+const PAGES_CONFIG: EntityFormConfig = {
+	actionURL: '/ldf/page',
+	entityType: ENTITY_TYPES.PAGES,
+	fields: [
+		{
+			label: 'number-of-pages',
+			name: 'count',
+			required: true,
+			type: 'number',
+			validators: [
+				{message: 'please-enter-a-valid-number', type: 'digits'},
+				{message: 'value-must-be-greater-than-0', type: 'min', value: 1},
+			],
+		},
+		{
+			label: 'base-page-name',
+			name: 'baseName',
+			required: true,
+			type: 'text',
+		},
+		{
+			dataSource: '/ldf/data/sites',
+			label: 'site',
+			name: 'groupId',
+			required: true,
+			type: 'select',
+		},
+		{
+			defaultValue: 'portlet',
+			label: 'page-type',
+			name: 'type',
+			options: [
+				{label: 'Widget Page', value: 'portlet'},
+				{label: 'Content Page', value: 'content'},
+				{label: 'Node', value: 'node'},
+				{label: 'Embedded', value: 'embedded'},
+				{label: 'Link to Page', value: 'link_to_layout'},
+				{label: 'URL', value: 'url'},
+				{label: 'Panel', value: 'panel'},
+				{label: 'Full Page Application', value: 'full_page_application'},
+			],
+			required: true,
+			type: 'select',
+		},
+		{
+			advanced: true,
+			defaultValue: false,
+			label: 'private-page',
+			name: 'privateLayout',
+			required: false,
+			type: 'toggle',
+		},
+		{
+			advanced: true,
+			defaultValue: false,
+			label: 'hidden-page',
+			name: 'hidden',
+			required: false,
+			type: 'toggle',
+		},
+	],
+	helpText: 'pages-help-text',
+	icon: 'page',
+	label: 'pages',
+};
+
 const USER_CONFIG: EntityFormConfig = {
 	actionURL: '/ldf/user',
 	entityType: ENTITY_TYPES.USERS,
@@ -483,6 +549,7 @@ const WCM_CONFIG: EntityFormConfig = {
 
 export const ENTITY_CONFIGS: Partial<Record<EntityType, EntityFormConfig>> = {
 	[ENTITY_TYPES.ORGANIZATION]: ORGANIZATION_CONFIG,
+	[ENTITY_TYPES.PAGES]: PAGES_CONFIG,
 	[ENTITY_TYPES.ROLES]: ROLE_CONFIG,
 	[ENTITY_TYPES.SITES]: SITE_CONFIG,
 	[ENTITY_TYPES.USERS]: USER_CONFIG,
