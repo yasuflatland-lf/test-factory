@@ -14,34 +14,10 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 /**
- * Locks in the per-iteration transaction contract for batch creation:
- * when one iteration inside a batch fails and is rolled back, the
- * iterations that ran BEFORE (and AFTER) the failing one must remain
- * committed in the database.
- *
- * Strategy: D (fallback). A deterministic non-skip mid-batch hard
- * failure was not found in the available experimentation window
- * (BatchNaming appends a uniform " N" suffix so length-based
- * OrganizationNameException cannot be triggered mid-batch, and reserved
- * / invalid-character names fail on iteration 1). Instead, this spec
- * exercises the "duplicate-skip" path: an organization matching the
- * batch's second iteration name is pre-created via the headless REST
- * API, forcing the Creator's iteration 2 to throw
- * DuplicateOrganizationException, which the Creator catches and
- * rolls back via the per-item TransactionInvokerUtil.invoke.
- *
- * Under the OLD whole-batch transaction contract, rolling back
- * iteration 2 would also roll back iteration 1 -- no "TxBatch 1"
- * would survive. Under the NEW per-iteration contract, iteration 1
- * commits independently and survives iteration 2's rollback, and
- * iteration 3 proceeds in its own transaction. This spec asserts
- * both iteration 1 and iteration 3 are present, which is only
- * achievable if each iteration has its own transaction boundary.
- *
- * TODO: replace with a true non-skip hard-failure trigger (e.g.,
- * one that raises a non-duplicate exception like
- * OrganizationParentException mid-batch) once such a trigger is
- * identified, for a stronger guarantee on the error path.
+ * Contract: each iteration of a batch create runs in its own transaction.
+ * An iteration-2 duplicate is induced by pre-creating "BASE 2" via the
+ * headless API; the spec then asserts that iterations 1 and 3 survive
+ * independently of iteration 2's skip.
  */
 @Stepwise
 class TransactionalBatchFailureSpec extends BaseLiferaySpec {
