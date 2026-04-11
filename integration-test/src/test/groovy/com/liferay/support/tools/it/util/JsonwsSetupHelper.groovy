@@ -83,18 +83,19 @@ class JsonwsSetupHelper {
 		Map response = _post(
 			'/api/jsonws/group/add-group',
 			[
+				'externalReferenceCode': '',
 				'parentGroupId': '0',
 				'liveGroupId': '0',
 				'nameMap': _localizedJson(name),
 				'descriptionMap': _localizedJson(''),
 				'type': type,
+				'typeSettings': '',
 				'manualMembership': 'true',
 				'membershipRestriction': '0',
 				'friendlyURL': '/' + name.toLowerCase().replaceAll(/[^a-z0-9]+/, '-'),
 				'site': 'true',
 				'inheritContent': 'false',
-				'active': 'true',
-				'serviceContext': '{}'
+				'active': 'true'
 			]) as Map
 
 		_tracked << new Tracked(
