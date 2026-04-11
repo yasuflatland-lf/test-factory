@@ -39,7 +39,7 @@ public class JournalUtils {
 
 		DDMStructure ddmStructure = _ddmStructureLocalService.getStructure(
 			groupId, PortalUtil.getClassNameId(JournalArticle.class),
-			LDFPortletKeys._DDM_STRUCTURE_KEY);
+			LDFPortletKeys.DDM_STRUCTURE_KEY);
 
 		Map<String, Serializable> fieldsMap = new ConcurrentHashMap<>();
 		fieldsMap.put(_DDM_CONTENT, baseArticle);
