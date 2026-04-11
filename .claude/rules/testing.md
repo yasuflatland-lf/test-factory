@@ -67,6 +67,20 @@ The PortletTracker in CE 7.4 GA132 tracks `javax.portlet.Portlet` services, **no
 - JVM args: `-Xms4g -Xmx4g`.
 - Test logging outputs `passed`, `skipped`, `failed`, `standardOut`, and `standardError`.
 
+## Coverage (JaCoCo)
+
+Host-JVM unit tests under `modules/liferay-dummy-factory/src/test/java` are measured by JaCoCo. The report is generated automatically after `test` via `finalizedBy`.
+
+```bash
+./gradlew :modules:liferay-dummy-factory:test
+```
+
+Report locations:
+- HTML: `modules/liferay-dummy-factory/build/reports/jacoco/test/html/index.html`
+- XML:  `modules/liferay-dummy-factory/build/reports/jacoco/test/jacocoTestReport.xml`
+
+**Scope limitation**: Only the host-JVM unit tests (JUnit 5) are covered. Integration tests run against a containerized Liferay JVM (Testcontainers) and are **not** instrumented in Step 1. Coverage for the containerized JVM requires injecting the JaCoCo agent into Liferay's `CATALINA_OPTS` and will be handled in a later step.
+
 ## Adding New Tests
 
 1. Create a new Groovy class under `integration-test/src/test/groovy/com/liferay/support/tools/it/spec/`.
