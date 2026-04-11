@@ -3,7 +3,6 @@ package com.liferay.support.tools.service.datalist;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
-import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.LayoutSetPrototype;
@@ -23,12 +22,7 @@ public class LayoutSetPrototypeDataListProvider implements DataListProvider {
 	public JSONArray getOptions(long companyId, String type) {
 		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
 
-		JSONObject noneOption = JSONFactoryUtil.createJSONObject();
-
-		noneOption.put("label", "none");
-		noneOption.put("value", "0");
-
-		jsonArray.put(noneOption);
+		jsonArray.put(createOption("none", 0));
 
 		try {
 			List<LayoutSetPrototype> layoutSetPrototypes =
