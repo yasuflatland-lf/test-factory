@@ -99,7 +99,7 @@ class UserRoleAssignmentSpec extends BaseLiferaySpec {
 		page.waitForLoadState()
 
 		and: 'select Users entity type'
-		page.locator('.nav-link:has-text("users")').click()
+		page.locator('[data-testid="entity-selector-USERS"]').click()
 		page.locator('#count').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
@@ -114,19 +114,19 @@ class UserRoleAssignmentSpec extends BaseLiferaySpec {
 		)
 
 		and: 'select the test organization in the multiselect'
-		page.locator("#organizationIds option:has-text(\"${TEST_ORG_NAME}\")").click()
+		page.locator("#organizationIds option[value=\"${testOrgId}\"]").click()
 
 		and: 'click Run button and capture the /ldf/user resource response'
 		Response response = page.waitForResponse(
 			{ Response r -> r.url().contains('p_p_resource_id=%2Fldf%2Fuser') },
-			{ -> page.locator('.sheet-footer button.btn-primary').click() })
+			{ -> page.locator('[data-testid="users-submit"]').click() })
 		apiResponseBody = response.text()
 
 		then: 'success alert appears'
-		page.locator('.alert-success').waitFor(
+		page.locator('[data-testid="users-result"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
-		page.locator('.alert-success').isVisible()
+		page.locator('[data-testid="users-result"]').isVisible()
 	}
 
 	def 'Created user is visible and belongs to test organization via JSONWS'() {
