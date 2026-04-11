@@ -32,7 +32,8 @@ public class SiteCreator {
 			long userId, long companyId, BatchSpec batchSpec,
 			SiteMembershipType membershipType, long parentGroupId,
 			long siteTemplateId, boolean manualMembership,
-			boolean inheritContent, boolean active, String description)
+			boolean inheritContent, boolean active, String description,
+			long publicLayoutSetPrototypeId, long privateLayoutSetPrototypeId)
 		throws Throwable {
 
 		int count = batchSpec.count();
@@ -73,6 +74,10 @@ public class SiteCreator {
 							_sites.updateLayoutSetPrototypesLinks(
 								newGroup, siteTemplateId, 0, true, false);
 						}
+
+						_layoutSetPrototypeLinker.linkSite(
+							newGroup, publicLayoutSetPrototypeId,
+							privateLayoutSetPrototypeId);
 
 						return newGroup;
 					});
@@ -116,6 +121,9 @@ public class SiteCreator {
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private LayoutSetPrototypeLinker _layoutSetPrototypeLinker;
 
 	@Reference
 	private Sites _sites;
