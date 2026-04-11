@@ -4,6 +4,7 @@ import com.liferay.support.tools.it.util.PlaywrightLifecycle
 
 import com.microsoft.playwright.Locator
 import com.microsoft.playwright.Page
+import com.microsoft.playwright.options.WaitForSelectorState
 
 import spock.lang.Shared
 import spock.lang.Stepwise
@@ -100,7 +101,7 @@ class PagesFunctionalSpec extends BaseLiferaySpec {
 			"[data-testid=\"pages-group-id-select\"] option[value=\"${guestGroupId}\"]"
 		).waitFor(
 			new Locator.WaitForOptions()
-				.setState(com.microsoft.playwright.options.WaitForSelectorState.ATTACHED)
+				.setState(WaitForSelectorState.ATTACHED)
 				.setTimeout(15_000)
 		)
 		page.locator('[data-testid="pages-group-id-select"]').selectOption("${guestGroupId}")

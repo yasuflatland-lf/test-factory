@@ -4,6 +4,7 @@ import com.liferay.support.tools.it.util.PlaywrightLifecycle
 
 import com.microsoft.playwright.Locator
 import com.microsoft.playwright.Page
+import com.microsoft.playwright.options.WaitForSelectorState
 
 import spock.lang.Shared
 import spock.lang.Stepwise
@@ -127,7 +128,7 @@ class MBThreadFunctionalSpec extends BaseLiferaySpec {
 			"[data-testid=\"mb-thread-category-id-select\"] option[value=\"${prereqCategoryId}\"]"
 		).waitFor(
 			new Locator.WaitForOptions()
-				.setState(com.microsoft.playwright.options.WaitForSelectorState.ATTACHED)
+				.setState(WaitForSelectorState.ATTACHED)
 				.setTimeout(15_000)
 		)
 
