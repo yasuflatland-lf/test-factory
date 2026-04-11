@@ -8,6 +8,7 @@ export interface SelectOption {
 export interface FieldDefinition {
 	advanced?: boolean;
 	dataSource?: string;
+	group?: 'identity' | 'generator' | 'membership' | 'layout' | 'content';
 	defaultValue?: unknown;
 	dependsOn?: {
 		field: string;
