@@ -9,6 +9,8 @@ import com.liferay.journal.service.JournalArticleLocalService;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.GroupLocalService;
@@ -230,6 +232,15 @@ public class WebContentCreator {
 				created++;
 			}
 			catch (Throwable throwable) {
+				if (throwable instanceof Error) {
+					throw (Error)throwable;
+				}
+
+				_log.error(
+					"Failed to create article " + (i + 1) + " of " + count +
+						" in group " + groupId,
+					throwable);
+
 				return new PerSiteResult(
 					groupId, siteName, created, count - created,
 					_errorMessage(throwable));
@@ -314,6 +325,15 @@ public class WebContentCreator {
 				created++;
 			}
 			catch (Throwable throwable) {
+				if (throwable instanceof Error) {
+					throw (Error)throwable;
+				}
+
+				_log.error(
+					"Failed to create article " + (i + 1) + " of " + count +
+						" in group " + groupId,
+					throwable);
+
 				return new PerSiteResult(
 					groupId, siteName, created, count - created,
 					_errorMessage(throwable));
@@ -382,6 +402,15 @@ public class WebContentCreator {
 				created++;
 			}
 			catch (Throwable throwable) {
+				if (throwable instanceof Error) {
+					throw (Error)throwable;
+				}
+
+				_log.error(
+					"Failed to create article " + (i + 1) + " of " + count +
+						" in group " + groupId,
+					throwable);
+
 				return new PerSiteResult(
 					groupId, siteName, created, count - created,
 					_errorMessage(throwable));
@@ -439,6 +468,10 @@ public class WebContentCreator {
 			}
 		}
 		catch (Exception exception) {
+			_log.warn(
+				"Unable to resolve descriptive name for group " + groupId +
+					", using id instead",
+				exception);
 		}
 
 		return String.valueOf(groupId);
@@ -559,6 +592,9 @@ public class WebContentCreator {
 			serviceContext);
 	}
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		WebContentCreator.class);
+
 	private static final TransactionConfig _transactionConfig =
 		TransactionConfig.Factory.create(
 			Propagation.REQUIRED, new Class<?>[] {Exception.class});
@@ -592,6 +628,23 @@ public class WebContentCreator {
 
 	private record PerSiteResult(
 		long groupId, String siteName, int created, int failed, String error) {
+
+		PerSiteResult {
+			if ((created < 0) || (failed < 0)) {
+				throw new IllegalArgumentException(
+					"created and failed must be non-negative");
+			}
+
+			if (siteName == null) {
+				throw new IllegalArgumentException("siteName is required");
+			}
+
+			if ((error != null) && (failed == 0)) {
+				throw new IllegalArgumentException(
+					"error requires failed > 0");
+			}
+		}
+
 	}
 
 }
