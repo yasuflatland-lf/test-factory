@@ -21,6 +21,7 @@ import com.liferay.portal.kernel.transaction.TransactionConfig;
 import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.support.tools.utils.CommonUtil;
+import com.liferay.support.tools.utils.ScreenNameSanitizer;
 
 import java.util.Calendar;
 
@@ -62,13 +63,14 @@ public class UserCreator {
 			if (fakerEnable) {
 				firstName = faker.name().firstName();
 				lastName = faker.name().lastName();
-				screenName =
-					(firstName + "." + lastName + (idx + 1)).toLowerCase();
+				screenName = ScreenNameSanitizer.sanitize(
+					(firstName + "." + lastName + (idx + 1)).toLowerCase());
 			}
 			else {
 				firstName = baseName;
 				lastName = String.valueOf(idx + 1);
-				screenName = baseName.toLowerCase() + (idx + 1);
+				screenName = ScreenNameSanitizer.sanitize(
+					baseName.toLowerCase() + (idx + 1));
 			}
 
 			final String emailAddress = screenName + "@" + emailDomain;
