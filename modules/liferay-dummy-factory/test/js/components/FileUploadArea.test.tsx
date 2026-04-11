@@ -26,6 +26,16 @@ function renderComponent(
 	return {...render(<FileUploadArea {...props} />), props};
 }
 
+function uploadFile(container: HTMLElement, fileName: string, content = 'x') {
+	const input = container.querySelector(
+		'input[type="file"]'
+	) as HTMLInputElement;
+
+	const file = new File([content], fileName, {type: 'text/plain'});
+
+	fireEvent.change(input, {target: {files: [file]}});
+}
+
 describe('FileUploadArea i18n', () => {
 	it('renders the upload-template-files label in its initial state', () => {
 		renderComponent();
@@ -47,13 +57,7 @@ describe('FileUploadArea i18n', () => {
 
 		const {container} = renderComponent();
 
-		const input = container.querySelector(
-			'input[type="file"]'
-		) as HTMLInputElement;
-
-		const file = new File(['hello'], 'template.txt', {type: 'text/plain'});
-
-		fireEvent.change(input, {target: {files: [file]}});
+		uploadFile(container, 'template.txt', 'hello');
 
 		const uploadingText = Liferay.Language.get('uploading');
 
@@ -80,13 +84,7 @@ describe('FileUploadArea i18n', () => {
 
 		const {container} = renderComponent();
 
-		const input = container.querySelector(
-			'input[type="file"]'
-		) as HTMLInputElement;
-
-		const file = new File(['fail'], 'broken.txt', {type: 'text/plain'});
-
-		fireEvent.change(input, {target: {files: [file]}});
+		uploadFile(container, 'broken.txt', 'fail');
 
 		let errorNode: HTMLElement | null = null;
 
@@ -109,13 +107,7 @@ describe('FileUploadArea i18n', () => {
 
 		const {container} = renderComponent();
 
-		const input = container.querySelector(
-			'input[type="file"]'
-		) as HTMLInputElement;
-
-		const file = new File(['fail'], 'noerror.txt', {type: 'text/plain'});
-
-		fireEvent.change(input, {target: {files: [file]}});
+		uploadFile(container, 'noerror.txt', 'fail');
 
 		const uploadFailedText = Liferay.Language.get('upload-failed');
 

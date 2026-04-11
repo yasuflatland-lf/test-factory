@@ -2,18 +2,20 @@ import {render, screen} from '@testing-library/react';
 
 import ResultAlert from '../../../src/main/resources/META-INF/resources/js/components/ResultAlert';
 
+function i18n(key: string): string {
+	const text = Liferay.Language.get(key);
+
+	expect(text).not.toBe(key);
+	expect(text.length).toBeGreaterThan(0);
+
+	return text;
+}
+
+const noop = () => undefined;
+
 describe('ResultAlert i18n', () => {
-	const noop = () => {
-		// no-op
-	};
-
 	it('renders the success i18n message when type is success', () => {
-		const successText = Liferay.Language.get(
-			'execution-completed-successfully'
-		);
-
-		expect(successText).not.toBe('execution-completed-successfully');
-		expect(successText.length).toBeGreaterThan(0);
+		const successText = i18n('execution-completed-successfully');
 
 		render(
 			<ResultAlert
@@ -27,10 +29,7 @@ describe('ResultAlert i18n', () => {
 	});
 
 	it('renders the failed i18n message when type is danger', () => {
-		const failedText = Liferay.Language.get('execution-failed');
-
-		expect(failedText).not.toBe('execution-failed');
-		expect(failedText.length).toBeGreaterThan(0);
+		const failedText = i18n('execution-failed');
 
 		render(
 			<ResultAlert
@@ -44,10 +43,7 @@ describe('ResultAlert i18n', () => {
 	});
 
 	it('renders the partial execution i18n message when type is warning', () => {
-		const partialText = Liferay.Language.get('partial-execution');
-
-		expect(partialText).not.toBe('partial-execution');
-		expect(partialText.length).toBeGreaterThan(0);
+		const partialText = i18n('partial-execution');
 
 		render(
 			<ResultAlert

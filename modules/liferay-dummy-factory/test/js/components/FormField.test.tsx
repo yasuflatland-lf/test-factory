@@ -3,34 +3,38 @@ import {render, screen} from '@testing-library/react';
 import FormField from '../../../src/main/resources/META-INF/resources/js/components/FormField';
 import {FieldDefinition} from '../../../src/main/resources/META-INF/resources/js/types';
 
+function i18n(key: string): string {
+	const text = Liferay.Language.get(key);
+
+	expect(text).not.toBe(key);
+	expect(text.length).toBeGreaterThan(0);
+
+	return text;
+}
+
+const noop = () => undefined;
+
+const textField: FieldDefinition = {
+	label: 'name',
+	name: 'name',
+	required: true,
+	type: 'text',
+};
+
+const selectField: FieldDefinition = {
+	label: 'role',
+	name: 'role',
+	options: [
+		{label: 'administrator', value: 'admin'},
+		{label: 'user', value: 'user'},
+	],
+	required: true,
+	type: 'select',
+};
+
 describe('FormField i18n', () => {
-	const noop = () => {
-		// no-op
-	};
-
-	const textField: FieldDefinition = {
-		label: 'name',
-		name: 'name',
-		required: true,
-		type: 'text',
-	};
-
-	const selectField: FieldDefinition = {
-		label: 'role',
-		name: 'role',
-		options: [
-			{label: 'administrator', value: 'admin'},
-			{label: 'user', value: 'user'},
-		],
-		required: true,
-		type: 'select',
-	};
-
 	it('renders the required validation i18n message when error is set on a text field', () => {
-		const requiredText = Liferay.Language.get('this-field-is-required');
-
-		expect(requiredText).not.toBe('this-field-is-required');
-		expect(requiredText.length).toBeGreaterThan(0);
+		const requiredText = i18n('this-field-is-required');
 
 		render(
 			<FormField
@@ -45,10 +49,7 @@ describe('FormField i18n', () => {
 	});
 
 	it('renders the required validation i18n message when error is set on a textarea field', () => {
-		const requiredText = Liferay.Language.get('this-field-is-required');
-
-		expect(requiredText).not.toBe('this-field-is-required');
-		expect(requiredText.length).toBeGreaterThan(0);
+		const requiredText = i18n('this-field-is-required');
 
 		const textareaField: FieldDefinition = {
 			label: 'description',
@@ -70,30 +71,18 @@ describe('FormField i18n', () => {
 	});
 
 	it('renders the select placeholder i18n message for select fields', () => {
-		const selectText = Liferay.Language.get('select');
-
-		expect(selectText).not.toBe('select');
-		expect(selectText.length).toBeGreaterThan(0);
+		const selectText = i18n('select');
 
 		render(
-			<FormField
-				field={selectField}
-				onChange={noop}
-				value=""
-			/>
+			<FormField field={selectField} onChange={noop} value="" />
 		);
 
 		expect(screen.queryByText(selectText)).not.toBeNull();
 	});
 
 	it('renders the required validation i18n message alongside the select placeholder when error is set', () => {
-		const selectText = Liferay.Language.get('select');
-		const requiredText = Liferay.Language.get('this-field-is-required');
-
-		expect(selectText).not.toBe('select');
-		expect(selectText.length).toBeGreaterThan(0);
-		expect(requiredText).not.toBe('this-field-is-required');
-		expect(requiredText.length).toBeGreaterThan(0);
+		const selectText = i18n('select');
+		const requiredText = i18n('this-field-is-required');
 
 		render(
 			<FormField
