@@ -1,10 +1,11 @@
 package com.liferay.support.tools.utils;
 
-import com.github.javafaker.Faker;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 
 import java.util.Locale;
+
+import net.datafaker.Faker;
 
 import org.osgi.service.component.annotations.Component;
 

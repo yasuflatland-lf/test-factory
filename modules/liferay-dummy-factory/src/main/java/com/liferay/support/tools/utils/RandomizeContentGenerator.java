@@ -2,14 +2,14 @@ package com.liferay.support.tools.utils;
 
 import com.liferay.support.tools.constants.LDFPortletKeys;
 
-import com.github.javafaker.Faker;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import net.datafaker.Faker;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
