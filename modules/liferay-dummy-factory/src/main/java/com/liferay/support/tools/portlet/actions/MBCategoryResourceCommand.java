@@ -85,7 +85,7 @@ public class MBCategoryResourceCommand extends BaseMVCResourceCommand {
 				responseJson, illegalArgumentException);
 		}
 		catch (Throwable throwable) {
-			_log.error("Failed to create message board categories", throwable);
+			_log.error("Failed to create MB categories", throwable);
 
 			ResourceCommandUtil.setErrorResponse(responseJson, throwable);
 		}

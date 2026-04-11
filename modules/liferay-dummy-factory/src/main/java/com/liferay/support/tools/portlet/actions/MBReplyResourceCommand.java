@@ -58,7 +58,7 @@ public class MBReplyResourceCommand extends BaseMVCResourceCommand {
 			String format = GetterUtil.getString(
 				data.getString("format"), "html");
 
-			ResourceCommandUtil.validate(count);
+			ResourceCommandUtil.validateCount(count);
 
 			ResourceCommandUtil.validatePositiveId(threadId, "threadId");
 
