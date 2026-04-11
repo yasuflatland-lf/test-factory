@@ -284,33 +284,24 @@ public class WebContentCreator {
 		RandomizeContentGenerator generator, ImageSource imageSource,
 		String linkLists, int randomAmount) {
 
+		String safeLinkLists = (linkLists == null) ? "" : linkLists;
+
 		if (randomAmount <= 0) {
-			return (linkLists == null) ? "" : linkLists;
+			return safeLinkLists;
 		}
 
-		List<String> userLinks;
-
-		if ((linkLists == null) || linkLists.isBlank()) {
-			userLinks = Collections.emptyList();
-		}
-		else {
-			userLinks = generator.generateLinks(linkLists);
-		}
+		List<String> userLinks = safeLinkLists.isBlank() ?
+			Collections.emptyList() : generator.generateLinks(safeLinkLists);
 
 		if (userLinks.size() >= randomAmount) {
-			return (linkLists == null) ? "" : linkLists;
+			return safeLinkLists;
 		}
 
-		int shortfall = randomAmount - userLinks.size();
+		List<String> merged = new ArrayList<>(userLinks);
 
-		List<String> picsumLinks = imageSource.supply(
-			ImageRequest.of(shortfall));
-
-		List<String> merged = new ArrayList<>(
-			userLinks.size() + picsumLinks.size());
-
-		merged.addAll(userLinks);
-		merged.addAll(picsumLinks);
+		merged.addAll(
+			imageSource.supply(
+				ImageRequest.of(randomAmount - userLinks.size())));
 
 		return String.join(LDFPortletKeys.EOL, merged);
 	}

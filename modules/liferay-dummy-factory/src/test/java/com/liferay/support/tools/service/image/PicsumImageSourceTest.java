@@ -15,7 +15,7 @@ public class PicsumImageSourceTest {
 
 	@Test
 	public void supply_returns_empty_list_when_count_is_zero() {
-		List<String> urls = new PicsumImageSource().supply(ImageRequest.of(0));
+		List<String> urls = _source.supply(ImageRequest.of(0));
 
 		assertNotNull(urls);
 		assertTrue(urls.isEmpty());
@@ -23,14 +23,14 @@ public class PicsumImageSourceTest {
 
 	@Test
 	public void supply_returns_n_urls_when_count_is_n() {
-		List<String> urls = new PicsumImageSource().supply(ImageRequest.of(5));
+		List<String> urls = _source.supply(ImageRequest.of(5));
 
 		assertEquals(5, urls.size());
 	}
 
 	@Test
 	public void supply_urls_start_with_picsum_seed_prefix() {
-		List<String> urls = new PicsumImageSource().supply(ImageRequest.of(4));
+		List<String> urls = _source.supply(ImageRequest.of(4));
 
 		for (String url : urls) {
 			assertTrue(
@@ -41,8 +41,7 @@ public class PicsumImageSourceTest {
 
 	@Test
 	public void supply_urls_embed_width_and_height() {
-		List<String> urls = new PicsumImageSource().supply(
-			new ImageRequest(3, 640, 480));
+		List<String> urls = _source.supply(new ImageRequest(3, 640, 480));
 
 		assertEquals(3, urls.size());
 
@@ -55,7 +54,7 @@ public class PicsumImageSourceTest {
 
 	@Test
 	public void supply_urls_are_unique_across_a_single_call() {
-		List<String> urls = new PicsumImageSource().supply(ImageRequest.of(10));
+		List<String> urls = _source.supply(ImageRequest.of(10));
 
 		Set<String> unique = new HashSet<>(urls);
 
@@ -64,7 +63,7 @@ public class PicsumImageSourceTest {
 
 	@Test
 	public void supply_returns_unmodifiable_list() {
-		List<String> urls = new PicsumImageSource().supply(ImageRequest.of(2));
+		List<String> urls = _source.supply(ImageRequest.of(2));
 
 		assertThrows(
 			UnsupportedOperationException.class,
@@ -100,5 +99,7 @@ public class PicsumImageSourceTest {
 		assertEquals(800, request.width());
 		assertEquals(600, request.height());
 	}
+
+	private final PicsumImageSource _source = new PicsumImageSource();
 
 }
