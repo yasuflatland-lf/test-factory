@@ -109,7 +109,7 @@ Requires Docker to be running.
 
 ```bash
 # Run all integration tests
-./gradlew :integration-test:integrationTest
+./gradlew :integration-test:integrationTest --info
 
 # Run a specific spec
 ./gradlew :integration-test:integrationTest --tests "com.liferay.support.tools.it.spec.DeploymentSpec"
