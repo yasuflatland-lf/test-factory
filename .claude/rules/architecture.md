@@ -24,7 +24,7 @@ liferay-dummy-factory/
 
 **MVCPortlet + PanelApp** -- The portlet (`com_liferay_support_tools_portlet_LiferayDummyFactoryPortlet`) is registered in the Control Panel under Configuration. The portlet uses `javax.portlet` namespace (Portlet API 3.0). The PanelApp's `@Reference` uses a target filter of `javax.portlet.name=...`. The view JSP renders the React component via the `<react:component>` tag.
 
-**MVCResourceCommands** -- Entity creation is handled by per-entity resource commands: `/ldf/org` (Organization), `/ldf/user` (User), `/ldf/role` (Role), `/ldf/site` (Site), `/ldf/page` (Layout), `/ldf/wcm` (Web Content), `/ldf/doc` (Document) with `/ldf/doc/upload` for file upload, `/ldf/vocabulary` (Vocabulary), `/ldf/category` (Category), `/ldf/mb-category` (MB Category), `/ldf/mb-thread` (MB Thread), and `/ldf/mb-reply` (MB Reply). `/ldf/data` (`DataListResourceCommand`) serves dropdown data for organizations, roles, user-groups, site-roles, org-roles, sites, site-templates, vocabularies, mb-categories, and mb-threads. `/ldf/progress` (`ProgressResourceCommand`) reports batch-creation progress.
+**MVCResourceCommands** -- Entity creation is handled by per-entity resource commands: `/ldf/company` (Company), `/ldf/org` (Organization), `/ldf/user` (User), `/ldf/role` (Role), `/ldf/site` (Site), `/ldf/page` (Layout), `/ldf/wcm` (Web Content), `/ldf/doc` (Document) with `/ldf/doc/upload` for file upload, `/ldf/vocabulary` (Vocabulary), `/ldf/category` (Category), `/ldf/mb-category` (MB Category), `/ldf/mb-thread` (MB Thread), and `/ldf/mb-reply` (MB Reply). `/ldf/data` (`DataListResourceCommand`) serves dropdown data for organizations, roles, user-groups, site-roles, org-roles, sites, site-templates, vocabularies, mb-categories, and mb-threads. `/ldf/progress` (`ProgressResourceCommand`) reports batch-creation progress.
 
 **Value Objects** -- `BatchSpec` (Java record) encapsulates batch-creation parameters (count + baseName) with constructor validation, replacing scattered primitive validation. `RoleType` and `SiteMembershipType` are type-safe enums mapping frontend string values to Liferay integer constants, preventing silent fallback on invalid input. All resource commands construct these value objects from JSON input before passing them to Creator services.
 
@@ -56,3 +56,25 @@ Key components:
 | **`release.portal.api` instead of `release.dxp.api`** | `release.dxp.api:default` resolves to 2026.q1.2 which provides `jakarta.portlet` (Portlet API 4.0). This is incompatible with the CE 7.4 GA132 Docker image, which uses `javax.portlet` (Portlet API 3.0). Using `release.portal.api` ensures the compile-time API matches the runtime. |
 | **`actionResourceURLs` map** | The JSP generates per-entity action URLs as a map keyed by `mvc.command.name`, enabling the single React app to dispatch to multiple MVCResourceCommands. New entity types require adding a `<portlet:resourceURL>` entry in `view.jsp`. |
 | **DataListProvider SPI** | Dropdown data sources are pluggable via an OSGi service interface with dynamic references, avoiding a growing switch statement in DataListResourceCommand. |
+
+## 5. Liferay CE 7.4 API Notes
+
+Non-obvious API facts that cost time to discover.
+
+### 1. `MBThreadLocalService.getThreads(groupId, categoryId, status, start, end)` — categoryId is exact-match filter
+
+The `categoryId` parameter is an exact-match filter, NOT a "no filter" sentinel. Passing `categoryId=0L` returns ONLY threads whose parent categoryId is exactly 0 (root-level threads under no category), NOT all threads in the group.
+
+To list ALL threads in a group regardless of which category they're under, iterate `MBCategoryLocalService.getCategories(groupId)` and union per-category results with the root-level call. There is no single overload that returns group-wide threads in one shot on CE 7.4 GA132.
+
+This was the root cause of an empty `#threadId` dropdown in the MB Reply form.
+
+### 2. `MBCategoryLocalService.addCategory` — only the 6-arg overload exists on CE 7.4 GA132
+
+Available signature:
+```java
+addCategory(String externalReferenceCode, long userId, long parentCategoryId,
+            String name, String description, ServiceContext serviceContext)
+```
+
+Pass `externalReferenceCode=null` and `parentCategoryId=0L` for top-level categories. The 5-arg overload (without externalReferenceCode) referenced in some older plans does not exist.

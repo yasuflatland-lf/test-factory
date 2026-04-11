@@ -51,6 +51,43 @@ The PortletTracker in CE 7.4 GA132 tracks `javax.portlet.Portlet` services, **no
 - Set explicit timeouts on waits: `waitForURL(..., new Page.WaitForURLOptions().setTimeout(30_000))`, `waitFor(new Locator.WaitForOptions().setTimeout(15_000))`.
 - Close the `PlaywrightLifecycle` instance in `cleanupSpec()` using safe-navigation: `pw?.close()`.
 
+## Playwright / Headless Gotchas
+
+- **`<option>` elements need `ATTACHED` state, not `visible`.** When waiting for an option inside a collapsed `<select>`, Playwright's default `visible` state treats it as hidden and the wait times out even though the element exists in the DOM. Use `setState(WaitForSelectorState.ATTACHED)`:
+
+	```groovy
+	page.locator("#vocabularyId option[value=\"${id}\"]").waitFor(
+	    new Locator.WaitForOptions()
+	        .setState(com.microsoft.playwright.options.WaitForSelectorState.ATTACHED)
+	        .setTimeout(15_000)
+	)
+	```
+
+	This applies to every cascading dropdown verification (category/vocabulary/thread pickers).
+
+- **`:has-text()` is substring, `:text-is()` is exact.** `.nav-link:has-text("categories")` matches BOTH "categories" AND "mb-categories" tabs and triggers a Playwright strict-mode violation. When an entity label is a substring of another label, always use `:text-is()`:
+
+	```groovy
+	page.locator('.nav-link:text-is("categories")').click()
+	```
+
+- **Headless Delivery `?search=` goes through Elasticsearch.** `/o/headless-delivery/v1.0/.../message-board-sections?search=...` hits the search index, which has ingestion latency. Tests running immediately after creation will get 0 results. For post-condition verification, drop `?search=` and fetch the full list with `?pageSize=100`, then filter client-side on `title` / `name`:
+
+	```groovy
+	def response = headlessGet("/o/headless-delivery/v1.0/sites/${siteId}/message-board-sections?pageSize=100")
+	def matching = response.items.findAll { it.title?.startsWith(BASE_NAME) }
+	```
+
+	The `message-board-sections` listing endpoint is DB-backed, not ES-backed, so there is no indexing lag.
+
+- **Headless API and Java API use different names for the same Message Boards entities.** The `id` values are identical between the two layers, so you can create via one and verify/delete via the other.
+
+	| Java API | Headless API |
+	|----------|--------------|
+	| `MBCategory` | `message-board-section` |
+	| `MBThread` | `message-board-thread` |
+	| `MBMessage` | `message-board-message` |
+
 ## Running Tests
 
 ```bash

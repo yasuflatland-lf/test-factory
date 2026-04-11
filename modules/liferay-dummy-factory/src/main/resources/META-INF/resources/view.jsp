@@ -13,6 +13,7 @@
 <portlet:resourceURL id="/ldf/mb-category" var="mbCategoryURL" />
 <portlet:resourceURL id="/ldf/mb-thread" var="mbThreadURL" />
 <portlet:resourceURL id="/ldf/mb-reply" var="mbReplyURL" />
+<portlet:resourceURL id="/ldf/company" var="companyResourceURL" />
 <portlet:resourceURL id="/ldf/data" var="dataResourceURL" />
 <portlet:resourceURL id="/ldf/progress" var="progressResourceURL" />
 
@@ -46,6 +47,8 @@
 				"/ldf/mb-thread", mbThreadURL
 			).put(
 				"/ldf/mb-reply", mbReplyURL
+			).put(
+				"/ldf/company", companyResourceURL
 			).build()
 		).put(
 			"dataResourceURL", dataResourceURL
