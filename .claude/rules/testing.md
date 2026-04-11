@@ -70,6 +70,14 @@ The PortletTracker in CE 7.4 GA132 tracks `javax.portlet.Portlet` services, **no
 
 	Never write `page.locator('[data-testid="organization-result"]').waitFor(...)` as a post-condition for a "create succeeded" assertion. If the server returns an error, the alert still appears, the wait still resolves, and the test turns green on a regression.
 
+## Liferay.Language Fallback Gotcha
+
+- `Liferay.Language.get('missing-key')` in a running Liferay portal returns **the key string itself** when the key is not present in `Language.properties`. There is no warning, no console error, and no visual marker — the raw kebab-case key is rendered directly to the end user.
+- **Runtime impact:** a typo or a deleted key surfaces to users as `execution-completed-successfully` or `create-user` instead of the translated phrase. Since the string is non-empty and looks superficially like valid text, the bug slips through manual smoke tests.
+- **Test impact:** Playwright assertions written as `page.locator(':has-text("execution-completed-successfully")')` will pass even when the key is missing from `Language.properties`, because the DOM literally contains that key string. A regression that deletes the key goes green. A regression that never defined the key in the first place goes green. This exact pattern was shipped and later caught in review.
+- **Authoring rule:** when writing a Playwright assertion on localized text, assert on the **resolved** English phrase from `Language.properties` (e.g. `"Execution completed successfully."`), never on the key identifier. If the assertion string contains hyphens and matches the key name, that is a code smell — look up the actual value.
+- **Adding a new key:** always add the entry to `Language.properties` in the same commit that introduces the `Liferay.Language.get('...')` call. See the Jest i18n Fallback Guard below for the unit-test side of the same problem.
+
 ## Jest i18n Fallback Guard
 
 - `test/setup.ts` stubs `Liferay.Language.get` as `languageMap.get(key) ?? key`. If a key is removed from `Language.properties` but a test only asserts `expect(text).toBe('Create User')`, the test will keep passing by echoing the key back as its own value. Any unit test that asserts on a localized string MUST pair the positive assertion with a guard that rejects the fallback:
@@ -81,6 +89,35 @@ The PortletTracker in CE 7.4 GA132 tracks `javax.portlet.Portlet` services, **no
 	```
 
 	This guarantees that the key actually resolved through `languageMap`, so silently deleting the key from `Language.properties` will fail the test instead of passing through the identity fallback.
+
+## Jest Unit Test Patterns
+
+### Language.properties auto-load in `test/setup.ts`
+
+- `modules/liferay-dummy-factory/test/setup.ts` reads `src/main/resources/content/Language.properties` **synchronously** with `fs.readFileSync` at module load time and parses it into a `Map<string, string>`. The global `Liferay.Language.get` stub then returns `languageMap.get(key) ?? key`. This means unit tests see the real resolved values without any build step or per-spec mock wiring.
+- The sync read is intentional: Jest's global `setup.ts` runs before any test module, and an async load would require `beforeAll` plumbing in every spec. Sync I/O at setup time is fine — it runs once per worker, not per test.
+- Comment-only lines (`#`) and blank lines are skipped; `key=value` is split on the **first** `=` so values containing `=` survive. Do not "improve" the parser to use `split('=')` — it will truncate values.
+- Pair every localized-string assertion with the i18n fallback guard documented above in **Jest i18n Fallback Guard**. The loader and the guard are two halves of the same contract.
+
+### `jest.MockedFunction` + minimal-shape pattern
+
+- When a component under test calls a custom hook (`useFormState`, `useProgress`, etc.), cast the imported hook with `jest.MockedFunction<typeof X>` and return a **minimal object** coerced via `as unknown as ReturnType<typeof X>`. Example from `EntityForm.test.tsx`:
+
+	```ts
+	const mockedUseFormState = useFormState as jest.MockedFunction<typeof useFormState>;
+	mockedUseFormState.mockReturnValue({
+		formData: {count: 1, baseName: 'Test'},
+		handleChange: jest.fn(),
+		// ...only the fields the component actually reads
+	} as unknown as ReturnType<typeof useFormState>);
+	```
+
+	Do NOT replicate the hook's full return shape in the test — that couples the test to every field on the hook and makes adding a new field a multi-spec churn. The `as unknown as ReturnType<typeof X>` escape hatch is the intended pattern.
+
+### Helper extraction stays in-file
+
+- Test helpers (render wrappers, fixture builders, mock factories) MUST stay inside the spec file that uses them. Do NOT create shared utility files under `test/js/utils/` or similar. If two specs need the same helper, copy it — the duplication is cheaper than the import graph and the coupling it creates.
+- The only exception is `test/setup.ts`, which is loaded globally by Jest and is not a helper file in the usual sense.
 
 ## Playwright / Headless Gotchas
 
