@@ -56,3 +56,25 @@ Key components:
 | **`release.portal.api` instead of `release.dxp.api`** | `release.dxp.api:default` resolves to 2026.q1.2 which provides `jakarta.portlet` (Portlet API 4.0). This is incompatible with the CE 7.4 GA132 Docker image, which uses `javax.portlet` (Portlet API 3.0). Using `release.portal.api` ensures the compile-time API matches the runtime. |
 | **`actionResourceURLs` map** | The JSP generates per-entity action URLs as a map keyed by `mvc.command.name`, enabling the single React app to dispatch to multiple MVCResourceCommands. New entity types require adding a `<portlet:resourceURL>` entry in `view.jsp`. |
 | **DataListProvider SPI** | Dropdown data sources are pluggable via an OSGi service interface with dynamic references, avoiding a growing switch statement in DataListResourceCommand. |
+
+## 5. Liferay CE 7.4 API Notes
+
+Non-obvious API facts that cost time to discover.
+
+### 1. `MBThreadLocalService.getThreads(groupId, categoryId, status, start, end)` — categoryId is exact-match filter
+
+The `categoryId` parameter is an exact-match filter, NOT a "no filter" sentinel. Passing `categoryId=0L` returns ONLY threads whose parent categoryId is exactly 0 (root-level threads under no category), NOT all threads in the group.
+
+To list ALL threads in a group regardless of which category they're under, iterate `MBCategoryLocalService.getCategories(groupId)` and union per-category results with the root-level call. There is no single overload that returns group-wide threads in one shot on CE 7.4 GA132.
+
+This was the root cause of an empty `#threadId` dropdown in the MB Reply form.
+
+### 2. `MBCategoryLocalService.addCategory` — only the 6-arg overload exists on CE 7.4 GA132
+
+Available signature:
+```java
+addCategory(String externalReferenceCode, long userId, long parentCategoryId,
+            String name, String description, ServiceContext serviceContext)
+```
+
+Pass `externalReferenceCode=null` and `parentCategoryId=0L` for top-level categories. The 5-arg overload (without externalReferenceCode) referenced in some older plans does not exist.
