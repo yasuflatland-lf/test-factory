@@ -59,13 +59,10 @@ class UserFunctionalSpec extends BaseLiferaySpec {
 		page.locator('[data-testid="users-count-input"]').waitFor(
 			new Locator.WaitForOptions().setTimeout(15_000)
 		)
-		page.locator('#count').waitFor(
-			new Locator.WaitForOptions().setTimeout(15_000)
-		)
 
 		and: 'fill in the user form'
-		page.locator('#count').fill("${USER_COUNT}")
-		page.locator('#baseName').fill(BASE_USER_NAME)
+		page.locator('[data-testid="users-count-input"]').fill("${USER_COUNT}")
+		page.locator('[data-testid="users-base-name-input"]').fill(BASE_USER_NAME)
 
 		and: 'capture API response and click Run'
 		page.onResponse(response -> {
@@ -82,10 +79,10 @@ class UserFunctionalSpec extends BaseLiferaySpec {
 		page.locator('[data-testid="users-submit"]').click()
 
 		then: 'success alert appears'
-		page.locator('[data-testid="users-result"]').waitFor(
+		page.locator('[data-testid="users-result"].alert-success').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
-		page.locator('[data-testid="users-result"]').isVisible()
+		page.locator('[data-testid="users-result"].alert-success').isVisible()
 	}
 
 	def 'API response confirms users were created'() {
