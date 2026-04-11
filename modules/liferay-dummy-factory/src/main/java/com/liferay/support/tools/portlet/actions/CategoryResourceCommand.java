@@ -58,6 +58,11 @@ public class CategoryResourceCommand extends BaseMVCResourceCommand {
 			long vocabularyId = GetterUtil.getLong(
 				data.getString("vocabularyId"));
 
+			if (groupId <= 0) {
+				throw new IllegalArgumentException(
+					"groupId must be greater than 0");
+			}
+
 			if (vocabularyId <= 0) {
 				throw new IllegalArgumentException(
 					"vocabularyId is required");

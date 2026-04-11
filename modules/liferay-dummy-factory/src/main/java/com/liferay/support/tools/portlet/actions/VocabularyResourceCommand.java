@@ -56,6 +56,11 @@ public class VocabularyResourceCommand extends BaseMVCResourceCommand {
 
 			long groupId = GetterUtil.getLong(data.getString("groupId"));
 
+			if (groupId <= 0) {
+				throw new IllegalArgumentException(
+					"groupId must be greater than 0");
+			}
+
 			long userId = _portal.getUserId(resourceRequest);
 
 			List<AssetVocabulary> vocabularies = _vocabularyCreator.create(
