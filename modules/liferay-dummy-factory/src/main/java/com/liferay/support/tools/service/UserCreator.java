@@ -135,21 +135,27 @@ public class UserCreator {
 
 						if (generatePersonalSiteLayouts) {
 							_userLayoutInitializer.init(u);
+							_layoutSetPrototypeLinker.linkUserPersonalSite(
+								u, publicLayoutSetPrototypeId,
+								privateLayoutSetPrototypeId);
 						}
-
-						_layoutSetPrototypeLinker.linkUserPersonalSite(
-							u, publicLayoutSetPrototypeId,
-							privateLayoutSetPrototypeId);
 
 						return u;
 					});
 			}
-			catch (UserScreenNameException e) {
+			catch (UserScreenNameException.MustNotBeDuplicate e) {
 				_log.warn(
-					"User '" + screenName +
-						"' already exists, skipping");
+					"User '" + screenName + "' already exists, skipping",
+					e);
 
 				continue;
+			}
+			catch (UserScreenNameException e) {
+				throw new Exception(
+					"Invalid screen name '" + screenName + "' (" +
+						e.getClass().getSimpleName() + "): " +
+							e.getMessage(),
+					e);
 			}
 			catch (Exception e) {
 				throw new Exception(
