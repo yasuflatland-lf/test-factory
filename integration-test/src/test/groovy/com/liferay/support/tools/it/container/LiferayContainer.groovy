@@ -82,9 +82,4 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 		return "http://${host}:${httpPort}"
 	}
 
-	@Override
-	void close() {
-		super.close()
-	}
-
 }
