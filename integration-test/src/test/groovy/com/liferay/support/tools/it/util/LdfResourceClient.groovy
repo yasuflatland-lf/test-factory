@@ -62,6 +62,7 @@ class LdfResourceClient {
 
 	private String _authToken
 	private boolean _loggedIn = false
+	private final Map<String, String> _resourceUrlCache = [:]
 
 	LdfResourceClient(
 		String baseUrl, String username = 'test@liferay.com',
@@ -74,7 +75,7 @@ class LdfResourceClient {
 
 		_httpClient = HttpClient.newBuilder()
 			.connectTimeout(Duration.ofSeconds(10))
-			.followRedirects(HttpClient.Redirect.NEVER)
+			.followRedirects(HttpClient.Redirect.NORMAL)
 			.build()
 	}
 
@@ -89,7 +90,7 @@ class LdfResourceClient {
 			"&progressId=${_encode(progressId)}" +
 			(_authToken ? "&p_auth=${_encode(_authToken)}" : '')
 
-		URI resourceURI = _buildResourceURI(mvcCommandName)
+		URI resourceURI = _resolveResourceURI(mvcCommandName)
 
 		HttpRequest request = HttpRequest.newBuilder(resourceURI)
 			.timeout(REQUEST_TIMEOUT)
@@ -140,13 +141,110 @@ class LdfResourceClient {
 		return post('/ldf/wcm', fields)
 	}
 
-	private URI _buildResourceURI(String mvcCommandName) {
-		String query =
-			"p_p_id=${_encode(PORTLET_ID)}" +
-			'&p_p_lifecycle=2' +
-			"&p_p_resource_id=${_encode(mvcCommandName)}"
+	/**
+	 * Resolves the real resource URL for the given MVC command name by
+	 * rendering the portlet page once and scraping the
+	 * {@code actionResourceURLs} map that the JSP hands to the React app.
+	 *
+	 * Liferay's {@code <portlet:resourceURL>} tag generates URLs that depend
+	 * on the current layout, so constructing them by hand is fragile. Rendering
+	 * the portlet through the control-panel URL yields exactly the same URL
+	 * the browser would use for POSTs, which is what we need here.
+	 */
+	private URI _resolveResourceURI(String mvcCommandName) {
+		String cached = _resourceUrlCache[mvcCommandName]
 
-		return URI.create("${_baseUrl}${CONTROL_PANEL_PATH}?${query}")
+		if (cached != null) {
+			return URI.create(cached)
+		}
+
+		String renderQuery =
+			"p_p_id=${_encode(PORTLET_ID)}" +
+			'&p_p_lifecycle=0' +
+			'&p_p_state=maximized'
+
+		URI renderURI = URI.create(
+			"${_baseUrl}${CONTROL_PANEL_PATH}?${renderQuery}")
+
+		HttpRequest renderRequest = HttpRequest.newBuilder(renderURI)
+			.timeout(REQUEST_TIMEOUT)
+			.header('Accept', 'text/html')
+			.header('Cookie', _cookieJar.toString())
+			.header('Authorization', _basicAuthHeader())
+			.GET()
+			.build()
+
+		HttpResponse<String> response = _send(renderRequest)
+
+		_captureCookies(response)
+
+		int status = response.statusCode()
+		String body = response.body() ?: ''
+
+		if ((status < 200) || (status >= 300)) {
+			throw new RuntimeException(
+				"GET ${renderURI} returned HTTP ${status}: " +
+					_truncate(body, 400))
+		}
+
+		_parseActionResourceURLs(body).each { String name, String url ->
+			_resourceUrlCache[name] = url.startsWith('http') ?
+				url : "${_baseUrl}${url}"
+		}
+
+		String resolved = _resourceUrlCache[mvcCommandName]
+
+		if (resolved == null) {
+			throw new RuntimeException(
+				"Could not find resource URL for ${mvcCommandName} in " +
+					"portlet render. Rendered body (truncated): " +
+					_truncate(body, 600))
+		}
+
+		return URI.create(resolved)
+	}
+
+	private static Map<String, String> _parseActionResourceURLs(String html) {
+		Map<String, String> out = [:]
+
+		// The JSP passes actionResourceURLs as part of the React props. The
+		// resulting HTML embeds the JSON object as an HTML attribute. Extract
+		// every portlet resource URL the portlet container generated for this
+		// render: URLs may be absolute or relative, but always contain both
+		// p_p_lifecycle=2 and p_p_resource_id=<command>.
+		//
+		// The HTML attribute value may escape the slashes as \/, which we
+		// restore after matching.
+		String pattern =
+			'((?:https?:\\\\?/\\\\?/[^"\'<>\\s]+?|/[^"\'<>\\s]*?)' +
+				'p_p_lifecycle=2[^"\'<>\\s]*?' +
+				'p_p_resource_id=([^"\'<>&\\s]+)[^"\'<>\\s]*)'
+
+		def matcher = html =~ pattern
+
+		while (matcher.find()) {
+			String url = matcher.group(1).replace('\\/', '/')
+			String rawCommand = matcher.group(2)
+			String command = URLDecoder.decode(rawCommand, 'UTF-8')
+
+			if (!out.containsKey(command)) {
+				out[command] = url
+			}
+		}
+
+		return out
+	}
+
+	private static String _truncate(String value, int max) {
+		if (value == null) {
+			return ''
+		}
+
+		if (value.length() <= max) {
+			return value
+		}
+
+		return value.substring(0, max) + '...'
 	}
 
 	private synchronized void _ensureLoggedIn() {
@@ -243,16 +341,24 @@ class LdfResourceClient {
 		long deadline = System.currentTimeMillis() + PROGRESS_TIMEOUT_MS
 		int zeroStreak = 0
 
+		URI progressBase
+		try {
+			progressBase = _resolveResourceURI('/ldf/progress')
+		}
+		catch (Exception e) {
+			log.debug(
+				'Skipping progress polling, could not resolve URL: {}',
+				e.message)
+			return
+		}
+
 		while (System.currentTimeMillis() < deadline) {
 			try {
-				String query =
-					"p_p_id=${_encode(PORTLET_ID)}" +
-					'&p_p_lifecycle=2' +
-					"&p_p_resource_id=${_encode('/ldf/progress')}" +
-					"&progressId=${_encode(progressId)}"
-
+				String separator = progressBase.toString().contains('?') ?
+					'&' : '?'
 				URI withProgress = URI.create(
-					"${_baseUrl}${CONTROL_PANEL_PATH}?${query}")
+					progressBase.toString() + separator +
+					"progressId=${_encode(progressId)}")
 
 				HttpRequest request = HttpRequest.newBuilder(withProgress)
 					.timeout(REQUEST_TIMEOUT)
