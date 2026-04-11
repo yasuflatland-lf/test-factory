@@ -4,6 +4,7 @@ import com.liferay.support.tools.it.util.PlaywrightLifecycle
 
 import com.microsoft.playwright.Locator
 import com.microsoft.playwright.Page
+import com.microsoft.playwright.Response
 
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
@@ -116,19 +117,11 @@ class UserRoleAssignmentSpec extends BaseLiferaySpec {
 		and: 'select the test organization in the multiselect'
 		page.locator("#organizationIds option:has-text(\"${TEST_ORG_NAME}\")").click()
 
-		and: 'capture API response and click Run button'
-		page.onResponse(response -> {
-			try {
-				String body = response.text()
-
-				if (body?.contains('"users"')) {
-					apiResponseBody = body
-				}
-			}
-			catch (ignored) {}
-		})
-
-		page.locator('.sheet-footer button.btn-primary').click()
+		and: 'click Run button and capture the /ldf/user resource response'
+		Response response = page.waitForResponse(
+			{ Response r -> r.url().contains('p_p_resource_id=%2Fldf%2Fuser') },
+			{ -> page.locator('.sheet-footer button.btn-primary').click() })
+		apiResponseBody = response.text()
 
 		then: 'success alert appears'
 		page.locator('.alert-success').waitFor(

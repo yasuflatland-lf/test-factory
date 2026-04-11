@@ -33,7 +33,9 @@ class SiteFunctionalSpec extends BaseLiferaySpec {
 	def cleanupSpec() {
 		createdSiteIds.each { id ->
 			try {
-				jsonwsGet("/api/jsonws/group/delete-group/group-id/${id}")
+				jsonwsPost(
+					'/api/jsonws/group/delete-group',
+					['groupId': id])
 			}
 			catch (Exception e) {
 				log.warn('Failed to clean up site {}: {}', id, e.message)
@@ -112,7 +114,9 @@ class SiteFunctionalSpec extends BaseLiferaySpec {
 	def 'Test sites are cleaned up via JSONWS GroupService'() {
 		when: 'delete each created site'
 		createdSiteIds.each { id ->
-			jsonwsGet("/api/jsonws/group/delete-group/group-id/${id}")
+			jsonwsPost(
+				'/api/jsonws/group/delete-group',
+				['groupId': id])
 		}
 
 		and: 'list groups again'
