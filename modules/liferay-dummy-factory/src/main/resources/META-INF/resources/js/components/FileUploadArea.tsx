@@ -176,7 +176,7 @@ function FileUploadArea({groupId, onChange, testId, uploadURL, value}: FileUploa
 						testId ? `${testId}-uploaded-list` : undefined
 					}
 				>
-					{fileNames.map((fileName) => (
+					{fileNames.map((fileName, index) => (
 						<li className="list-inline-item" key={fileName}>
 							<span className="label label-secondary">
 								<span className="label-item label-item-expand">
@@ -191,7 +191,7 @@ function FileUploadArea({groupId, onChange, testId, uploadURL, value}: FileUploa
 										className="btn btn-unstyled"
 										data-testid={
 											testId
-												? `${testId}-remove-${fileName}`
+												? `${testId}-remove-${index}`
 												: undefined
 										}
 										onClick={() => _handleRemove(fileName)}
