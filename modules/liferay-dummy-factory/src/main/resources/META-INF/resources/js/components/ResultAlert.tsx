@@ -6,7 +6,7 @@ interface ResultAlertProps {
 	message: string | null;
 	multiSite?: MultiSiteResult | null;
 	onDismiss: () => void;
-	type: 'success' | 'danger';
+	type: 'success' | 'danger' | 'warning';
 }
 
 function ResultAlert({message, multiSite, onDismiss, type}: ResultAlertProps) {

@@ -214,7 +214,7 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 					message={result.message}
 					multiSite={result.multiSite}
 					onDismiss={() => setResult(null)}
-					type={result.type === 'warning' ? 'danger' : result.type}
+					type={result.type}
 				/>
 			)}
 		</div>
