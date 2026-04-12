@@ -9,6 +9,7 @@
 <portlet:resourceURL id="/ldf/doc" var="docResourceURL" />
 <portlet:resourceURL id="/ldf/doc/upload" var="docUploadResourceURL" />
 <portlet:resourceURL id="/ldf/vocabulary" var="vocabularyURL" />
+<portlet:resourceURL id="/ldf/blog" var="blogResourceURL" />
 <portlet:resourceURL id="/ldf/category" var="categoryURL" />
 <portlet:resourceURL id="/ldf/mb-category" var="mbCategoryURL" />
 <portlet:resourceURL id="/ldf/mb-thread" var="mbThreadURL" />
@@ -57,6 +58,8 @@ while (enumeration.hasMoreElements()) {
 				"/ldf/doc/upload", docUploadResourceURL
 			).put(
 				"/ldf/vocabulary", vocabularyURL
+			).put(
+				"/ldf/blog", blogResourceURL
 			).put(
 				"/ldf/category", categoryURL
 			).put(
