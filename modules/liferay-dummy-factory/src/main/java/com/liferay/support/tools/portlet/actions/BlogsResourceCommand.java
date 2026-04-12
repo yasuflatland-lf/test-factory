@@ -26,7 +26,7 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	property = {
 		"javax.portlet.name=" + LDFPortletKeys.LIFERAY_DUMMY_FACTORY,
-		"mvc.command.name=/ldf/blog"
+		"mvc.command.name=" + LDFPortletKeys.BLOGS
 	},
 	service = MVCResourceCommand.class
 )
@@ -67,7 +67,9 @@ public class BlogsResourceCommand extends BaseMVCResourceCommand {
 				batchSpec, groupId, content, subtitle, description,
 				allowPingbacks, allowTrackbacks, null);
 
-			long userId = _portal.getUserId(resourceRequest);
+			long userId = GetterUtil.getLong(
+				data.getString("userId"),
+				_portal.getUserId(resourceRequest));
 
 			responseJson = _blogsCreator.create(userId, blogsBatchSpec);
 		}
