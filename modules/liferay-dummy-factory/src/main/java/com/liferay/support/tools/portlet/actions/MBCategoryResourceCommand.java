@@ -15,6 +15,7 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.support.tools.constants.LDFPortletKeys;
 import com.liferay.support.tools.service.BatchSpec;
 import com.liferay.support.tools.service.MBCategoryCreator;
+import com.liferay.support.tools.utils.ProgressCallback;
 import com.liferay.support.tools.utils.ProgressManager;
 
 import java.util.List;
@@ -51,8 +52,11 @@ public class MBCategoryResourceCommand extends BaseMVCResourceCommand {
 
 		ProgressManager progressManager = new ProgressManager();
 
+		boolean progressStarted = false;
+
 		try {
 			progressManager.start(resourceRequest);
+			progressStarted = true;
 
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
@@ -69,14 +73,8 @@ public class MBCategoryResourceCommand extends BaseMVCResourceCommand {
 
 			List<MBCategory> categories = _mbCategoryCreator.create(
 				userId, groupId, batchSpec, description,
-				(current, total) -> {
-					try {
-						progressManager.trackProgress(current, total);
-					}
-					catch (Exception e) {
-						// Progress tracking is observational; failures must not break entity creation
-					}
-				});
+				ProgressCallback.fromProgressManager(
+					progressManager));
 
 			JSONArray itemsArray = JSONFactoryUtil.createJSONArray();
 
@@ -116,7 +114,9 @@ public class MBCategoryResourceCommand extends BaseMVCResourceCommand {
 			ResourceCommandUtil.setErrorResponse(responseJson, throwable);
 		}
 		finally {
-			progressManager.finish();
+			if (progressStarted) {
+				progressManager.finish();
+			}
 		}
 
 		JSONPortletResponseUtil.writeJSON(

@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -67,7 +68,7 @@ public class WebContentCreator {
 		String baseName = batch.baseName();
 
 		int totalEntities = count * groupIds.length;
-		int[] globalIndex = {0};
+		AtomicInteger globalIndex = new AtomicInteger(0);
 
 		List<PerSiteResult> perSiteResults = new ArrayList<>();
 
@@ -190,7 +191,7 @@ public class WebContentCreator {
 		String baseArticle, long folderId, String[] locales,
 		boolean neverExpire, boolean neverReview,
 		ProgressCallback progress, int totalEntities,
-		int[] globalIndex) {
+		AtomicInteger globalIndex) {
 
 		String siteName = _resolveSiteName(groupId);
 		int created = 0;
@@ -243,8 +244,8 @@ public class WebContentCreator {
 
 				created++;
 
-				globalIndex[0]++;
-				progress.onProgress(globalIndex[0], totalEntities);
+				progress.onProgress(
+					globalIndex.incrementAndGet(), totalEntities);
 			}
 			catch (Throwable throwable) {
 				if (throwable instanceof Error) {
@@ -256,8 +257,8 @@ public class WebContentCreator {
 						" in group " + groupId,
 					throwable);
 
-				globalIndex[0]++;
-				progress.onProgress(globalIndex[0], totalEntities);
+				progress.onProgress(
+					globalIndex.incrementAndGet(), totalEntities);
 
 				return new PerSiteResult(
 					groupId, siteName, created, count - created,
@@ -273,7 +274,7 @@ public class WebContentCreator {
 		String[] locales, int titleWords, int totalParagraphs, int randomAmount,
 		String linkLists, boolean neverExpire, boolean neverReview,
 		ProgressCallback progress, int totalEntities,
-		int[] globalIndex) {
+		AtomicInteger globalIndex) {
 
 		String siteName = _resolveSiteName(groupId);
 		int created = 0;
@@ -344,8 +345,8 @@ public class WebContentCreator {
 
 				created++;
 
-				globalIndex[0]++;
-				progress.onProgress(globalIndex[0], totalEntities);
+				progress.onProgress(
+					globalIndex.incrementAndGet(), totalEntities);
 			}
 			catch (Throwable throwable) {
 				if (throwable instanceof Error) {
@@ -357,8 +358,8 @@ public class WebContentCreator {
 						" in group " + groupId,
 					throwable);
 
-				globalIndex[0]++;
-				progress.onProgress(globalIndex[0], totalEntities);
+				progress.onProgress(
+					globalIndex.incrementAndGet(), totalEntities);
 
 				return new PerSiteResult(
 					groupId, siteName, created, count - created,
@@ -374,7 +375,7 @@ public class WebContentCreator {
 		String[] locales, long ddmStructureId, long ddmTemplateId,
 		boolean neverExpire, boolean neverReview,
 		ProgressCallback progress, int totalEntities,
-		int[] globalIndex) {
+		AtomicInteger globalIndex) {
 
 		String siteName = _resolveSiteName(groupId);
 		int created = 0;
@@ -428,8 +429,8 @@ public class WebContentCreator {
 
 				created++;
 
-				globalIndex[0]++;
-				progress.onProgress(globalIndex[0], totalEntities);
+				progress.onProgress(
+					globalIndex.incrementAndGet(), totalEntities);
 			}
 			catch (Throwable throwable) {
 				if (throwable instanceof Error) {
@@ -441,8 +442,8 @@ public class WebContentCreator {
 						" in group " + groupId,
 					throwable);
 
-				globalIndex[0]++;
-				progress.onProgress(globalIndex[0], totalEntities);
+				progress.onProgress(
+					globalIndex.incrementAndGet(), totalEntities);
 
 				return new PerSiteResult(
 					groupId, siteName, created, count - created,

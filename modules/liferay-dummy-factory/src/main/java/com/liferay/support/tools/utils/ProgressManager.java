@@ -80,14 +80,14 @@ public class ProgressManager {
 	 * poll the final state before the tracker is torn down.
 	 */
 	public void finish() {
-		try {
-			Thread.sleep(_sleep);
-		}
-		catch (InterruptedException interruptedException) {
-			Thread.currentThread().interrupt();
-		}
-
 		if ((_progressTracker != null) && (_request != null)) {
+			try {
+				Thread.sleep(_sleep);
+			}
+			catch (InterruptedException interruptedException) {
+				Thread.currentThread().interrupt();
+			}
+
 			_progressTracker.finish(_request);
 		}
 	}
