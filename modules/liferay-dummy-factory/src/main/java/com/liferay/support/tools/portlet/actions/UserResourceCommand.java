@@ -41,8 +41,6 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 
 		ProgressManager progressManager = new ProgressManager();
 
-		progressManager.start(resourceRequest);
-
 		HttpServletRequest httpServletRequest =
 			_portal.getOriginalServletRequest(
 				_portal.getHttpServletRequest(resourceRequest));
@@ -53,6 +51,8 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 		JSONObject responseJson = JSONFactoryUtil.createJSONObject();
 
 		try {
+			progressManager.start(resourceRequest);
+
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
 			BatchSpec batchSpec = ResourceCommandUtil.parseBatchSpec(data);
@@ -84,8 +84,14 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 
 			responseJson = _userCreator.create(
 				userId, companyId, userBatchSpec,
-				(current, total) -> progressManager.trackProgress(
-					current, total));
+				(current, total) -> {
+					try {
+						progressManager.trackProgress(current, total);
+					}
+					catch (Exception e) {
+						// Progress tracking is observational; failures must not break entity creation
+					}
+				});
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(

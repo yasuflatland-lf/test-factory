@@ -56,9 +56,9 @@ public class WcmResourceCommand extends BaseMVCResourceCommand {
 
 		ProgressManager progressManager = new ProgressManager();
 
-		progressManager.start(resourceRequest);
-
 		try {
+			progressManager.start(resourceRequest);
+
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
 			long[] groupIds = _parseGroupIds(data);
@@ -94,8 +94,14 @@ public class WcmResourceCommand extends BaseMVCResourceCommand {
 
 			responseJson = _webContentCreator.create(
 				userId, spec,
-				(current, total) -> progressManager.trackProgress(
-					current, total));
+				(current, total) -> {
+					try {
+						progressManager.trackProgress(current, total);
+					}
+					catch (Exception e) {
+						// Progress tracking is observational; failures must not break entity creation
+					}
+				});
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(

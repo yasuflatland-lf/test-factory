@@ -49,9 +49,9 @@ public class RoleResourceCommand extends BaseMVCResourceCommand {
 
 		ProgressManager progressManager = new ProgressManager();
 
-		progressManager.start(resourceRequest);
-
 		try {
+			progressManager.start(resourceRequest);
+
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
 			BatchSpec batchSpec = ResourceCommandUtil.parseBatchSpec(data);
@@ -65,8 +65,14 @@ public class RoleResourceCommand extends BaseMVCResourceCommand {
 
 			responseJson = _roleCreator.create(
 				userId, batchSpec, roleType, description,
-				(current, total) -> progressManager.trackProgress(
-					current, total));
+				(current, total) -> {
+					try {
+						progressManager.trackProgress(current, total);
+					}
+					catch (Exception e) {
+						// Progress tracking is observational; failures must not break entity creation
+					}
+				});
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(

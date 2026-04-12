@@ -48,9 +48,10 @@ public class SiteResourceCommand extends BaseMVCResourceCommand {
 		JSONObject responseJson = JSONFactoryUtil.createJSONObject();
 
 		ProgressManager progressManager = new ProgressManager();
-		progressManager.start(resourceRequest);
 
 		try {
+			progressManager.start(resourceRequest);
+
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
 			BatchSpec batchSpec = ResourceCommandUtil.parseBatchSpec(data);
@@ -83,7 +84,14 @@ public class SiteResourceCommand extends BaseMVCResourceCommand {
 				siteTemplateId, manualMembership,
 				inheritContent, active, description,
 				publicLayoutSetPrototypeId, privateLayoutSetPrototypeId,
-				(current, total) -> progressManager.trackProgress(current, total));
+				(current, total) -> {
+					try {
+						progressManager.trackProgress(current, total);
+					}
+					catch (Exception e) {
+						// Progress tracking is observational; failures must not break entity creation
+					}
+				});
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(

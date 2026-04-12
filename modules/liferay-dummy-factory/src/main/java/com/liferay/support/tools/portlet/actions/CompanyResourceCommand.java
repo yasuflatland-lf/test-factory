@@ -50,9 +50,9 @@ public class CompanyResourceCommand extends BaseMVCResourceCommand {
 
 		ProgressManager progressManager = new ProgressManager();
 
-		progressManager.start(resourceRequest);
-
 		try {
+			progressManager.start(resourceRequest);
+
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
 			int count = GetterUtil.getInteger(data.getString("count"));
@@ -83,8 +83,14 @@ public class CompanyResourceCommand extends BaseMVCResourceCommand {
 
 			List<Company> companies = _companyCreator.create(
 				count, webId, virtualHostname, mx, maxUsers, active,
-				(current, total) -> progressManager.trackProgress(
-					current, total));
+				(current, total) -> {
+					try {
+						progressManager.trackProgress(current, total);
+					}
+					catch (Exception e) {
+						// Progress tracking is observational; failures must not break entity creation
+					}
+				});
 
 			int createdCount = companies.size();
 			boolean success = (createdCount == count);

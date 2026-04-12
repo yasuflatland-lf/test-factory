@@ -84,6 +84,7 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 				type: 'danger',
 			});
 			endSubmit();
+			reset();
 			return;
 		}
 

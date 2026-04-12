@@ -51,9 +51,9 @@ public class MBThreadResourceCommand extends BaseMVCResourceCommand {
 
 		ProgressManager progressManager = new ProgressManager();
 
-		progressManager.start(resourceRequest);
-
 		try {
+			progressManager.start(resourceRequest);
+
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
 			BatchSpec batchSpec = ResourceCommandUtil.parseBatchSpec(data);
@@ -77,8 +77,14 @@ public class MBThreadResourceCommand extends BaseMVCResourceCommand {
 
 			List<MBMessage> messages = _mbThreadCreator.create(
 				userId, groupId, categoryId, batchSpec, body, format,
-				(current, total) -> progressManager.trackProgress(
-					current, total));
+				(current, total) -> {
+					try {
+						progressManager.trackProgress(current, total);
+					}
+					catch (Exception e) {
+						// Progress tracking is observational; failures must not break entity creation
+					}
+				});
 
 			JSONArray itemsArray = JSONFactoryUtil.createJSONArray();
 

@@ -7,10 +7,8 @@ package com.liferay.support.tools.utils;
 @FunctionalInterface
 public interface ProgressCallback {
 
-	void onProgress(int current, int total);
+	void onProgress(long current, long total);
 
-	static ProgressCallback noop() {
-		return (c, t) -> {};
-	}
+	static final ProgressCallback NOOP = (c, t) -> {};
 
 }
