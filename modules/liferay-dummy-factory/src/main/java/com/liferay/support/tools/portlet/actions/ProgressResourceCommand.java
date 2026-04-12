@@ -17,23 +17,6 @@ import javax.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Component;
 
-/**
- * Serves the current progress percentage for a long-running creator job.
- *
- * <p>
- * The creator services drive a {@link ProgressTracker} via
- * {@code ProgressManager}. That tracker installs itself into the
- * {@link PortletSession} under the key
- * {@link ProgressTracker#PERCENT}+{@code progressId}. This endpoint reads the
- * tracker back out of the session and returns its current percent as JSON:
- * </p>
- *
- * <pre>{@code
- * {"percent": 42}
- * }</pre>
- *
- * @author Yasuyuki Takeo
- */
 @Component(
 	property = {
 		"javax.portlet.name=" + LDFPortletKeys.LIFERAY_DUMMY_FACTORY,

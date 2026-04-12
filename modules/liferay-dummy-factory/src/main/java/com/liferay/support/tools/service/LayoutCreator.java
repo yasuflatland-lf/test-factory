@@ -26,7 +26,7 @@ public class LayoutCreator {
 			long userId, BatchSpec batchSpec, long groupId, String type,
 			boolean privateLayout, boolean hidden,
 			ProgressCallback progress)
-		throws Exception {
+		throws Throwable {
 
 		int count = batchSpec.count();
 		String baseName = batchSpec.baseName();
@@ -103,23 +103,14 @@ public class LayoutCreator {
 	private Layout _invokeAddLayout(
 			long userId, long groupId, boolean privateLayout, String name,
 			String type, boolean hidden)
-		throws Exception {
+		throws Throwable {
 
-		try {
-			return BatchTransaction.run(
-				() -> _layoutLocalService.addLayout(
-					StringPool.BLANK, userId, groupId, privateLayout,
-					LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, name,
-					StringPool.BLANK, StringPool.BLANK, type, hidden,
-					StringPool.BLANK, new ServiceContext()));
-		}
-		catch (Throwable t) {
-			if (t instanceof Exception) {
-				throw (Exception)t;
-			}
-
-			throw new Exception(t);
-		}
+		return BatchTransaction.run(
+			() -> _layoutLocalService.addLayout(
+				StringPool.BLANK, userId, groupId, privateLayout,
+				LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, name,
+				StringPool.BLANK, StringPool.BLANK, type, hidden,
+				StringPool.BLANK, new ServiceContext()));
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(LayoutCreator.class);

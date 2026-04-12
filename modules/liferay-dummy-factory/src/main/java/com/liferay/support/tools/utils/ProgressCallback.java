@@ -3,10 +3,6 @@ package com.liferay.support.tools.utils;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 
-/**
- * Callback for reporting batch-creation progress from Creators to
- * ResourceCommands without coupling Creators to the portlet API.
- */
 @FunctionalInterface
 public interface ProgressCallback {
 
