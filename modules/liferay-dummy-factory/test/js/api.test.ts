@@ -101,7 +101,8 @@ describe('postResource', () => {
 		expect(result.success).toBe(false);
 
 		if (!result.success) {
-			expect(result.error).toBe('Operation failed');
+			expect(result.error).not.toBe('execution-failed');
+			expect(result.error).toBe('Execution Failed');
 			expect(result.data).toEqual({count: 3, requested: 5, success: false});
 		}
 	});
@@ -175,7 +176,8 @@ describe('fetchResource', () => {
 		expect(result.success).toBe(false);
 
 		if (!result.success) {
-			expect(result.error).toBe('Operation failed');
+			expect(result.error).not.toBe('execution-failed');
+			expect(result.error).toBe('Execution Failed');
 			expect(result.data).toEqual({items: [], success: false});
 		}
 	});
