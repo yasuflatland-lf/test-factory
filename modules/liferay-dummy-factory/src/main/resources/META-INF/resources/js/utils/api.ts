@@ -15,7 +15,7 @@ async function parseResponse<T>(response: Response): Promise<ApiResponse<T>> {
 	const data = await response.json();
 
 	if (data.error) {
-		return {error: data.error, success: false};
+		return {data, error: data.error, success: false};
 	}
 
 	return {data, success: true};
