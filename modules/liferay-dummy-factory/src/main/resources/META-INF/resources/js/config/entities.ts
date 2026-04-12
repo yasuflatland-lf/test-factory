@@ -581,6 +581,80 @@ const VOCABULARY_CONFIG: EntityFormConfig = {
 	label: 'vocabularies',
 };
 
+const BLOGS_CONFIG: EntityFormConfig = {
+	actionURL: '/ldf/blog',
+	entityType: ENTITY_TYPES.BLOGS,
+	fields: [
+		createCountField('number-of-posts'),
+		createBaseNameField('base-blog-title'),
+		{
+			dataSource: '/ldf/data/sites',
+			label: 'site',
+			name: 'groupId',
+			required: true,
+			type: 'select',
+		},
+		{
+			defaultValue: '<p>Test blog content.</p>',
+			label: 'article-content',
+			name: 'content',
+			required: true,
+			type: 'textarea',
+		},
+		{
+			advanced: true,
+			dataSource: '/ldf/data/users',
+			label: 'users',
+			name: 'userId',
+			required: false,
+			type: 'select',
+		},
+		{
+			advanced: true,
+			defaultValue: '',
+			label: 'subtitle',
+			name: 'subtitle',
+			required: false,
+			type: 'text',
+		},
+		{
+			advanced: true,
+			defaultValue: '',
+			label: 'description',
+			name: 'description',
+			required: false,
+			type: 'textarea',
+		},
+		{
+			advanced: true,
+			defaultValue: true,
+			label: 'allow-pingbacks',
+			name: 'allowPingbacks',
+			required: false,
+			type: 'toggle',
+		},
+		{
+			advanced: true,
+			defaultValue: false,
+			label: 'allow-trackbacks',
+			name: 'allowTrackbacks',
+			required: false,
+			type: 'toggle',
+		},
+		{
+			advanced: true,
+			defaultValue: '',
+			label: 'trackback-urls',
+			name: 'trackbackURLs',
+			required: false,
+			type: 'textarea',
+		},
+	],
+	helpText: 'blogs-help-text',
+	icon: 'blogs',
+	label: 'blogs',
+};
+
 const CATEGORY_CONFIG: EntityFormConfig = {
 	actionURL: '/ldf/category',
 	entityType: ENTITY_TYPES.CATEGORY,
@@ -776,6 +850,7 @@ const WCM_CONFIG: EntityFormConfig = {
 };
 
 export const ENTITY_CONFIGS: Partial<Record<EntityType, EntityFormConfig>> = {
+	[ENTITY_TYPES.BLOGS]: BLOGS_CONFIG,
 	[ENTITY_TYPES.CATEGORY]: CATEGORY_CONFIG,
 	[ENTITY_TYPES.COMPANY]: COMPANY_CONFIG,
 	[ENTITY_TYPES.DOCUMENTS]: DOCUMENTS_CONFIG,
