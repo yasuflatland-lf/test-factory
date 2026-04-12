@@ -69,7 +69,7 @@ class UserFunctionalSpec extends BaseLiferaySpec {
 			try {
 				String body = response.text()
 
-				if (body?.contains('"users"')) {
+				if (body?.contains('"items"')) {
 					apiResponseBody = body
 				}
 			}
@@ -91,12 +91,16 @@ class UserFunctionalSpec extends BaseLiferaySpec {
 		apiResponseBody.contains('"success":true')
 		apiResponseBody.contains("\"count\":${USER_COUNT}")
 
-		and: 'response contains expected screen names'
+		and: 'response contains expected screen names under items key'
 		String prefix = BASE_USER_NAME.toLowerCase()
 
 		(1..USER_COUNT).every { i ->
 			apiResponseBody.contains("\"screenName\":\"${prefix}${i}\"")
 		}
+
+		and: 'response uses items key (not legacy users key)'
+		apiResponseBody.contains('"items"')
+		!apiResponseBody.contains('"users"')
 	}
 
 }

@@ -12,10 +12,8 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.TransactionConfig;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.support.tools.utils.BatchTransaction;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -63,23 +61,36 @@ public class LayoutCreator {
 		}
 
 		int createdCount = layouts.length();
+		boolean success = (createdCount == count);
 
 		result.put("count", createdCount);
-		result.put("layouts", layouts);
+		result.put("items", layouts);
+		result.put("requested", count);
 		result.put("skipped", skipped);
-		result.put("success", createdCount > 0);
+		result.put("success", success);
 
-		if (createdCount == 0) {
-			result.put(
-				"error",
-				"No layouts were created (all names may be invalid or " +
-					"already exist)");
-		}
+		if (!success) {
+			String errorMessage;
 
-		if (skipped > 0) {
-			result.put(
-				"message",
-				skipped + " layout(s) were skipped");
+			if (createdCount == 0) {
+				errorMessage =
+					"No pages were created (all names may be invalid or " +
+						"already exist)";
+			}
+			else if (skipped > 0) {
+				errorMessage =
+					"Only " + createdCount + " of " + count +
+						" pages were created; " + skipped +
+							" skipped because the name was invalid or " +
+								"already existed.";
+			}
+			else {
+				errorMessage =
+					"Only " + createdCount + " of " + count +
+						" pages were created.";
+			}
+
+			result.put("error", errorMessage);
 		}
 
 		return result;
@@ -91,27 +102,23 @@ public class LayoutCreator {
 		throws Exception {
 
 		try {
-			return TransactionInvokerUtil.invoke(
-				_transactionConfig,
+			return BatchTransaction.run(
 				() -> _layoutLocalService.addLayout(
 					StringPool.BLANK, userId, groupId, privateLayout,
 					LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, name,
 					StringPool.BLANK, StringPool.BLANK, type, hidden,
 					StringPool.BLANK, new ServiceContext()));
 		}
-		catch (Exception e) {
-			throw e;
-		}
 		catch (Throwable t) {
+			if (t instanceof Exception) {
+				throw (Exception)t;
+			}
+
 			throw new Exception(t);
 		}
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(LayoutCreator.class);
-
-	private static final TransactionConfig _transactionConfig =
-		TransactionConfig.Factory.create(
-			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;

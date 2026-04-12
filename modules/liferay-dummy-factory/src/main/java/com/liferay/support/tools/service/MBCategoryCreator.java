@@ -3,9 +3,7 @@ package com.liferay.support.tools.service;
 import com.liferay.message.boards.model.MBCategory;
 import com.liferay.message.boards.service.MBCategoryLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.TransactionConfig;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
+import com.liferay.support.tools.utils.BatchTransaction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,18 +32,13 @@ public class MBCategoryCreator {
 				batchSpec.baseName(), count, i, " ");
 
 			categories.add(
-				TransactionInvokerUtil.invoke(
-					_transactionConfig,
+				BatchTransaction.run(
 					() -> _mbCategoryLocalService.addCategory(
 						null, userId, 0L, name, description, serviceContext)));
 		}
 
 		return categories;
 	}
-
-	private static final TransactionConfig _transactionConfig =
-		TransactionConfig.Factory.create(
-			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private MBCategoryLocalService _mbCategoryLocalService;

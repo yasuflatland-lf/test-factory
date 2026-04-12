@@ -4,9 +4,7 @@ import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.service.MBMessageLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.TransactionConfig;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
+import com.liferay.support.tools.utils.BatchTransaction;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,8 +37,7 @@ public class MBThreadCreator {
 				batchSpec.baseName(), count, i, " ");
 
 			messages.add(
-				TransactionInvokerUtil.invoke(
-					_transactionConfig,
+				BatchTransaction.run(
 					() -> _mbMessageLocalService.addMessage(
 						null, userId, userName, groupId, categoryId, 0L, 0L,
 						subject, body, format, Collections.emptyList(), false,
@@ -49,10 +46,6 @@ public class MBThreadCreator {
 
 		return messages;
 	}
-
-	private static final TransactionConfig _transactionConfig =
-		TransactionConfig.Factory.create(
-			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private MBMessageLocalService _mbMessageLocalService;

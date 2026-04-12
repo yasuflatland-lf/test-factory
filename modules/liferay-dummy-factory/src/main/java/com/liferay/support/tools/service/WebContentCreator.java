@@ -16,9 +16,6 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.TransactionConfig;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -27,6 +24,7 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.support.tools.constants.LDFPortletKeys;
 import com.liferay.support.tools.service.image.ImageRequest;
 import com.liferay.support.tools.service.image.ImageSource;
+import com.liferay.support.tools.utils.BatchTransaction;
 import com.liferay.support.tools.utils.JournalUtils;
 import com.liferay.support.tools.utils.RandomizeContentGenerator;
 
@@ -35,7 +33,6 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -46,69 +43,72 @@ import org.osgi.service.component.annotations.Reference;
 @Component(service = WebContentCreator.class)
 public class WebContentCreator {
 
-	public JSONObject createSimple(
-			long userId, long[] groupIds, BatchSpec spec, String baseArticle,
-			long folderId, String[] locales, boolean neverExpire,
-			boolean neverReview)
+	public JSONObject create(long userId, WebContentBatchSpec spec)
 		throws Throwable {
 
-		int count = spec.count();
-		String baseName = spec.baseName();
+		BatchSpec batch = spec.batch();
+		long[] groupIds = spec.groupIds();
+		long folderId = spec.folderId();
+		String[] locales = spec.locales();
+		boolean neverExpire = spec.neverExpire();
+		boolean neverReview = spec.neverReview();
+		int createContentsType = spec.createContentsType();
+		String baseArticle = spec.baseArticle();
+		int titleWords = spec.titleWords();
+		int totalParagraphs = spec.totalParagraphs();
+		int randomAmount = spec.randomAmount();
+		String linkLists = spec.linkLists();
+		long ddmStructureId = spec.ddmStructureId();
+		long ddmTemplateId = spec.ddmTemplateId();
+
+		int count = batch.count();
+		String baseName = batch.baseName();
 
 		List<PerSiteResult> perSiteResults = new ArrayList<>();
 
-		for (long groupId : groupIds) {
-			PerSiteResult siteResult = _createSimpleForSite(
-				userId, groupId, count, baseName, baseArticle, folderId,
-				locales, neverExpire, neverReview);
+		if (createContentsType == 0) {
+			for (long groupId : groupIds) {
+				PerSiteResult siteResult = _createSimpleForSite(
+					userId, groupId, count, baseName, baseArticle, folderId,
+					locales, neverExpire, neverReview);
 
-			perSiteResults.add(siteResult);
+				perSiteResults.add(siteResult);
+			}
 		}
+		else if (createContentsType == 1) {
+			for (long groupId : groupIds) {
+				PerSiteResult siteResult = _createDummyForSite(
+					userId, groupId, count, baseName, folderId, locales,
+					titleWords, totalParagraphs, randomAmount, linkLists,
+					neverExpire, neverReview);
 
-		return _buildResponse(count, groupIds.length, perSiteResults);
-	}
-
-	public JSONObject createDummy(
-			long userId, long[] groupIds, BatchSpec spec, long folderId,
-			String[] locales, int titleWords, int totalParagraphs,
-			int randomAmount, String linkLists, boolean neverExpire,
-			boolean neverReview)
-		throws Throwable {
-
-		int count = spec.count();
-		String baseName = spec.baseName();
-
-		List<PerSiteResult> perSiteResults = new ArrayList<>();
-
-		for (long groupId : groupIds) {
-			PerSiteResult siteResult = _createDummyForSite(
-				userId, groupId, count, baseName, folderId, locales, titleWords,
-				totalParagraphs, randomAmount, linkLists, neverExpire,
-				neverReview);
-
-			perSiteResults.add(siteResult);
+				perSiteResults.add(siteResult);
+			}
 		}
+		else if (createContentsType == 2) {
+			if (ddmStructureId <= 0) {
+				throw new IllegalArgumentException(
+					"ddmStructureId must be a positive number");
+			}
 
-		return _buildResponse(count, groupIds.length, perSiteResults);
-	}
+			if (ddmTemplateId <= 0) {
+				throw new IllegalArgumentException(
+					"ddmTemplateId must be a positive number");
+			}
 
-	public JSONObject createWithStructureTemplate(
-			long userId, long[] groupIds, BatchSpec spec, long folderId,
-			String[] locales, long ddmStructureId, long ddmTemplateId,
-			boolean neverExpire, boolean neverReview)
-		throws Throwable {
+			for (long groupId : groupIds) {
+				PerSiteResult siteResult =
+					_createWithStructureTemplateForSite(
+						userId, groupId, count, baseName, folderId, locales,
+						ddmStructureId, ddmTemplateId, neverExpire,
+						neverReview);
 
-		int count = spec.count();
-		String baseName = spec.baseName();
-
-		List<PerSiteResult> perSiteResults = new ArrayList<>();
-
-		for (long groupId : groupIds) {
-			PerSiteResult siteResult = _createWithStructureTemplateForSite(
-				userId, groupId, count, baseName, folderId, locales,
-				ddmStructureId, ddmTemplateId, neverExpire, neverReview);
-
-			perSiteResults.add(siteResult);
+				perSiteResults.add(siteResult);
+			}
+		}
+		else {
+			throw new IllegalArgumentException(
+				"Unknown createContentsType: " + createContentsType);
 		}
 
 		return _buildResponse(count, groupIds.length, perSiteResults);
@@ -212,8 +212,7 @@ public class WebContentCreator {
 			titleMap.put(defaultLocale, title);
 
 			try {
-				TransactionInvokerUtil.invoke(
-					_transactionConfig,
+				BatchTransaction.run(
 					() -> {
 						String content = _journalUtils.buildFields(
 							groupId, locales, baseArticle);
@@ -297,8 +296,7 @@ public class WebContentCreator {
 			titleMap.put(defaultLocale, titleFinal);
 
 			try {
-				TransactionInvokerUtil.invoke(
-					_transactionConfig,
+				BatchTransaction.run(
 					() -> {
 						String mergedLinks = resolveImageLinks(
 							_randomizeContentGenerator, _imageSource,
@@ -384,8 +382,7 @@ public class WebContentCreator {
 			titleMap.put(defaultLocale, title);
 
 			try {
-				TransactionInvokerUtil.invoke(
-					_transactionConfig,
+				BatchTransaction.run(
 					() -> {
 						String content = _journalUtils.buildFields(
 							groupId, ddmStructure, locales);
@@ -612,10 +609,6 @@ public class WebContentCreator {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		WebContentCreator.class);
-
-	private static final TransactionConfig _transactionConfig =
-		TransactionConfig.Factory.create(
-			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private DDMStructureLocalService _ddmStructureLocalService;

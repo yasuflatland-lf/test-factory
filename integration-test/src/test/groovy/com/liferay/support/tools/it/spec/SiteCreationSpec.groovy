@@ -81,10 +81,10 @@ class SiteCreationSpec extends BaseLiferaySpec {
 		then: 'creator reports success'
 		response.success == true
 		(response.count as Integer) == 3
-		(response.sites as List)?.size() == 3
+		(response.items as List)?.size() == 3
 
 		when: 'collect created site ids for JSONWS verification'
-		List<Long> groupIds = (response.sites as List).collect {
+		List<Long> groupIds = (response.items as List).collect {
 			(it as Map).groupId as Long
 		}
 		createdSiteIds.addAll(groupIds)
@@ -115,7 +115,7 @@ class SiteCreationSpec extends BaseLiferaySpec {
 		(response.count as Integer) == 2
 
 		when: 'collect created site ids for JSONWS verification'
-		List<Long> groupIds = (response.sites as List).collect {
+		List<Long> groupIds = (response.items as List).collect {
 			(it as Map).groupId as Long
 		}
 		createdSiteIds.addAll(groupIds)
@@ -167,7 +167,7 @@ class SiteCreationSpec extends BaseLiferaySpec {
 		(response.count as Integer) == 1
 
 		when: 'collect created site id and prototype uuids from the response'
-		Map created = (response.sites as List).first() as Map
+		Map created = (response.items as List).first() as Map
 		Long createdGroupId = created.groupId as Long
 		createdSiteIds << createdGroupId
 
@@ -206,7 +206,7 @@ class SiteCreationSpec extends BaseLiferaySpec {
 		// SiteCreator echoes back inheritContent and parentGroupId so we do
 		// not need to round-trip through /api/jsonws/group/get-group, which
 		// would not expose inheritContent on the default Group JSON view.
-		Map created = (response.sites as List).first() as Map
+		Map created = (response.items as List).first() as Map
 		Long childGroupId = created.groupId as Long
 		createdSiteIds << childGroupId
 

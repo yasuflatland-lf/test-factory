@@ -73,7 +73,7 @@ public class MBThreadResourceCommand extends BaseMVCResourceCommand {
 			List<MBMessage> messages = _mbThreadCreator.create(
 				userId, groupId, categoryId, batchSpec, body, format);
 
-			JSONArray created = JSONFactoryUtil.createJSONArray();
+			JSONArray itemsArray = JSONFactoryUtil.createJSONArray();
 
 			for (MBMessage message : messages) {
 				JSONObject threadJson = JSONFactoryUtil.createJSONObject();
@@ -82,12 +82,25 @@ public class MBThreadResourceCommand extends BaseMVCResourceCommand {
 				threadJson.put("subject", message.getSubject());
 				threadJson.put("threadId", message.getThreadId());
 
-				created.put(threadJson);
+				itemsArray.put(threadJson);
 			}
 
-			responseJson.put("count", created.length());
-			responseJson.put("success", true);
-			responseJson.put("threads", created);
+			int requested = batchSpec.count();
+			int created = messages.size();
+			boolean success = (created == requested);
+
+			responseJson.put("count", created);
+			responseJson.put("items", itemsArray);
+			responseJson.put("requested", requested);
+			responseJson.put("skipped", 0);
+			responseJson.put("success", success);
+
+			if (!success) {
+				responseJson.put(
+					"error",
+					"Only " + created + " of " + requested +
+						" MB threads were created.");
+			}
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(

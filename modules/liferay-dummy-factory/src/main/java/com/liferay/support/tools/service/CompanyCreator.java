@@ -2,9 +2,7 @@ package com.liferay.support.tools.service;
 
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.service.CompanyLocalService;
-import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.TransactionConfig;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
+import com.liferay.support.tools.utils.BatchTransaction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,8 +24,7 @@ public class CompanyCreator {
 			String prefix = (count > 1) ? String.valueOf(i + 1) : "";
 
 			companies.add(
-				TransactionInvokerUtil.invoke(
-					_transactionConfig,
+				BatchTransaction.run(
 					() -> _companyLocalService.addCompany(
 						null, prefix + webId, prefix + virtualHostname,
 						prefix + mx, maxUsers, active, false, null, null, null,
@@ -36,10 +33,6 @@ public class CompanyCreator {
 
 		return companies;
 	}
-
-	private static final TransactionConfig _transactionConfig =
-		TransactionConfig.Factory.create(
-			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private CompanyLocalService _companyLocalService;

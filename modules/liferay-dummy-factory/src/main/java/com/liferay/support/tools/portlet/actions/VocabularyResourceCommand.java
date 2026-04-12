@@ -66,7 +66,7 @@ public class VocabularyResourceCommand extends BaseMVCResourceCommand {
 			List<AssetVocabulary> vocabularies = _vocabularyCreator.create(
 				userId, groupId, batchSpec);
 
-			JSONArray created = JSONFactoryUtil.createJSONArray();
+			JSONArray itemsArray = JSONFactoryUtil.createJSONArray();
 
 			for (AssetVocabulary vocabulary : vocabularies) {
 				JSONObject vocabularyJson = JSONFactoryUtil.createJSONObject();
@@ -75,12 +75,25 @@ public class VocabularyResourceCommand extends BaseMVCResourceCommand {
 				vocabularyJson.put(
 					"vocabularyId", vocabulary.getVocabularyId());
 
-				created.put(vocabularyJson);
+				itemsArray.put(vocabularyJson);
 			}
 
-			responseJson.put("count", created.length());
-			responseJson.put("vocabularies", created);
-			responseJson.put("success", true);
+			int requested = batchSpec.count();
+			int created = vocabularies.size();
+			boolean success = (created == requested);
+
+			responseJson.put("count", created);
+			responseJson.put("items", itemsArray);
+			responseJson.put("requested", requested);
+			responseJson.put("skipped", 0);
+			responseJson.put("success", success);
+
+			if (!success) {
+				responseJson.put(
+					"error",
+					"Only " + created + " of " + requested +
+						" vocabularies were created.");
+			}
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(

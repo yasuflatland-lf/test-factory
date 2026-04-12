@@ -6,9 +6,7 @@ import com.liferay.message.boards.service.MBMessageLocalService;
 import com.liferay.message.boards.service.MBThreadLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.TransactionConfig;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
+import com.liferay.support.tools.utils.BatchTransaction;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,8 +41,7 @@ public class MBReplyCreator {
 			String subject = "RE: reply " + (i + 1);
 
 			replies.add(
-				TransactionInvokerUtil.invoke(
-					_transactionConfig,
+				BatchTransaction.run(
 					() -> _mbMessageLocalService.addMessage(
 						null, userId, userName, groupId, categoryId, threadId,
 						rootMessageId, subject, body, format,
@@ -54,10 +51,6 @@ public class MBReplyCreator {
 
 		return replies;
 	}
-
-	private static final TransactionConfig _transactionConfig =
-		TransactionConfig.Factory.create(
-			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private MBMessageLocalService _mbMessageLocalService;

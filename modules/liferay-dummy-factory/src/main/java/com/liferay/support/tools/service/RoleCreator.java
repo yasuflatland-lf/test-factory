@@ -9,10 +9,8 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.service.RoleLocalService;
-import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.TransactionConfig;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.support.tools.utils.BatchTransaction;
 
 import java.util.Collections;
 import java.util.Locale;
@@ -48,8 +46,7 @@ public class RoleCreator {
 				LocaleUtil.getDefault(), name);
 
 			try {
-				Role role = TransactionInvokerUtil.invoke(
-					_transactionConfig,
+				Role role = BatchTransaction.run(
 					() -> _roleLocalService.addRole(
 						StringPool.BLANK, userId, null, 0, name, titleMap,
 						descriptionMap, type, null, null));
@@ -70,15 +67,35 @@ public class RoleCreator {
 			}
 		}
 
-		result.put("count", created.length());
-		result.put("roles", created);
-		result.put("skipped", skipped);
-		result.put("success", created.length() > 0);
+		int createdCount = created.length();
+		boolean success = (createdCount == count);
 
-		if (skipped > 0) {
-			result.put(
-				"message",
-				skipped + " role(s) already existed and were skipped");
+		result.put("count", createdCount);
+		result.put("items", created);
+		result.put("requested", count);
+		result.put("skipped", skipped);
+		result.put("success", success);
+
+		if (!success) {
+			String errorMessage;
+
+			if (createdCount == 0) {
+				errorMessage =
+					"No roles were created (all names may already exist)";
+			}
+			else if (skipped > 0) {
+				errorMessage =
+					"Only " + createdCount + " of " + count +
+						" roles were created; " + skipped +
+							" skipped because the name already existed.";
+			}
+			else {
+				errorMessage =
+					"Only " + createdCount + " of " + count +
+						" roles were created.";
+			}
+
+			result.put("error", errorMessage);
 		}
 
 		return result;
@@ -86,10 +103,6 @@ public class RoleCreator {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		RoleCreator.class);
-
-	private static final TransactionConfig _transactionConfig =
-		TransactionConfig.Factory.create(
-			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private RoleLocalService _roleLocalService;

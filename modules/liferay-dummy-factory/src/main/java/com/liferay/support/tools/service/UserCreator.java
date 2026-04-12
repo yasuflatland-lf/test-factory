@@ -16,10 +16,8 @@ import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.TransactionConfig;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.support.tools.utils.BatchTransaction;
 import com.liferay.support.tools.utils.CommonUtil;
 import com.liferay.support.tools.utils.ScreenNameSanitizer;
 
@@ -34,18 +32,30 @@ import org.osgi.service.component.annotations.Reference;
 public class UserCreator {
 
 	public JSONObject create(
-			long creatorUserId, long companyId, BatchSpec batchSpec,
-			String emailDomain, String password,
-			boolean male, String jobTitle, long[] organizationIds,
-			long[] roleIds, long[] userGroupIds,
-			long[] siteRoleIds, long[] orgRoleIds, boolean fakerEnable,
-			String locale, boolean generatePersonalSiteLayouts,
-			long publicLayoutSetPrototypeId, long privateLayoutSetPrototypeId,
-			long[] groupIds)
+			long creatorUserId, long companyId, UserBatchSpec spec)
 		throws Throwable {
 
+		BatchSpec batchSpec = spec.batch();
 		int count = batchSpec.count();
 		String baseName = batchSpec.baseName();
+
+		String emailDomain = spec.emailDomain();
+		String password = spec.password();
+		boolean male = spec.male();
+		String jobTitle = spec.jobTitle();
+		long[] organizationIds = spec.organizationIds();
+		long[] roleIds = spec.roleIds();
+		long[] userGroupIds = spec.userGroupIds();
+		long[] siteRoleIds = spec.siteRoleIds();
+		long[] orgRoleIds = spec.orgRoleIds();
+		boolean fakerEnable = spec.fakerEnable();
+		String locale = spec.locale();
+		boolean generatePersonalSiteLayouts =
+			spec.generatePersonalSiteLayouts();
+		long publicLayoutSetPrototypeId = spec.publicLayoutSetPrototypeId();
+		long privateLayoutSetPrototypeId =
+			spec.privateLayoutSetPrototypeId();
+		long[] groupIds = spec.groupIds();
 
 		if (!fakerEnable) {
 			String normalizedBaseName = baseName.toLowerCase();
@@ -94,8 +104,7 @@ public class UserCreator {
 			User user;
 
 			try {
-				user = TransactionInvokerUtil.invoke(
-					_transactionConfig,
+				user = BatchTransaction.run(
 					() -> {
 						User u = _userLocalService.addUserWithWorkflow(
 							creatorUserId, companyId, false, password,
@@ -226,7 +235,7 @@ public class UserCreator {
 		result.put("requested", count);
 		result.put("skipped", skippedDuplicates);
 		result.put("success", success);
-		result.put("users", created);
+		result.put("items", created);
 
 		if (!success) {
 			if (created.length() == 0) {
@@ -243,6 +252,12 @@ public class UserCreator {
 							" skipped because the screen name already " +
 								"existed.");
 			}
+			else {
+				result.put(
+					"error",
+					"Only " + created.length() + " of " + count +
+						" users were created.");
+			}
 		}
 
 		return result;
@@ -250,10 +265,6 @@ public class UserCreator {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		UserCreator.class);
-
-	private static final TransactionConfig _transactionConfig =
-		TransactionConfig.Factory.create(
-			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private CommonUtil _commonUtil;

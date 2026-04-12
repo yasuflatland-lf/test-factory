@@ -138,7 +138,7 @@ class UserRoleAssignmentSpec extends BaseLiferaySpec {
 
 		when: 'extract userId from portlet API response'
 		def apiJson = new JsonSlurper().parseText(apiResponseBody) as Map
-		def firstUser = (apiJson.users as List)?.first() as Map
+		def firstUser = (apiJson.items as List)?.first() as Map
 		createdUserId = Long.parseLong(firstUser.userId as String)
 
 		and: 'fetch the user by id via JSONWS (DB-backed)'
