@@ -17,6 +17,8 @@
 <portlet:resourceURL id="/ldf/data" var="dataResourceURL" />
 <portlet:resourceURL id="/ldf/progress" var="progressResourceURL" />
 
+<script src="/o/js/language/<%= themeDisplay.getLanguageId() %>/liferay-dummy-factory/all.js"></script>
+
 <react:component
 	module="{App} from liferay-dummy-factory"
 	props='<%=
