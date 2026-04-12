@@ -16,9 +16,6 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.TransactionConfig;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -27,6 +24,7 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.support.tools.constants.LDFPortletKeys;
 import com.liferay.support.tools.service.image.ImageRequest;
 import com.liferay.support.tools.service.image.ImageSource;
+import com.liferay.support.tools.utils.BatchTransaction;
 import com.liferay.support.tools.utils.JournalUtils;
 import com.liferay.support.tools.utils.RandomizeContentGenerator;
 
@@ -212,8 +210,7 @@ public class WebContentCreator {
 			titleMap.put(defaultLocale, title);
 
 			try {
-				TransactionInvokerUtil.invoke(
-					_transactionConfig,
+				BatchTransaction.run(
 					() -> {
 						String content = _journalUtils.buildFields(
 							groupId, locales, baseArticle);
@@ -297,8 +294,7 @@ public class WebContentCreator {
 			titleMap.put(defaultLocale, titleFinal);
 
 			try {
-				TransactionInvokerUtil.invoke(
-					_transactionConfig,
+				BatchTransaction.run(
 					() -> {
 						String mergedLinks = resolveImageLinks(
 							_randomizeContentGenerator, _imageSource,
@@ -384,8 +380,7 @@ public class WebContentCreator {
 			titleMap.put(defaultLocale, title);
 
 			try {
-				TransactionInvokerUtil.invoke(
-					_transactionConfig,
+				BatchTransaction.run(
 					() -> {
 						String content = _journalUtils.buildFields(
 							groupId, ddmStructure, locales);
@@ -612,10 +607,6 @@ public class WebContentCreator {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		WebContentCreator.class);
-
-	private static final TransactionConfig _transactionConfig =
-		TransactionConfig.Factory.create(
-			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private DDMStructureLocalService _ddmStructureLocalService;

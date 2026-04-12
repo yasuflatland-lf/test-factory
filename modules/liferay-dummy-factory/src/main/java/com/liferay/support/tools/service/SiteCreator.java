@@ -14,11 +14,9 @@ import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.TransactionConfig;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.sites.kernel.util.Sites;
+import com.liferay.support.tools.utils.BatchTransaction;
 
 import java.util.Collections;
 import java.util.Locale;
@@ -61,8 +59,7 @@ public class SiteCreator {
 				LocaleUtil.getDefault(), siteName);
 
 			try {
-				Group group = TransactionInvokerUtil.invoke(
-					_transactionConfig,
+				Group group = BatchTransaction.run(
 					() -> {
 						Group newGroup = _groupLocalService.addGroup(
 							userId, parentGroupId, null, 0,
@@ -146,10 +143,6 @@ public class SiteCreator {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		SiteCreator.class);
-
-	private static final TransactionConfig _transactionConfig =
-		TransactionConfig.Factory.create(
-			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private GroupLocalService _groupLocalService;

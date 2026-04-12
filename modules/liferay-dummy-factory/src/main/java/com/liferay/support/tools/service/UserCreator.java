@@ -16,10 +16,8 @@ import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.TransactionConfig;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.support.tools.utils.BatchTransaction;
 import com.liferay.support.tools.utils.CommonUtil;
 import com.liferay.support.tools.utils.ScreenNameSanitizer;
 
@@ -94,8 +92,7 @@ public class UserCreator {
 			User user;
 
 			try {
-				user = TransactionInvokerUtil.invoke(
-					_transactionConfig,
+				user = BatchTransaction.run(
 					() -> {
 						User u = _userLocalService.addUserWithWorkflow(
 							creatorUserId, companyId, false, password,
@@ -250,10 +247,6 @@ public class UserCreator {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		UserCreator.class);
-
-	private static final TransactionConfig _transactionConfig =
-		TransactionConfig.Factory.create(
-			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private CommonUtil _commonUtil;

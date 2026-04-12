@@ -12,10 +12,8 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.TransactionConfig;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.support.tools.utils.BatchTransaction;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -91,8 +89,7 @@ public class LayoutCreator {
 		throws Exception {
 
 		try {
-			return TransactionInvokerUtil.invoke(
-				_transactionConfig,
+			return BatchTransaction.run(
 				() -> _layoutLocalService.addLayout(
 					StringPool.BLANK, userId, groupId, privateLayout,
 					LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, name,
@@ -108,10 +105,6 @@ public class LayoutCreator {
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(LayoutCreator.class);
-
-	private static final TransactionConfig _transactionConfig =
-		TransactionConfig.Factory.create(
-			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;

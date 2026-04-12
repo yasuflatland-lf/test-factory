@@ -3,10 +3,9 @@ package com.liferay.support.tools.service;
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.TransactionConfig;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+
+import com.liferay.support.tools.utils.BatchTransaction;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,8 +39,7 @@ public class CategoryCreator {
 				LocaleUtil.getDefault(), name);
 
 			categories.add(
-				TransactionInvokerUtil.invoke(
-					_transactionConfig,
+				BatchTransaction.run(
 					() -> _assetCategoryLocalService.addCategory(
 						null, userId, groupId, 0L, titleMap,
 						Collections.emptyMap(), vocabularyId, new String[0],
@@ -50,10 +48,6 @@ public class CategoryCreator {
 
 		return categories;
 	}
-
-	private static final TransactionConfig _transactionConfig =
-		TransactionConfig.Factory.create(
-			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private AssetCategoryLocalService _assetCategoryLocalService;

@@ -8,9 +8,7 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.service.OrganizationLocalService;
-import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.TransactionConfig;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
+import com.liferay.support.tools.utils.BatchTransaction;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -34,8 +32,7 @@ public class OrganizationCreator {
 			final String name = BatchNaming.resolve(baseName, count, i, " ");
 
 			try {
-				Organization organization = TransactionInvokerUtil.invoke(
-					_transactionConfig,
+				Organization organization = BatchTransaction.run(
 					() -> _organizationLocalService.addOrganization(
 						userId, parentOrganizationId, name, site));
 
@@ -82,10 +79,6 @@ public class OrganizationCreator {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		OrganizationCreator.class);
-
-	private static final TransactionConfig _transactionConfig =
-		TransactionConfig.Factory.create(
-			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private OrganizationLocalService _organizationLocalService;

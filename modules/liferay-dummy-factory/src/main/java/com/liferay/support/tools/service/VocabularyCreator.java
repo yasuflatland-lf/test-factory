@@ -3,9 +3,7 @@ package com.liferay.support.tools.service;
 import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.service.AssetVocabularyLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.TransactionConfig;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
+import com.liferay.support.tools.utils.BatchTransaction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,18 +31,13 @@ public class VocabularyCreator {
 				batchSpec.baseName(), count, i, " ");
 
 			vocabularies.add(
-				TransactionInvokerUtil.invoke(
-					_transactionConfig,
+				BatchTransaction.run(
 					() -> _assetVocabularyLocalService.addVocabulary(
 						userId, groupId, name, serviceContext)));
 		}
 
 		return vocabularies;
 	}
-
-	private static final TransactionConfig _transactionConfig =
-		TransactionConfig.Factory.create(
-			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private AssetVocabularyLocalService _assetVocabularyLocalService;
