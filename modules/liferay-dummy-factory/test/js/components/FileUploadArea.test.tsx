@@ -20,6 +20,7 @@ function renderComponent(
 ) {
 	const props: React.ComponentProps<typeof FileUploadArea> = {
 		groupId: '20121',
+		label: 'upload-template-files',
 		onChange: vi.fn(),
 		testId: 'file-upload',
 		uploadURL: '/o/ldf/upload',
