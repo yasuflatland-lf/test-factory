@@ -2,6 +2,8 @@
 
 A Liferay Portal 7.4 (CE GA132) workspace featuring a portlet built with MVCPortlet + React, along with Testcontainers-based integration tests.
 
+> For development rules and contracts, start with [`CLAUDE.md`](CLAUDE.md) and the task-based files under [`.claude/rules/`](.claude/rules/). Concrete details live under [`docs/details/`](docs/details/), and architectural decisions in [`docs/ADR/`](docs/ADR/).
+
 ## Project Structure
 
 ```
