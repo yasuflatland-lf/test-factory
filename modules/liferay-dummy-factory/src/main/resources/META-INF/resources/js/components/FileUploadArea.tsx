@@ -2,6 +2,7 @@ import {useState} from 'react';
 
 interface FileUploadAreaProps {
 	groupId: string;
+	label: string;
 	onChange: (name: string, value: string) => void;
 	testId?: string;
 	uploadURL: string;
@@ -10,7 +11,7 @@ interface FileUploadAreaProps {
 
 const FIELD_NAME = 'uploadedFiles';
 
-function FileUploadArea({groupId, onChange, testId, uploadURL, value}: FileUploadAreaProps) {
+function FileUploadArea({groupId, label, onChange, testId, uploadURL, value}: FileUploadAreaProps) {
 	const [uploadingNames, setUploadingNames] = useState<string[]>([]);
 	const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -147,7 +148,7 @@ function FileUploadArea({groupId, onChange, testId, uploadURL, value}: FileUploa
 	return (
 		<div className="form-group">
 			<label htmlFor="ldf-file-upload-area">
-				{Liferay.Language.get('upload-template-files')}
+				{Liferay.Language.get(label)}
 			</label>
 
 			<input

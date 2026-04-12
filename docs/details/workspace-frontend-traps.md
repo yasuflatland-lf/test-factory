@@ -18,3 +18,17 @@ Do NOT attempt to collapse them onto a single bundler just for consistency. The 
 - The Vitest run only needs to evaluate ESM modules in jsdom; it never produces an output bundle.
 
 Forcing both onto Vite for "consistency" requires re-implementing the AMD bridge inside Vite plugins, which is strictly more code and more failure modes than the split design.
+
+## J27: `LanguageUtil.process()` replaces string-literal `Liferay.Language.get()` calls at serve-time
+
+**Why:** Liferay's resource serving pipeline applies `LanguageUtil.process()` to JS files, which regex-replaces `Liferay.Language.get('string-literal')` with the resolved value. For module-specific keys not registered via `ResourceBundleLoader`, the key itself becomes the literal — silently breaking i18n. Variable-parameter calls (`Liferay.Language.get(variable)`) are not matched by the regex and survive to runtime.
+
+**What:** Never hardcode module-specific i18n keys as string literals in component code. Pass keys via variables (e.g. `Liferay.Language.get(field.label)` instead of `Liferay.Language.get('upload-template-files')`). If string literals are unavoidable, register a `ResourceBundleLoader` component (`LDFResourceBundleLoader.java`) with `Provide-Capability: liferay.resource.bundle` in `bnd.bnd` to make the module's `Language.properties` globally visible to `LanguageUtil`.
+
+## J28: New `MVCResourceCommand` endpoints require `view.jsp` registration
+
+**Why:** The React frontend resolves resource URLs from `<portlet:resourceURL>` tags rendered in `view.jsp`. Without registration, `LdfResourceClient` (integration tests) and the frontend `postResource` function cannot find the endpoint URL, producing "Could not find resource URL" errors.
+
+**What:** When adding a new `MVCResourceCommand` (e.g. `/ldf/blog`), add both entries to `view.jsp` in the same commit:
+1. `<portlet:resourceURL id="/ldf/blog" var="blogResourceURL" />`
+2. `actionResourceURLs.put("/ldf/blog", blogResourceURL)` in the HashMap initialization

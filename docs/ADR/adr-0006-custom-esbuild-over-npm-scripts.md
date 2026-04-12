@@ -63,9 +63,23 @@ The build script handles four steps sequentially:
 
 A custom esbuild plugin (`liferayReactExternalsPlugin`) redirects `react` and `react-dom` imports to the portal's shared bundles at `../../frontend-js-react-web/__liferay__/exports/react.js`. This prevents React from being duplicated in the browser.
 
-### 4. Handle frontend i18n via JSP ResourceBundle injection
+### 4. Two-mechanism i18n architecture: serve-time replacement + runtime JSP injection
 
-Because the ESM bundle is served as a static resource (bypassing Liferay's `LanguageUtil.process()` server-side replacement), `view.jsp` injects language keys from `portletConfig.getResourceBundle(locale)` into `Liferay.Language._cache` before the React component renders. See the "Frontend i18n loading" section in `.claude/rules/writing-code.md`.
+Liferay's `LanguageUtil.process()` IS applied to the ESM bundle at serve-time. It scans the JavaScript source for `Liferay.Language.get('string-literal')` calls and replaces the string-literal argument with the resolved value from the portal's language bundles. However, for module-specific keys not present in the global language bundle, the replacement resolves to the key itself (the standard Liferay fallback behavior), which is indistinguishable from a missing key.
+
+To make module-specific keys available for serve-time replacement, a `ResourceBundleLoader` must be registered so that the `LanguageResourcesExtender` merges them into the global resolution path (see Decision 5).
+
+Variable-parameter calls such as `Liferay.Language.get(variable)` are not matched by the `LanguageUtil.process()` regex and survive to runtime unchanged. For these calls, `view.jsp` injects language keys from `portletConfig.getResourceBundle(locale)` into `Liferay.Language._cache` before the React component renders, providing runtime resolution.
+
+### 5. Register ResourceBundleLoader for global language key resolution
+
+`LDFResourceBundleLoader.java` registers as an OSGi `@Component(service = ResourceBundleLoader.class)` with properties:
+
+- `bundle.symbolic.name=liferay.dummy.factory`
+- `resource.bundle.base.name=content.Language`
+- `servlet.context.name=liferay-dummy-factory`
+
+`bnd.bnd` declares a `Provide-Capability: liferay.resource.bundle` header with matching attributes. This allows Liferay's `LanguageResourcesExtender` to discover and merge the module's `Language.properties` into the global resolution path, so that `LanguageUtil.process()` can replace string-literal `Liferay.Language.get('module-key')` calls at serve-time.
 
 ## Consequences
 
@@ -79,21 +93,24 @@ Because the ESM bundle is served as a static resource (bypassing Liferay's `Lang
 ### Negative
 
 - **No content-addressed filenames** — output is `__liferay__/index.js` (no hash). Browser caching requires cache-busting via query strings or short TTLs. Acceptable for a development/admin tool
-- **No build-time language key extraction** — `Liferay.Language.get()` calls are left as-is in the bundle. i18n resolution happens at runtime via the JSP injection pattern, not at build time. This means all keys are loaded regardless of whether they're used in the current page
+- **Dual i18n resolution path** — String-literal `Liferay.Language.get('key')` calls are replaced at serve-time by `LanguageUtil.process()`, but variable-parameter calls require runtime resolution via JSP-injected `Liferay.Language._cache`. Developers must understand which mechanism applies to their call site. All keys are injected into the cache at page load regardless of whether they are used
 - **Manual externalization** — only `react` and `react-dom` are externalized. If the portlet imports other portal-global packages in the future, the plugin must be updated manually
 - **No watch mode / HMR** — rebuild requires `./gradlew :modules:liferay-dummy-factory:jar` + container deploy. Acceptable for a tool with infrequent frontend changes
 - **Maintenance burden** — the ~165-line build script must track changes to Liferay's AMD bridge format, manifest schema, or module URL conventions across portal upgrades
 
 ### Lessons Learned
 
-- `LanguageUtil.get(Locale, key)` (used by the language servlet) only checks portal-global language bundles. Module-specific Language.properties keys are invisible to it. Use `portletConfig.getResourceBundle(locale)` for module-scoped keys
-- The language servlet's `all.js` uses ESM `export default` — loading it via `<script>` (non-module) causes a SyntaxError
-- `Liferay.Language._cache` starts empty in the browser. For ESM portlets, the cache must be explicitly populated before React renders
+- `LanguageUtil.process()` replaces `Liferay.Language.get('literal')` at serve-time. Variable parameters (`Liferay.Language.get(variable)`) are not matched by the regex and survive to runtime
+- Module-specific keys require a `ResourceBundleLoader` (e.g. `LDFResourceBundleLoader.java`) plus a `Provide-Capability: liferay.resource.bundle` header in `bnd.bnd` for serve-time replacement. Without this registration, string-literal calls resolve to the key itself (the standard Liferay fallback)
+- JSP injection via `portletConfig.getResourceBundle(locale)` into `Liferay.Language._cache` provides runtime resolution for variable-parameter calls that `LanguageUtil.process()` cannot match
+- Never hardcode module-specific i18n keys as string literals in `Liferay.Language.get()` without first confirming the `ResourceBundleLoader` is registered — if the key is not in the global resolution path, the serve-time replacement silently substitutes the key itself, and debugging the failure requires understanding both resolution mechanisms
 
 ## References
 
 - Custom build script: `modules/liferay-dummy-factory/scripts/build.mjs`
 - AMD bridge format: compare with portal's `modules/frontend-sdk/node-scripts/util/amd/writeMainBridge.mjs`
+- ResourceBundleLoader: `modules/liferay-dummy-factory/src/main/java/com/liferay/support/tools/portlet/LDFResourceBundleLoader.java`
+- bnd.bnd Provide-Capability header: `modules/liferay-dummy-factory/bnd.bnd`
 - Language injection: `modules/liferay-dummy-factory/src/main/resources/META-INF/resources/view.jsp` (lines 20-36)
 - Frontend i18n architecture: `.claude/rules/writing-code.md` § "Frontend i18n loading: JSP-injected ResourceBundle"
 - ADR-0002: Use javax.portlet (3.0) for the Portlet API (related CE 7.4 compatibility decision)

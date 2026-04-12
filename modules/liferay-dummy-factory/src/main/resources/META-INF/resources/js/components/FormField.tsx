@@ -155,6 +155,7 @@ function FormField({
 			<FileUploadArea
 				groupId={groupId}
 				key={field.name}
+				label={field.label}
 				onChange={(name, newValue) => onChange(field.name, newValue)}
 				testId={testId}
 				uploadURL={uploadURL ?? ''}

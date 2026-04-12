@@ -1,6 +1,11 @@
 Bundle-Name: Liferay Dummy Factory Portlet
 Bundle-SymbolicName: liferay.dummy.factory
 Bundle-Version: 1.0.0
+Provide-Capability:\
+	liferay.resource.bundle;\
+		bundle.symbolic.name=liferay.dummy.factory;\
+		resource.bundle.base.name="content.Language";\
+		servlet.context.name=liferay-dummy-factory
 Web-ContextPath: /liferay-dummy-factory
 -dsannotations-options: inherit
 -fixupmessages.mrjar: "Classes found in the wrong directory"

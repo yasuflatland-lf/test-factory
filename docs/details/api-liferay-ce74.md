@@ -94,3 +94,26 @@ The PortletTracker in CE 7.4 GA132 tracks `javax.portlet.Portlet` services, **no
 3. If the bundle imports `jakarta.portlet`, switch the portlet `@Component` to `service = javax.portlet.Portlet.class` and use `javax.portlet` imports.
 
 The corresponding workspace-level decision is recorded in `docs/ADR/adr-0002-portlet-api-javax-namespace.md`.
+
+## 10. `BlogsEntryLocalService.addEntry` auto-deduplicates `urlTitle`
+
+**Why:** Unlike organizations (`DuplicateOrganizationException`) or users (`DuplicateScreenNameException`), blog entries have no title-uniqueness constraint. `BlogsEntryLocalServiceImpl._getUniqueUrlTitle()` via `FriendlyURLEntryLocalService.getUniqueUrlTitle()` automatically appends a numeric suffix on collision (`test`, `test-1`, `test-2`).
+
+**What:** No `DuplicateEntryException` exists for blog titles. The only blog duplicate exception is `DuplicateBlogsEntryExternalReferenceCodeException` (for external reference codes). Creators do not need catch-and-continue duplicate handling for blogs — the `skipped` counter tracks generic per-entity `Exception` catches only.
+
+## 11. JSONWS paths for module-level services use a dot-prefixed context
+
+**Why:** Portal-core services (e.g. `user`, `company`, `role`) use simple paths: `/api/jsonws/user/get-user-by-email-address`. Services from OSGi module JARs (blogs, journal, DDM, etc.) require the module context prefix with a dot separator.
+
+**What:** The JSONWS path pattern for module services is `/<module>.<entity>/method-name`:
+- Blogs: `/api/jsonws/blogs.blogsentry/get-group-entries`
+- Journal: `/api/jsonws/journal.journalarticle/get-articles`
+- DDM: `/api/jsonws/ddm.ddmstructure/get-structures`
+
+The module name matches the `Bundle-SymbolicName` prefix (e.g. `com.liferay.blogs.service` → `blogs`). Omitting the prefix returns HTTP 404.
+
+## 12. `PanelCategoryKeys.CONTROL_PANEL_MARKETPLACE` is not registered in CE 7.4 GA132
+
+**Why:** The constant `PanelCategoryKeys.CONTROL_PANEL_MARKETPLACE` (`"control_panel.marketplace"`) is defined in the `application-list-api` JAR but no `PanelCategory` component implements it on CE 7.4 GA132. Portlets registered under this key are orphaned and invisible.
+
+**What:** The "MARKETPLACE" section visible in the Control Panel UI is rendered under `PanelCategoryKeys.CONTROL_PANEL_APPS` (`"control_panel.apps"`). Existing Marketplace items (Purchased order=100, Store order=200, License Manager order=300) all use `CONTROL_PANEL_APPS`. Use this key with `panel.app.order` lower than 100 to appear first.
