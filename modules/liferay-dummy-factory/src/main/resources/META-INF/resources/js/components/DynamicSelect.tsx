@@ -18,7 +18,7 @@ function DynamicSelect({dataResourceURL, dependsOnValue, error, field, onChange,
 		? {[field.dependsOn.paramName]: dependsOnValue ?? ''}
 		: undefined;
 
-	const {data, loading} = useApiData(dataResourceURL, field.dataSource, extraParams);
+	const {data, error: apiError, loading} = useApiData(dataResourceURL, field.dataSource, extraParams);
 
 	if (field.dependsOn && !dependsOnValue) {
 		return (
@@ -49,6 +49,18 @@ function DynamicSelect({dataResourceURL, dependsOnValue, error, field, onChange,
 				</label>
 
 				<div className="loading-animation loading-animation-sm" />
+			</div>
+		);
+	}
+
+	if (apiError) {
+		return (
+			<div className="form-group">
+				<label htmlFor={field.name}>
+					{Liferay.Language.get(field.label)}
+				</label>
+
+				<div className="alert alert-danger">{apiError}</div>
 			</div>
 		);
 	}

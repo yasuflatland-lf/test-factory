@@ -1,4 +1,4 @@
-# ADR-0003: Use Custom esbuild Pipeline Instead of @liferay/npm-scripts
+# ADR-0006: Use Custom esbuild Pipeline Instead of @liferay/npm-scripts
 
 ## Status
 

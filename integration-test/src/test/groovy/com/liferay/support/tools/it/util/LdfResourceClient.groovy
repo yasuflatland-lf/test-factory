@@ -122,6 +122,10 @@ class LdfResourceClient implements Closeable {
 		return post('/ldf/wcm', fields)
 	}
 
+	Map createBlog(Map<String, Object> fields) {
+		return post('/ldf/blog', fields)
+	}
+
 	/**
 	 * Forces the internal login / password-change flow without invoking any
 	 * MVC resource command. Callers that need to prime the admin password to

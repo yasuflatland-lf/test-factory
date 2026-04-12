@@ -74,7 +74,7 @@ import javax.portlet.Portlet;
 
 ### Negative
 
-- The "use `jakarta.portlet`" rule in `.claude/rules/code-conventions.md` does not apply to CE 7.4 GA132. This rule only becomes valid for DXP 2024+ / CE GA120+ once the corresponding `release.portal.api` provides the jakarta namespace
+- The "use `jakarta.portlet`" rule in `.claude/rules/writing-code.md` does not apply to CE 7.4 GA132. This rule only becomes valid for DXP 2024+ / CE GA120+ once the corresponding `release.portal.api` provides the jakarta namespace
 
 ### Lessons Learned: Debugging Methodology
 
