@@ -185,6 +185,10 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 		<div className="sheet">
 			<div className="sheet-header">
 				<h2>{Liferay.Language.get(config.label)}</h2>
+
+				{config.helpText && (
+					<p className="sheet-text">{Liferay.Language.get(config.helpText)}</p>
+				)}
 			</div>
 
 			<div className="sheet-section">
