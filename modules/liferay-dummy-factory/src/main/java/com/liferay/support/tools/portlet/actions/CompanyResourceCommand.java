@@ -79,9 +79,8 @@ public class CompanyResourceCommand extends BaseMVCResourceCommand {
 			List<Company> companies = _companyCreator.create(
 				count, webId, virtualHostname, mx, maxUsers, active);
 
-			int requested = count;
 			int createdCount = companies.size();
-			boolean success = (createdCount == requested);
+			boolean success = (createdCount == count);
 
 			JSONArray itemsArray = JSONFactoryUtil.createJSONArray();
 
@@ -96,14 +95,14 @@ public class CompanyResourceCommand extends BaseMVCResourceCommand {
 
 			responseJson.put("count", createdCount);
 			responseJson.put("items", itemsArray);
-			responseJson.put("requested", requested);
+			responseJson.put("requested", count);
 			responseJson.put("skipped", 0);
 			responseJson.put("success", success);
 
 			if (!success) {
 				responseJson.put(
 					"error",
-					"Only " + createdCount + " of " + requested +
+					"Only " + createdCount + " of " + count +
 						" companies were created.");
 			}
 		}

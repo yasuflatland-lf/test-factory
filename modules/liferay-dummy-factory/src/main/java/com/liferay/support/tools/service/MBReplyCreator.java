@@ -6,7 +6,6 @@ import com.liferay.message.boards.service.MBMessageLocalService;
 import com.liferay.message.boards.service.MBThreadLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
-
 import com.liferay.support.tools.utils.BatchTransaction;
 
 import java.util.ArrayList;

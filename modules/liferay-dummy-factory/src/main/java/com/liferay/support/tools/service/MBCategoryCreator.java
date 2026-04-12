@@ -3,7 +3,6 @@ package com.liferay.support.tools.service;
 import com.liferay.message.boards.model.MBCategory;
 import com.liferay.message.boards.service.MBCategoryLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
-
 import com.liferay.support.tools.utils.BatchTransaction;
 
 import java.util.ArrayList;

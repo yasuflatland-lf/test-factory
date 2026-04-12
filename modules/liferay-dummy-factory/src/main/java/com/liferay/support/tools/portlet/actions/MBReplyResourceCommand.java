@@ -79,20 +79,19 @@ public class MBReplyResourceCommand extends BaseMVCResourceCommand {
 				itemsArray.put(replyJson);
 			}
 
-			int requested = count;
 			int createdCount = replies.size();
-			boolean success = (createdCount == requested);
+			boolean success = (createdCount == count);
 
 			responseJson.put("count", createdCount);
 			responseJson.put("items", itemsArray);
-			responseJson.put("requested", requested);
+			responseJson.put("requested", count);
 			responseJson.put("skipped", 0);
 			responseJson.put("success", success);
 
 			if (!success) {
 				responseJson.put(
 					"error",
-					"Only " + createdCount + " of " + requested +
+					"Only " + createdCount + " of " + count +
 						" MB replies were created.");
 			}
 		}

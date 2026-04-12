@@ -109,10 +109,11 @@ public class LayoutCreator {
 					StringPool.BLANK, StringPool.BLANK, type, hidden,
 					StringPool.BLANK, new ServiceContext()));
 		}
-		catch (Exception e) {
-			throw e;
-		}
 		catch (Throwable t) {
+			if (t instanceof Exception) {
+				throw (Exception)t;
+			}
+
 			throw new Exception(t);
 		}
 	}
