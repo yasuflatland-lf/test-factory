@@ -1,0 +1,22 @@
+package com.liferay.support.tools.workflow;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+public record WorkflowDefinition(
+	String schemaVersion,
+	String workflowId,
+	Map<String, Object> input,
+	List<WorkflowStepDefinition> steps) {
+
+	public WorkflowDefinition {
+		if ((schemaVersion == null) || schemaVersion.isBlank()) {
+			throw new IllegalArgumentException("schemaVersion is required");
+		}
+
+		input = Map.copyOf(new LinkedHashMap<>(input));
+		steps = List.copyOf(steps);
+	}
+
+}
