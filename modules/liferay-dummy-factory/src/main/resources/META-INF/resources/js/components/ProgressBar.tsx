@@ -9,19 +9,24 @@ function ProgressBar({percent, running, testId}: ProgressBarProps) {
 		return null;
 	}
 
+	const isComplete = percent === 100;
+	const rounded = Math.round(percent);
+
 	return (
 		<div className="sheet-section">
 			<div
-				className="progress"
+				className={`progress-group${isComplete ? ' progress-group-stacked' : ''}`}
 				data-testid={testId}
 			>
-				<div
-					className="progress-bar"
-					role="progressbar"
-					style={{width: `${percent}%`}}
-				>
-					{percent > 0 && `${Math.round(percent)}%`}
+				<div className="progress">
+					<div
+						className={`progress-bar${isComplete ? ' progress-bar-success' : ''}`}
+						role="progressbar"
+						style={{width: `${percent}%`}}
+					/>
 				</div>
+
+				<div className="progress-group-addon">{`${rounded}%`}</div>
 			</div>
 		</div>
 	);
