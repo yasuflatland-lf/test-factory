@@ -20,6 +20,23 @@ function App({actionResourceURLs, dataResourceURL, progressResourceURL}: AppProp
 
 	return (
 		<div className="container-fluid container-fluid-max-xl">
+			<ol className="breadcrumb">
+				<li className="breadcrumb-item">
+					<span className="text-truncate">
+						{Liferay.Language.get('control-panel')}
+					</span>
+				</li>
+				<li className="breadcrumb-item">
+					<span className="text-truncate">
+						{Liferay.Language.get('configuration')}
+					</span>
+				</li>
+				<li className="breadcrumb-item active">
+					<span className="text-truncate">
+						{Liferay.Language.get('liferay-dummy-factory')}
+					</span>
+				</li>
+			</ol>
 			<div className="row">
 				<div className="col-md-2 pr-0">
 					<EntitySelector
