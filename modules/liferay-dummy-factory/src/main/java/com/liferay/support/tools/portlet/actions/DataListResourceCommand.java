@@ -2,6 +2,7 @@ package com.liferay.support.tools.portlet.actions;
 
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
@@ -49,25 +50,40 @@ public class DataListResourceCommand extends BaseMVCResourceCommand {
 
 		DataListProvider provider = _providers.get(type);
 
-		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
-
 		if (provider == null) {
-			_log.warn("Unknown data list type requested: " + type);
-		}
-		else {
-			try {
-				jsonArray = provider.getOptions(
-					companyId, type, httpServletRequest);
-			}
-			catch (Exception exception) {
-				_log.error(
-					"Failed to load data list options for type: " + type,
-					exception);
-			}
+			_log.error("Unknown data list type requested: " + type);
+
+			JSONObject errorResponse = JSONFactoryUtil.createJSONObject();
+
+			errorResponse.put("error", "Unknown data list type: " + type);
+
+			JSONPortletResponseUtil.writeJSON(
+				resourceRequest, resourceResponse, errorResponse);
+
+			return;
 		}
 
-		JSONPortletResponseUtil.writeJSON(
-			resourceRequest, resourceResponse, jsonArray);
+		try {
+			JSONArray jsonArray = provider.getOptions(
+				companyId, type, httpServletRequest);
+
+			JSONPortletResponseUtil.writeJSON(
+				resourceRequest, resourceResponse, jsonArray);
+		}
+		catch (Exception exception) {
+			_log.error(
+				"Failed to load data list options for type: " + type,
+				exception);
+
+			JSONObject errorResponse = JSONFactoryUtil.createJSONObject();
+
+			errorResponse.put(
+				"error",
+				"Failed to load options for type: " + type);
+
+			JSONPortletResponseUtil.writeJSON(
+				resourceRequest, resourceResponse, errorResponse);
+		}
 	}
 
 	@Reference(
