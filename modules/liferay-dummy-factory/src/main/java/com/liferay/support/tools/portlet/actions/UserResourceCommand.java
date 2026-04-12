@@ -13,6 +13,7 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.support.tools.constants.LDFPortletKeys;
 import com.liferay.support.tools.service.BatchSpec;
+import com.liferay.support.tools.service.UserBatchSpec;
 import com.liferay.support.tools.service.UserCreator;
 
 import javax.portlet.ResourceRequest;
@@ -51,54 +52,33 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 
 			BatchSpec batchSpec = ResourceCommandUtil.parseBatchSpec(data);
 
-			String emailDomain = data.getString("emailDomain", "liferay.com");
-
-			if (emailDomain.isEmpty()) {
-				emailDomain = "liferay.com";
-			}
-
-			String password = data.getString("password", "test");
-
-			if (password.isEmpty()) {
-				password = "test";
-			}
-
-			boolean male = data.has("male") ?
-				data.getBoolean("male") : true;
-			String jobTitle = data.getString("jobTitle", "");
-
-			long[] organizationIds = _toLongArray(
-				data.getJSONArray("organizationIds"));
-			long[] roleIds = _toLongArray(data.getJSONArray("roleIds"));
-			long[] userGroupIds = _toLongArray(
-				data.getJSONArray("userGroupIds"));
-			long[] siteRoleIds = _toLongArray(
-				data.getJSONArray("siteRoleIds"));
-			long[] orgRoleIds = _toLongArray(
-				data.getJSONArray("orgRoleIds"));
-
-			boolean fakerEnable = GetterUtil.getBoolean(
-				data.getString("fakerEnable"), false);
-			String locale = GetterUtil.getString(
-				data.getString("locale"), "en_US");
-			boolean generatePersonalSiteLayouts = GetterUtil.getBoolean(
-				data.getString("generatePersonalSiteLayouts"), false);
-			long publicLayoutSetPrototypeId = GetterUtil.getLong(
-				data.getString("publicLayoutSetPrototypeId"), 0L);
-			long privateLayoutSetPrototypeId = GetterUtil.getLong(
-				data.getString("privateLayoutSetPrototypeId"), 0L);
-			long[] groupIds = _toLongArray(data.getJSONArray("groupIds"));
+			UserBatchSpec userBatchSpec = new UserBatchSpec(
+				batchSpec,
+				data.getString("emailDomain"),
+				data.getString("password"),
+				data.has("male") ? data.getBoolean("male") : true,
+				data.getString("jobTitle"),
+				_toLongArray(data.getJSONArray("organizationIds")),
+				_toLongArray(data.getJSONArray("roleIds")),
+				_toLongArray(data.getJSONArray("userGroupIds")),
+				_toLongArray(data.getJSONArray("siteRoleIds")),
+				_toLongArray(data.getJSONArray("orgRoleIds")),
+				GetterUtil.getBoolean(
+					data.getString("fakerEnable"), false),
+				data.getString("locale"),
+				GetterUtil.getBoolean(
+					data.getString("generatePersonalSiteLayouts"), false),
+				GetterUtil.getLong(
+					data.getString("publicLayoutSetPrototypeId"), 0L),
+				GetterUtil.getLong(
+					data.getString("privateLayoutSetPrototypeId"), 0L),
+				_toLongArray(data.getJSONArray("groupIds")));
 
 			long userId = _portal.getUserId(resourceRequest);
 			long companyId = _portal.getCompanyId(resourceRequest);
 
 			responseJson = _userCreator.create(
-				userId, companyId, batchSpec,
-				emailDomain, password, male, jobTitle,
-				organizationIds, roleIds, userGroupIds,
-				siteRoleIds, orgRoleIds, fakerEnable, locale,
-				generatePersonalSiteLayouts, publicLayoutSetPrototypeId,
-				privateLayoutSetPrototypeId, groupIds);
+				userId, companyId, userBatchSpec);
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(

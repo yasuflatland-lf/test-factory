@@ -32,18 +32,30 @@ import org.osgi.service.component.annotations.Reference;
 public class UserCreator {
 
 	public JSONObject create(
-			long creatorUserId, long companyId, BatchSpec batchSpec,
-			String emailDomain, String password,
-			boolean male, String jobTitle, long[] organizationIds,
-			long[] roleIds, long[] userGroupIds,
-			long[] siteRoleIds, long[] orgRoleIds, boolean fakerEnable,
-			String locale, boolean generatePersonalSiteLayouts,
-			long publicLayoutSetPrototypeId, long privateLayoutSetPrototypeId,
-			long[] groupIds)
+			long creatorUserId, long companyId, UserBatchSpec spec)
 		throws Throwable {
 
+		BatchSpec batchSpec = spec.batch();
 		int count = batchSpec.count();
 		String baseName = batchSpec.baseName();
+
+		String emailDomain = spec.emailDomain();
+		String password = spec.password();
+		boolean male = spec.male();
+		String jobTitle = spec.jobTitle();
+		long[] organizationIds = spec.organizationIds();
+		long[] roleIds = spec.roleIds();
+		long[] userGroupIds = spec.userGroupIds();
+		long[] siteRoleIds = spec.siteRoleIds();
+		long[] orgRoleIds = spec.orgRoleIds();
+		boolean fakerEnable = spec.fakerEnable();
+		String locale = spec.locale();
+		boolean generatePersonalSiteLayouts =
+			spec.generatePersonalSiteLayouts();
+		long publicLayoutSetPrototypeId = spec.publicLayoutSetPrototypeId();
+		long privateLayoutSetPrototypeId =
+			spec.privateLayoutSetPrototypeId();
+		long[] groupIds = spec.groupIds();
 
 		if (!fakerEnable) {
 			String normalizedBaseName = baseName.toLowerCase();
