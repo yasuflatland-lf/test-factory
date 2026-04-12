@@ -40,6 +40,7 @@ class BlogsFunctionalSpec extends BaseLiferaySpec {
 	}
 
 	def cleanupSpec() {
+		// withReuse(false) starts a fresh container per run; no cleanup needed.
 		ldf?.close()
 	}
 
