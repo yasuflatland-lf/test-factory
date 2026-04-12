@@ -25,22 +25,22 @@ function runValidator(value: string, validator: Validator): string | null {
 	switch (validator.type) {
 		case 'digits':
 			if (value && !/^\d+$/.test(value)) {
-				return validator.message;
+				return Liferay.Language.get(validator.message);
 			}
 			break;
 		case 'min':
 			if (validator.value !== undefined && Number(value) < validator.value) {
-				return validator.message;
+				return Liferay.Language.get(validator.message);
 			}
 			break;
 		case 'max':
 			if (validator.value !== undefined && Number(value) > validator.value) {
-				return validator.message;
+				return Liferay.Language.get(validator.message);
 			}
 			break;
 		case 'required':
 			if (!value.trim()) {
-				return validator.message;
+				return Liferay.Language.get(validator.message);
 			}
 			break;
 	}
