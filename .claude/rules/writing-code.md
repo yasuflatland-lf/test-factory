@@ -130,6 +130,27 @@ The backend/frontend error field name is `error` — not `errorMessage`, `messag
 
 **Adding a key**: always add the entry to `Language.properties` in the same commit that introduces the `Liferay.Language.get('...')` call.
 
+### Frontend i18n loading: JSP-injected ResourceBundle
+
+**Why:** Custom ESM builds (esbuild/Vite via `scripts/build.mjs`) bypass Liferay's `LanguageUtil.process()` server-side JS replacement. Standard `@liferay/npm-bundler` portlets get `Liferay.Language.get('key')` calls rewritten to literal values at serve-time by `BuiltInJSModuleServlet`. Custom ESM bundles are served as static resources via the OSGi HTTP Whiteboard — no rewriting occurs, so `Liferay.Language._cache` starts empty and every `get()` call returns the raw key.
+
+**What:** `view.jsp` injects the portlet's own ResourceBundle into `Liferay.Language._cache` before `<react:component>` renders. Use `portletConfig.getResourceBundle(locale)` — NOT `LanguageUtil.get(Locale, key)`, which only checks portal-global bundles and misses module-specific keys.
+
+```jsp
+<%
+ResourceBundle resourceBundle = portletConfig.getResourceBundle(locale);
+JSONObject languageKeys = JSONFactoryUtil.createJSONObject();
+Enumeration<String> enumeration = resourceBundle.getKeys();
+while (enumeration.hasMoreElements()) {
+	String key = enumeration.nextElement();
+	languageKeys.put(key, resourceBundle.getString(key));
+}
+%>
+<script>
+	Object.assign(Liferay.Language._cache, <%= languageKeys.toJSONString() %>);
+</script>
+```
+
 ### Playwright selector strategy
 
 - Priority: `getByRole` → `aria-label` (i18n-stable only) → `data-testid`.
