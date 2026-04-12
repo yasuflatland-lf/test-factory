@@ -20,7 +20,7 @@ function ProgressBar({percent, running, testId}: ProgressBarProps) {
 			>
 				<div className="progress">
 					<div
-						className={`progress-bar${isComplete ? ' progress-bar-success' : ''}`}
+						className={`progress-bar${isComplete ? ' progress-bar-success' : ' progress-bar-animated'}`}
 						role="progressbar"
 						style={{width: `${percent}%`}}
 					/>
