@@ -67,7 +67,7 @@ class BlogsFunctionalSpec extends BaseLiferaySpec {
 	def 'created entries exist in Liferay via JSONWS'() {
 		when: 'query blog entries from Guest site via JSONWS'
 		def entries = jsonwsGet(
-			'/api/jsonws/blogsentry/get-group-entries' +
+			'/api/jsonws/blogs.blogsentry/get-group-entries' +
 			"?groupId=${guestGroupId}&status=0&max=100") as List
 
 		then: 'response is not null'
