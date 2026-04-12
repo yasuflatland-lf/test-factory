@@ -223,7 +223,7 @@ public class UserCreator {
 		result.put("requested", count);
 		result.put("skipped", skippedDuplicates);
 		result.put("success", success);
-		result.put("users", created);
+		result.put("items", created);
 
 		if (!success) {
 			if (created.length() == 0) {
@@ -239,6 +239,12 @@ public class UserCreator {
 						" users were created; " + skippedDuplicates +
 							" skipped because the screen name already " +
 								"existed.");
+			}
+			else {
+				result.put(
+					"error",
+					"Only " + created.length() + " of " + count +
+						" users were created.");
 			}
 		}
 

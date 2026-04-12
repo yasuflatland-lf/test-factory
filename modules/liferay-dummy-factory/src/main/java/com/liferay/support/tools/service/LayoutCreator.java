@@ -61,23 +61,36 @@ public class LayoutCreator {
 		}
 
 		int createdCount = layouts.length();
+		boolean success = (createdCount == count);
 
 		result.put("count", createdCount);
-		result.put("layouts", layouts);
+		result.put("items", layouts);
+		result.put("requested", count);
 		result.put("skipped", skipped);
-		result.put("success", createdCount > 0);
+		result.put("success", success);
 
-		if (createdCount == 0) {
-			result.put(
-				"error",
-				"No layouts were created (all names may be invalid or " +
-					"already exist)");
-		}
+		if (!success) {
+			String errorMessage;
 
-		if (skipped > 0) {
-			result.put(
-				"message",
-				skipped + " layout(s) were skipped");
+			if (createdCount == 0) {
+				errorMessage =
+					"No pages were created (all names may be invalid or " +
+						"already exist)";
+			}
+			else if (skipped > 0) {
+				errorMessage =
+					"Only " + createdCount + " of " + count +
+						" pages were created; " + skipped +
+							" skipped because the name was invalid or " +
+								"already existed.";
+			}
+			else {
+				errorMessage =
+					"Only " + createdCount + " of " + count +
+						" pages were created.";
+			}
+
+			result.put("error", errorMessage);
 		}
 
 		return result;

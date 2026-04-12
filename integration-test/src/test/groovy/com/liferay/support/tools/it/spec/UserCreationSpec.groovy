@@ -75,7 +75,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 
 		then: 'response reports success'
 		response.success == true
-		(response.users as List).size() == count
+		(response.items as List).size() == count
 
 		and: 'each user is discoverable via JSONWS get-user-by-screen-name'
 		String prefix = BASIC_BASE_NAME.toLowerCase()
@@ -111,10 +111,10 @@ class UserCreationSpec extends BaseLiferaySpec {
 
 		then: 'response reports success'
 		response.success == true
-		(response.users as List).size() == count
+		(response.items as List).size() == count
 
 		when: 'fetch each generated user by screen name'
-		List<Map> createdUsers = (response.users as List).collect { it as Map }
+		List<Map> createdUsers = (response.items as List).collect { it as Map }
 
 		List<Map> dbUsers = createdUsers.collect { Map created ->
 			String screenName = created.screenName as String
@@ -141,7 +141,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 		dbUsers.every { Map u -> (u.firstName as String) != FAKER_BASE_NAME }
 
 		and: 'all returned screen names match Liferay-legal characters'
-		(response.users as List).every {
+		(response.items as List).every {
 			(it.screenName as String) ==~ /^[a-z0-9._-]+$/
 		}
 	}
@@ -183,7 +183,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 		response.success == true
 
 		when:
-		Map createdUser = (response.users as List).first() as Map
+		Map createdUser = (response.items as List).first() as Map
 		long userId = createdUser.userId as Long
 		createdUserIds << userId
 
@@ -225,7 +225,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 		response.success == true
 
 		when:
-		Map createdUser = (response.users as List).first() as Map
+		Map createdUser = (response.items as List).first() as Map
 		long userId = createdUser.userId as Long
 		createdUserIds << userId
 
@@ -251,7 +251,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 		response.success == true
 
 		when:
-		Map createdUser = (response.users as List).first() as Map
+		Map createdUser = (response.items as List).first() as Map
 		long userId = createdUser.userId as Long
 		createdUserIds << userId
 
@@ -300,7 +300,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 		response.success == true
 
 		when:
-		Map createdUser = (response.users as List).first() as Map
+		Map createdUser = (response.items as List).first() as Map
 		long userId = createdUser.userId as Long
 		createdUserIds << userId
 

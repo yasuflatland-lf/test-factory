@@ -54,24 +54,35 @@ public class OrganizationCreator {
 		}
 
 		int createdCount = created.length();
+		boolean success = (createdCount == count);
 
 		result.put("count", createdCount);
-		result.put("organizations", created);
+		result.put("items", created);
+		result.put("requested", count);
 		result.put("skipped", skipped);
-		result.put("success", createdCount > 0);
+		result.put("success", success);
 
-		if (createdCount == 0) {
-			result.put(
-				"error",
-				"No organizations were created (all names may " +
-					"already exist)");
-		}
+		if (!success) {
+			String errorMessage;
 
-		if (skipped > 0) {
-			result.put(
-				"message",
-				skipped +
-					" organization(s) already existed and were skipped");
+			if (createdCount == 0) {
+				errorMessage =
+					"No organizations were created (all names may " +
+						"already exist)";
+			}
+			else if (skipped > 0) {
+				errorMessage =
+					"Only " + createdCount + " of " + count +
+						" organizations were created; " + skipped +
+							" skipped because the name already existed.";
+			}
+			else {
+				errorMessage =
+					"Only " + createdCount + " of " + count +
+						" organizations were created.";
+			}
+
+			result.put("error", errorMessage);
 		}
 
 		return result;

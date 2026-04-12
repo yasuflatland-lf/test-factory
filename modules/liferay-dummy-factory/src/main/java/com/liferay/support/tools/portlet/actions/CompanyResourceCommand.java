@@ -79,20 +79,33 @@ public class CompanyResourceCommand extends BaseMVCResourceCommand {
 			List<Company> companies = _companyCreator.create(
 				count, webId, virtualHostname, mx, maxUsers, active);
 
-			JSONArray created = JSONFactoryUtil.createJSONArray();
+			int requested = count;
+			int createdCount = companies.size();
+			boolean success = (createdCount == requested);
+
+			JSONArray itemsArray = JSONFactoryUtil.createJSONArray();
 
 			for (Company company : companies) {
-				JSONObject companyJson = JSONFactoryUtil.createJSONObject();
+				JSONObject itemJson = JSONFactoryUtil.createJSONObject();
 
-				companyJson.put("companyId", company.getCompanyId());
-				companyJson.put("webId", company.getWebId());
+				itemJson.put("companyId", company.getCompanyId());
+				itemJson.put("webId", company.getWebId());
 
-				created.put(companyJson);
+				itemsArray.put(itemJson);
 			}
 
-			responseJson.put("count", created.length());
-			responseJson.put("companies", created);
-			responseJson.put("success", true);
+			responseJson.put("count", createdCount);
+			responseJson.put("items", itemsArray);
+			responseJson.put("requested", requested);
+			responseJson.put("skipped", 0);
+			responseJson.put("success", success);
+
+			if (!success) {
+				responseJson.put(
+					"error",
+					"Only " + createdCount + " of " + requested +
+						" companies were created.");
+			}
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(

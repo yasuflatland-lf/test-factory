@@ -112,17 +112,35 @@ public class DocumentCreator {
 		}
 
 		int createdCount = created.length();
+		boolean success = (createdCount == count);
 
 		result.put("count", createdCount);
-		result.put("documents", created);
+		result.put("items", created);
+		result.put("requested", count);
 		result.put("skipped", skipped);
-		result.put("success", createdCount > 0);
+		result.put("success", success);
 
-		if (createdCount == 0) {
-			result.put(
-				"error",
-				"No documents were created (all titles may already " +
-					"exist or upload sizes were invalid)");
+		if (!success) {
+			String errorMessage;
+
+			if (createdCount == 0) {
+				errorMessage =
+					"No documents were created (all titles may already " +
+						"exist or upload sizes were invalid)";
+			}
+			else if (skipped > 0) {
+				errorMessage =
+					"Only " + createdCount + " of " + count +
+						" documents were created; " + skipped +
+							" skipped because the title already existed.";
+			}
+			else {
+				errorMessage =
+					"Only " + createdCount + " of " + count +
+						" documents were created.";
+			}
+
+			result.put("error", errorMessage);
 		}
 
 		return result;

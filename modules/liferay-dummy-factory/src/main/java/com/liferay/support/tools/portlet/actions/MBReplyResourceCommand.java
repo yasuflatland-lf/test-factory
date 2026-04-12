@@ -67,7 +67,7 @@ public class MBReplyResourceCommand extends BaseMVCResourceCommand {
 			List<MBMessage> replies = _mbReplyCreator.create(
 				userId, threadId, count, body, format);
 
-			JSONArray created = JSONFactoryUtil.createJSONArray();
+			JSONArray itemsArray = JSONFactoryUtil.createJSONArray();
 
 			for (MBMessage reply : replies) {
 				JSONObject replyJson = JSONFactoryUtil.createJSONObject();
@@ -76,12 +76,25 @@ public class MBReplyResourceCommand extends BaseMVCResourceCommand {
 				replyJson.put("messageId", reply.getMessageId());
 				replyJson.put("subject", reply.getSubject());
 
-				created.put(replyJson);
+				itemsArray.put(replyJson);
 			}
 
-			responseJson.put("count", created.length());
-			responseJson.put("replies", created);
-			responseJson.put("success", true);
+			int requested = count;
+			int createdCount = replies.size();
+			boolean success = (createdCount == requested);
+
+			responseJson.put("count", createdCount);
+			responseJson.put("items", itemsArray);
+			responseJson.put("requested", requested);
+			responseJson.put("skipped", 0);
+			responseJson.put("success", success);
+
+			if (!success) {
+				responseJson.put(
+					"error",
+					"Only " + createdCount + " of " + requested +
+						" MB replies were created.");
+			}
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(

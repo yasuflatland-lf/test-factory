@@ -65,7 +65,7 @@ public class MBCategoryResourceCommand extends BaseMVCResourceCommand {
 			List<MBCategory> categories = _mbCategoryCreator.create(
 				userId, groupId, batchSpec, description);
 
-			JSONArray created = JSONFactoryUtil.createJSONArray();
+			JSONArray itemsArray = JSONFactoryUtil.createJSONArray();
 
 			for (MBCategory category : categories) {
 				JSONObject categoryJson = JSONFactoryUtil.createJSONObject();
@@ -73,12 +73,25 @@ public class MBCategoryResourceCommand extends BaseMVCResourceCommand {
 				categoryJson.put("categoryId", category.getCategoryId());
 				categoryJson.put("name", category.getName());
 
-				created.put(categoryJson);
+				itemsArray.put(categoryJson);
 			}
 
-			responseJson.put("categories", created);
-			responseJson.put("count", created.length());
-			responseJson.put("success", true);
+			int requested = batchSpec.count();
+			int created = categories.size();
+			boolean success = (created == requested);
+
+			responseJson.put("count", created);
+			responseJson.put("items", itemsArray);
+			responseJson.put("requested", requested);
+			responseJson.put("skipped", 0);
+			responseJson.put("success", success);
+
+			if (!success) {
+				responseJson.put(
+					"error",
+					"Only " + created + " of " + requested +
+						" MB categories were created.");
+			}
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(
