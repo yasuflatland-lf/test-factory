@@ -6,6 +6,8 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.support.tools.utils.BatchTransaction;
 
@@ -26,6 +28,7 @@ public class BlogsCreator {
 
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		JSONArray created = JSONFactoryUtil.createJSONArray();
+		int skipped = 0;
 
 		ServiceContext serviceContext = new ServiceContext();
 
@@ -38,19 +41,29 @@ public class BlogsCreator {
 			final String title = BatchNaming.resolve(
 				baseName, count, i, " ");
 
-			BlogsEntry entry = BatchTransaction.run(
-				() -> _blogsEntryLocalService.addEntry(
-					userId, title, spec.subtitle(), spec.description(),
-					spec.content(), displayDate, spec.allowPingbacks(),
-					spec.allowTrackbacks(), spec.trackbackURLs(),
-					StringPool.BLANK, null, null, serviceContext));
+			try {
+				BlogsEntry entry = BatchTransaction.run(
+					() -> _blogsEntryLocalService.addEntry(
+						userId, title, spec.subtitle(), spec.description(),
+						spec.content(), displayDate, spec.allowPingbacks(),
+						spec.allowTrackbacks(), spec.trackbackURLs(),
+						StringPool.BLANK, null, null, serviceContext));
 
-			JSONObject entryJson = JSONFactoryUtil.createJSONObject();
+				JSONObject entryJson = JSONFactoryUtil.createJSONObject();
 
-			entryJson.put("entryId", entry.getEntryId());
-			entryJson.put("title", entry.getTitle());
+				entryJson.put("entryId", entry.getEntryId());
+				entryJson.put("title", entry.getTitle());
 
-			created.put(entryJson);
+				created.put(entryJson);
+			}
+			catch (Exception e) {
+				_log.warn(
+					"Blog entry '" + title +
+						"' could not be created, skipping: " +
+							e.getMessage());
+
+				skipped++;
+			}
 		}
 
 		int createdCount = created.length();
@@ -59,18 +72,36 @@ public class BlogsCreator {
 		result.put("count", createdCount);
 		result.put("items", created);
 		result.put("requested", count);
-		result.put("skipped", 0);
+		result.put("skipped", skipped);
 		result.put("success", success);
 
 		if (!success) {
-			result.put(
-				"error",
-				"Only " + createdCount + " of " + count +
-					" blog entries were created.");
+			String errorMessage;
+
+			if (createdCount == 0) {
+				errorMessage =
+					"No blog entries were created (all attempts failed)";
+			}
+			else if (skipped > 0) {
+				errorMessage =
+					"Only " + createdCount + " of " + count +
+						" blog entries were created; " + skipped +
+							" skipped due to errors.";
+			}
+			else {
+				errorMessage =
+					"Only " + createdCount + " of " + count +
+						" blog entries were created.";
+			}
+
+			result.put("error", errorMessage);
 		}
 
 		return result;
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		BlogsCreator.class);
 
 	@Reference
 	private BlogsEntryLocalService _blogsEntryLocalService;
