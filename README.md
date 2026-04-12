@@ -1,24 +1,34 @@
 # liferay-dummy-factory
 
-A Liferay Portal 7.4 (CE GA132) workspace featuring a portlet built with MVCPortlet + React, along with Testcontainers-based integration tests.
+[![Build Status](https://travis-ci.org/yasuflatland-lf/liferay-dummy-factory.svg?branch=master)](https://travis-ci.org/yasuflatland-lf/liferay-dummy-factory)
+[![Coverage Status](https://coveralls.io/repos/github/yasuflatland-lf/liferay-dummy-factory/badge.svg)](https://coveralls.io/github/yasuflatland-lf/liferay-dummy-factory)
+
+Dummy Factory generates dummy data for debugging use. Please don't use this for a production use.
+
+## What does Dummy Factory generate?
+
+* Organizations
+* Sites
+* Pages
+* Users
+* Web Content Articles
+* Documents
+* Message Board (Threads / Categories)
+* Category (Categories / Vocabularies)
+* Wiki
+* Blogs
+* Company
+
+## Required environment
+* Java 21 or above
+* Liferay 7.4 GA1 (Master / Develop branch)
+* Liferay 7.3 GA1 (Master / Develop branch)
+* Liferay 7.2 (Please see 7.2.x branch)
+* Liferay 7.1 (Please see 7.1.x branch)
+* Liferay 7.0 (Please see 7.0.x branch)
 
 > For development rules and contracts, start with [`CLAUDE.md`](CLAUDE.md) and the task-based files under [`.claude/rules/`](.claude/rules/). Concrete details live under [`docs/details/`](docs/details/), and architectural decisions in [`docs/ADR/`](docs/ADR/).
 
-## Project Structure
-
-```
-liferay-dummy-factory/
-├── modules/
-│   └── liferay-dummy-factory/   # OSGi bundle (Portlet + Web)
-│       └── src/main/
-│           ├── java/              # MVCPortlet, MVCResourceCommand, services, constants
-│           └── resources/
-│               └── META-INF/resources/
-│                   └── js/        # React frontend
-├── integration-test/              # Spock + Testcontainers + Playwright
-│   └── src/test/groovy/
-└── .github/workflows/             # CI (GitHub Actions)
-```
 
 ## Tech Stack
 
@@ -30,6 +40,22 @@ liferay-dummy-factory/
 | Build | Gradle 8.5 + Liferay Workspace Plugin 10.1.9 |
 | Testing | Spock 2.4 / Groovy 5.0 / Testcontainers 2.0.4 / Playwright 1.59.0 |
 | Java | JDK 21 |
+
+## Usage
+| Version | Link                                                                                                                                                       | 
+|---------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------| 
+| 7.4     | [https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/master/latest](https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/master/latest) |
+| 7.3     | [https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.3.x/latest](https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.3.x/latest)   | 
+| 7.2     | [https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.2.x/latest](https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.2.x/latest)   | 
+| 7.1     | [https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.1.x/latest](https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.1.x/latest)   | 
+| 7.0     | [https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.0.x/latest](https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.0.x/latest)   | 
+
+1. Download jar file according to the version above and place it int `${liferay-home}/deploy ` 
+1. Start Liferay bundle and login as an administrator.
+1. After the jar is properly installed, navigate to `Control Panel -> System Settings -> Platform -> Thrid party` and enable JQuery.
+1. Reboot the bundle.
+1. Navigate to `Control Panel`, under `Marketplace`, `Dummy Factory` will be found.
+1. Now you are ready to create dummy data! Enjoy!
 
 ## Quick Start (Docker)
 
