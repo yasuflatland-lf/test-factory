@@ -14,6 +14,7 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.support.tools.constants.LDFPortletKeys;
 import com.liferay.support.tools.service.CompanyCreator;
+import com.liferay.support.tools.utils.ProgressManager;
 
 import java.util.List;
 
@@ -47,6 +48,10 @@ public class CompanyResourceCommand extends BaseMVCResourceCommand {
 
 		JSONObject responseJson = JSONFactoryUtil.createJSONObject();
 
+		ProgressManager progressManager = new ProgressManager();
+
+		progressManager.start(resourceRequest);
+
 		try {
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
@@ -77,7 +82,9 @@ public class CompanyResourceCommand extends BaseMVCResourceCommand {
 			}
 
 			List<Company> companies = _companyCreator.create(
-				count, webId, virtualHostname, mx, maxUsers, active);
+				count, webId, virtualHostname, mx, maxUsers, active,
+				(current, total) -> progressManager.trackProgress(
+					current, total));
 
 			int createdCount = companies.size();
 			boolean success = (createdCount == count);
@@ -114,6 +121,9 @@ public class CompanyResourceCommand extends BaseMVCResourceCommand {
 			_log.error("Failed to create companies", throwable);
 
 			ResourceCommandUtil.setErrorResponse(responseJson, throwable);
+		}
+		finally {
+			progressManager.finish();
 		}
 
 		JSONPortletResponseUtil.writeJSON(

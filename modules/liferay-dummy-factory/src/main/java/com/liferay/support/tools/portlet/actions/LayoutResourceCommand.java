@@ -13,6 +13,7 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.support.tools.constants.LDFPortletKeys;
 import com.liferay.support.tools.service.BatchSpec;
 import com.liferay.support.tools.service.LayoutCreator;
+import com.liferay.support.tools.utils.ProgressManager;
 
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
@@ -45,6 +46,9 @@ public class LayoutResourceCommand extends BaseMVCResourceCommand {
 
 		JSONObject responseJson = JSONFactoryUtil.createJSONObject();
 
+		ProgressManager progressManager = new ProgressManager();
+		progressManager.start(resourceRequest);
+
 		try {
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
@@ -66,7 +70,9 @@ public class LayoutResourceCommand extends BaseMVCResourceCommand {
 			long userId = _portal.getUserId(resourceRequest);
 
 			responseJson = _layoutCreator.create(
-				userId, batchSpec, groupId, type, privateLayout, hidden);
+				userId, batchSpec, groupId, type, privateLayout, hidden,
+				(current, total) -> progressManager.trackProgress(
+					current, total));
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(
@@ -76,6 +82,9 @@ public class LayoutResourceCommand extends BaseMVCResourceCommand {
 			_log.error("Failed to create layouts", exception);
 
 			ResourceCommandUtil.setErrorResponse(responseJson, exception);
+		}
+		finally {
+			progressManager.finish();
 		}
 
 		JSONPortletResponseUtil.writeJSON(

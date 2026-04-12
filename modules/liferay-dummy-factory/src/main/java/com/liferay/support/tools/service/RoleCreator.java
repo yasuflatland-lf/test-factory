@@ -11,6 +11,7 @@ import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.support.tools.utils.BatchTransaction;
+import com.liferay.support.tools.utils.ProgressCallback;
 
 import java.util.Collections;
 import java.util.Locale;
@@ -24,7 +25,8 @@ public class RoleCreator {
 
 	public JSONObject create(
 			long userId, BatchSpec batchSpec,
-			RoleType roleType, String description)
+			RoleType roleType, String description,
+			ProgressCallback progress)
 		throws Throwable {
 
 		int count = batchSpec.count();
@@ -65,6 +67,8 @@ public class RoleCreator {
 
 				skipped++;
 			}
+
+			progress.onProgress(i + 1, count);
 		}
 
 		int createdCount = created.length();

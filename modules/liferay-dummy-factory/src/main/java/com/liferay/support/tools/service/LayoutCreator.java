@@ -14,6 +14,7 @@ import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.support.tools.utils.BatchTransaction;
+import com.liferay.support.tools.utils.ProgressCallback;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -23,7 +24,8 @@ public class LayoutCreator {
 
 	public JSONObject create(
 			long userId, BatchSpec batchSpec, long groupId, String type,
-			boolean privateLayout, boolean hidden)
+			boolean privateLayout, boolean hidden,
+			ProgressCallback progress)
 		throws Exception {
 
 		int count = batchSpec.count();
@@ -58,6 +60,8 @@ public class LayoutCreator {
 
 				skipped++;
 			}
+
+			progress.onProgress(i + 1, count);
 		}
 
 		int createdCount = layouts.length();

@@ -9,6 +9,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.support.tools.utils.BatchTransaction;
+import com.liferay.support.tools.utils.ProgressCallback;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -18,7 +19,8 @@ public class OrganizationCreator {
 
 	public JSONObject create(
 			long userId, BatchSpec batchSpec,
-			long parentOrganizationId, boolean site)
+			long parentOrganizationId, boolean site,
+			ProgressCallback progress)
 		throws Throwable {
 
 		int count = batchSpec.count();
@@ -51,6 +53,8 @@ public class OrganizationCreator {
 
 				skipped++;
 			}
+
+			progress.onProgress(i + 1, count);
 		}
 
 		int createdCount = created.length();

@@ -10,6 +10,7 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.support.tools.utils.BatchTransaction;
+import com.liferay.support.tools.utils.ProgressCallback;
 
 import java.util.Date;
 
@@ -19,7 +20,8 @@ import org.osgi.service.component.annotations.Reference;
 @Component(service = BlogsCreator.class)
 public class BlogsCreator {
 
-	public JSONObject create(long userId, BlogsBatchSpec spec)
+	public JSONObject create(
+			long userId, BlogsBatchSpec spec, ProgressCallback progress)
 		throws Throwable {
 
 		BatchSpec batch = spec.batch();
@@ -63,6 +65,8 @@ public class BlogsCreator {
 
 				skipped++;
 			}
+
+			progress.onProgress(i + 1, count);
 		}
 
 		int createdCount = created.length();

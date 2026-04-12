@@ -92,7 +92,7 @@ public class ProgressResourceCommand extends BaseMVCResourceCommand {
 
 	private static final String _DEFAULT_PROGRESS_ID = "COMMON_PROGRESS_ID";
 
-	private static final String _PROGRESS_ID_PARAM = "COMMON_PROGRESS_ID";
+	private static final String _PROGRESS_ID_PARAM = "progressId";
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		ProgressResourceCommand.class);

@@ -7,6 +7,7 @@ import com.liferay.message.boards.service.MBThreadLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.support.tools.utils.BatchTransaction;
+import com.liferay.support.tools.utils.ProgressCallback;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,7 +20,8 @@ import org.osgi.service.component.annotations.Reference;
 public class MBReplyCreator {
 
 	public List<MBMessage> create(
-			long userId, long threadId, int count, String body, String format)
+			long userId, long threadId, int count, String body, String format,
+			ProgressCallback progress)
 		throws Throwable {
 
 		MBThread thread = _mbThreadLocalService.getMBThread(threadId);
@@ -47,6 +49,8 @@ public class MBReplyCreator {
 						rootMessageId, subject, body, format,
 						Collections.emptyList(), false, 0.0, false,
 						serviceContext)));
+
+			progress.onProgress(i + 1, count);
 		}
 
 		return replies;

@@ -13,6 +13,7 @@ import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.TempFileEntryUtil;
 import com.liferay.support.tools.portlet.actions.DocumentUploadResourceCommand;
 import com.liferay.support.tools.utils.BatchTransaction;
+import com.liferay.support.tools.utils.ProgressCallback;
 
 import java.nio.charset.StandardCharsets;
 
@@ -28,7 +29,8 @@ public class DocumentCreator {
 
 	public JSONObject create(
 			long userId, long groupId, BatchSpec spec, long folderId,
-			String description, String[] uploadedFiles)
+			String description, String[] uploadedFiles,
+			ProgressCallback progress)
 		throws Throwable {
 
 		int count = spec.count();
@@ -105,6 +107,8 @@ public class DocumentCreator {
 
 					skipped++;
 				}
+
+				progress.onProgress(i + 1, count);
 			}
 		}
 		finally {

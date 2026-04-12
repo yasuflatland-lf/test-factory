@@ -14,6 +14,7 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.support.tools.constants.LDFPortletKeys;
 import com.liferay.support.tools.service.BatchSpec;
 import com.liferay.support.tools.service.DocumentCreator;
+import com.liferay.support.tools.utils.ProgressManager;
 
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
@@ -45,6 +46,10 @@ public class DocumentResourceCommand extends BaseMVCResourceCommand {
 
 		JSONObject responseJson = JSONFactoryUtil.createJSONObject();
 
+		ProgressManager progressManager = new ProgressManager();
+
+		progressManager.start(resourceRequest);
+
 		try {
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
@@ -70,7 +75,9 @@ public class DocumentResourceCommand extends BaseMVCResourceCommand {
 			try {
 				responseJson = _documentCreator.create(
 					userId, groupId, batchSpec, folderId, description,
-					uploadedFiles);
+					uploadedFiles,
+					(current, total) -> progressManager.trackProgress(
+						current, total));
 			}
 			catch (Throwable throwable) {
 				if (throwable instanceof Error) {
@@ -92,6 +99,9 @@ public class DocumentResourceCommand extends BaseMVCResourceCommand {
 			_log.error("Failed to create documents", exception);
 
 			ResourceCommandUtil.setErrorResponse(responseJson, exception);
+		}
+		finally {
+			progressManager.finish();
 		}
 
 		JSONPortletResponseUtil.writeJSON(

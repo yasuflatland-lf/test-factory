@@ -17,6 +17,7 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.sites.kernel.util.Sites;
 import com.liferay.support.tools.utils.BatchTransaction;
+import com.liferay.support.tools.utils.ProgressCallback;
 
 import java.util.Collections;
 import java.util.Locale;
@@ -33,7 +34,8 @@ public class SiteCreator {
 			SiteMembershipType membershipType, long parentGroupId,
 			long siteTemplateId, boolean manualMembership,
 			boolean inheritContent, boolean active, String description,
-			long publicLayoutSetPrototypeId, long privateLayoutSetPrototypeId)
+			long publicLayoutSetPrototypeId, long privateLayoutSetPrototypeId,
+			ProgressCallback progress)
 		throws Throwable {
 
 		int count = batchSpec.count();
@@ -131,6 +133,8 @@ public class SiteCreator {
 
 				skipped++;
 			}
+
+			progress.onProgress(i + 1, count);
 		}
 
 		int createdCount = created.length();

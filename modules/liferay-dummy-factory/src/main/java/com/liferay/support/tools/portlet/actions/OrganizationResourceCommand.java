@@ -13,6 +13,7 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.support.tools.constants.LDFPortletKeys;
 import com.liferay.support.tools.service.BatchSpec;
 import com.liferay.support.tools.service.OrganizationCreator;
+import com.liferay.support.tools.utils.ProgressManager;
 
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
@@ -45,6 +46,9 @@ public class OrganizationResourceCommand extends BaseMVCResourceCommand {
 
 		JSONObject responseJson = JSONFactoryUtil.createJSONObject();
 
+		ProgressManager progressManager = new ProgressManager();
+		progressManager.start(resourceRequest);
+
 		try {
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
@@ -57,7 +61,9 @@ public class OrganizationResourceCommand extends BaseMVCResourceCommand {
 			long userId = _portal.getUserId(resourceRequest);
 
 			responseJson = _organizationCreator.create(
-				userId, batchSpec, parentOrganizationId, site);
+				userId, batchSpec, parentOrganizationId, site,
+				(current, total) -> progressManager.trackProgress(
+					current, total));
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(
@@ -67,6 +73,9 @@ public class OrganizationResourceCommand extends BaseMVCResourceCommand {
 			_log.error("Failed to create organizations", throwable);
 
 			ResourceCommandUtil.setErrorResponse(responseJson, throwable);
+		}
+		finally {
+			progressManager.finish();
 		}
 
 		JSONPortletResponseUtil.writeJSON(

@@ -14,6 +14,7 @@ import com.liferay.support.tools.constants.LDFPortletKeys;
 import com.liferay.support.tools.service.BatchSpec;
 import com.liferay.support.tools.service.BlogsBatchSpec;
 import com.liferay.support.tools.service.BlogsCreator;
+import com.liferay.support.tools.utils.ProgressManager;
 
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
@@ -46,6 +47,9 @@ public class BlogsResourceCommand extends BaseMVCResourceCommand {
 
 		JSONObject responseJson = JSONFactoryUtil.createJSONObject();
 
+		ProgressManager progressManager = new ProgressManager();
+		progressManager.start(resourceRequest);
+
 		try {
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
@@ -71,7 +75,10 @@ public class BlogsResourceCommand extends BaseMVCResourceCommand {
 				data.getString("userId"),
 				_portal.getUserId(resourceRequest));
 
-			responseJson = _blogsCreator.create(userId, blogsBatchSpec);
+			responseJson = _blogsCreator.create(
+				userId, blogsBatchSpec,
+				(current, total) -> progressManager.trackProgress(
+					current, total));
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(
@@ -81,6 +88,9 @@ public class BlogsResourceCommand extends BaseMVCResourceCommand {
 			_log.error("Failed to create blog entries", throwable);
 
 			ResourceCommandUtil.setErrorResponse(responseJson, throwable);
+		}
+		finally {
+			progressManager.finish();
 		}
 
 		JSONPortletResponseUtil.writeJSON(

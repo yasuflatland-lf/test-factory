@@ -15,6 +15,7 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.support.tools.constants.LDFPortletKeys;
 import com.liferay.support.tools.service.BatchSpec;
 import com.liferay.support.tools.service.MBThreadCreator;
+import com.liferay.support.tools.utils.ProgressManager;
 
 import java.util.List;
 
@@ -48,6 +49,10 @@ public class MBThreadResourceCommand extends BaseMVCResourceCommand {
 
 		JSONObject responseJson = JSONFactoryUtil.createJSONObject();
 
+		ProgressManager progressManager = new ProgressManager();
+
+		progressManager.start(resourceRequest);
+
 		try {
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
@@ -71,7 +76,9 @@ public class MBThreadResourceCommand extends BaseMVCResourceCommand {
 			long userId = _portal.getUserId(resourceRequest);
 
 			List<MBMessage> messages = _mbThreadCreator.create(
-				userId, groupId, categoryId, batchSpec, body, format);
+				userId, groupId, categoryId, batchSpec, body, format,
+				(current, total) -> progressManager.trackProgress(
+					current, total));
 
 			JSONArray itemsArray = JSONFactoryUtil.createJSONArray();
 
@@ -110,6 +117,9 @@ public class MBThreadResourceCommand extends BaseMVCResourceCommand {
 			_log.error("Failed to create MB threads", throwable);
 
 			ResourceCommandUtil.setErrorResponse(responseJson, throwable);
+		}
+		finally {
+			progressManager.finish();
 		}
 
 		JSONPortletResponseUtil.writeJSON(

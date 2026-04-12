@@ -14,6 +14,7 @@ import com.liferay.support.tools.constants.LDFPortletKeys;
 import com.liferay.support.tools.service.BatchSpec;
 import com.liferay.support.tools.service.SiteCreator;
 import com.liferay.support.tools.service.SiteMembershipType;
+import com.liferay.support.tools.utils.ProgressManager;
 
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
@@ -45,6 +46,9 @@ public class SiteResourceCommand extends BaseMVCResourceCommand {
 			httpServletRequest, "data");
 
 		JSONObject responseJson = JSONFactoryUtil.createJSONObject();
+
+		ProgressManager progressManager = new ProgressManager();
+		progressManager.start(resourceRequest);
 
 		try {
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
@@ -78,7 +82,8 @@ public class SiteResourceCommand extends BaseMVCResourceCommand {
 				membershipType, parentGroupId,
 				siteTemplateId, manualMembership,
 				inheritContent, active, description,
-				publicLayoutSetPrototypeId, privateLayoutSetPrototypeId);
+				publicLayoutSetPrototypeId, privateLayoutSetPrototypeId,
+				(current, total) -> progressManager.trackProgress(current, total));
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(
@@ -88,6 +93,9 @@ public class SiteResourceCommand extends BaseMVCResourceCommand {
 			_log.error("Failed to create sites", throwable);
 
 			ResourceCommandUtil.setErrorResponse(responseJson, throwable);
+		}
+		finally {
+			progressManager.finish();
 		}
 
 		JSONPortletResponseUtil.writeJSON(

@@ -15,6 +15,7 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.support.tools.constants.LDFPortletKeys;
 import com.liferay.support.tools.service.BatchSpec;
 import com.liferay.support.tools.service.CategoryCreator;
+import com.liferay.support.tools.utils.ProgressManager;
 
 import java.util.List;
 
@@ -49,6 +50,10 @@ public class CategoryResourceCommand extends BaseMVCResourceCommand {
 
 		JSONObject responseJson = JSONFactoryUtil.createJSONObject();
 
+		ProgressManager progressManager = new ProgressManager();
+
+		progressManager.start(resourceRequest);
+
 		try {
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
@@ -71,7 +76,9 @@ public class CategoryResourceCommand extends BaseMVCResourceCommand {
 			long userId = _portal.getUserId(resourceRequest);
 
 			List<AssetCategory> categories = _categoryCreator.create(
-				userId, groupId, vocabularyId, batchSpec);
+				userId, groupId, vocabularyId, batchSpec,
+				(current, total) -> progressManager.trackProgress(
+					current, total));
 
 			JSONArray itemsArray = JSONFactoryUtil.createJSONArray();
 
@@ -109,6 +116,9 @@ public class CategoryResourceCommand extends BaseMVCResourceCommand {
 			_log.error("Failed to create categories", throwable);
 
 			ResourceCommandUtil.setErrorResponse(responseJson, throwable);
+		}
+		finally {
+			progressManager.finish();
 		}
 
 		JSONPortletResponseUtil.writeJSON(

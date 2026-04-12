@@ -17,6 +17,7 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.support.tools.constants.LDFPortletKeys;
 import com.liferay.support.tools.service.WebContentBatchSpec;
 import com.liferay.support.tools.service.WebContentCreator;
+import com.liferay.support.tools.utils.ProgressManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,6 +54,10 @@ public class WcmResourceCommand extends BaseMVCResourceCommand {
 
 		JSONObject responseJson = JSONFactoryUtil.createJSONObject();
 
+		ProgressManager progressManager = new ProgressManager();
+
+		progressManager.start(resourceRequest);
+
 		try {
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
@@ -87,7 +92,10 @@ public class WcmResourceCommand extends BaseMVCResourceCommand {
 
 			long userId = _portal.getUserId(resourceRequest);
 
-			responseJson = _webContentCreator.create(userId, spec);
+			responseJson = _webContentCreator.create(
+				userId, spec,
+				(current, total) -> progressManager.trackProgress(
+					current, total));
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(
@@ -97,6 +105,9 @@ public class WcmResourceCommand extends BaseMVCResourceCommand {
 			_log.error("Failed to create web contents", throwable);
 
 			ResourceCommandUtil.setErrorResponse(responseJson, throwable);
+		}
+		finally {
+			progressManager.finish();
 		}
 
 		JSONPortletResponseUtil.writeJSON(
