@@ -134,6 +134,18 @@ Authoring rules that emerged from the `ScreenNameSanitizer` work. Not framework 
 
 - **Response-shape assertions should lock the contract, not the current values.** When a Creator's response shape is part of the contract (`success`, `count`, `requested`, `skipped`, `error?`), tests should assert **presence and type** of each field on both success and failure paths, not just the values seen in the happy case. A regression that silently drops the `skipped` field is otherwise undetectable. Add a one-line `response.containsKey('skipped')` check next to the value assertions.
 
+- **Wire format renames require string-literal sweeps, not just dotted-access sweeps.** When a backend response field is renamed (e.g. `"users"` → `"items"`), grepping for `response.users` misses references through other variable names (`apiJson.users`, `apiResponseBody.contains('"users"')`, `body?.contains('"users"')`). The sweep must include the **string literal** form of the old field name as well:
+
+	```bash
+	# Dotted access (catches response.users, apiJson.users, etc.)
+	grep -rn '\.users\b' integration-test/src/test/groovy/
+
+	# String literal (catches contains("users"), put("users"), etc.)
+	grep -rn '"users"' integration-test/src/test/groovy/
+	```
+
+	This is not hypothetical — the `"users"` → `"items"` rename in this project missed `UserFunctionalSpec` (`apiResponseBody.contains('"users"')`) and `UserRoleAssignmentSpec` (`apiJson.users`) because the initial sweep only covered `response.users`.
+
 The Vitest migration gotcha catalogue (Mock typing, RTL cleanup, `vi.mock` hoisting, React double-resolution, ESM `setup.ts`) lives in `docs/details/ui-vitest-gotchas.md`. Read it when bumping the JS test toolchain.
 
 ## Gradle execution and the Incremental Build Trap

@@ -76,7 +76,7 @@ describe('postResource', () => {
 
 		const result = await postResource('/api/resource', {num1: '10'});
 
-		expect(result).toEqual({error: 'Division by zero', success: false});
+		expect(result).toEqual({data: {error: 'Division by zero'}, error: 'Division by zero', success: false});
 	});
 
 	it('returns success false with server error when response.ok is false', async () => {
@@ -88,6 +88,23 @@ describe('postResource', () => {
 		const result = await postResource('/api/resource', {num1: '10'});
 
 		expect(result).toEqual({error: 'Server error: 500', success: false});
+	});
+
+	it('classifies {success: false} without error field as failure', async () => {
+		mockFetch.mockResolvedValueOnce({
+			json: () => Promise.resolve({count: 3, requested: 5, success: false}),
+			ok: true,
+		});
+
+		const result = await postResource('/api/resource', {num1: '10'});
+
+		expect(result.success).toBe(false);
+
+		if (!result.success) {
+			expect(result.error).not.toBe('execution-failed');
+			expect(result.error).toBe('Execution Failed');
+			expect(result.data).toEqual({count: 3, requested: 5, success: false});
+		}
 	});
 });
 
@@ -134,7 +151,7 @@ describe('fetchResource', () => {
 
 		const result = await fetchResource('http://localhost/api/resource');
 
-		expect(result).toEqual({error: 'Not found', success: false});
+		expect(result).toEqual({data: {error: 'Not found'}, error: 'Not found', success: false});
 	});
 
 	it('returns success false with server error when response.ok is false', async () => {
@@ -146,5 +163,22 @@ describe('fetchResource', () => {
 		const result = await fetchResource('http://localhost/api/resource');
 
 		expect(result).toEqual({error: 'Server error: 404', success: false});
+	});
+
+	it('classifies {success: false} without error field as failure', async () => {
+		mockFetch.mockResolvedValueOnce({
+			json: () => Promise.resolve({items: [], success: false}),
+			ok: true,
+		});
+
+		const result = await fetchResource('http://localhost/api/resource');
+
+		expect(result.success).toBe(false);
+
+		if (!result.success) {
+			expect(result.error).not.toBe('execution-failed');
+			expect(result.error).toBe('Execution Failed');
+			expect(result.data).toEqual({items: [], success: false});
+		}
 	});
 });

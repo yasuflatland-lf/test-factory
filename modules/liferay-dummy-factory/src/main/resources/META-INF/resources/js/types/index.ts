@@ -61,4 +61,4 @@ export interface EntityFormConfig {
 
 export type ApiResponse<T = unknown> =
 	| {success: true; data: T}
-	| {success: false; error: string};
+	| {success: false; data?: T; error: string};

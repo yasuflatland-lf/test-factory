@@ -14,8 +14,8 @@ async function parseResponse<T>(response: Response): Promise<ApiResponse<T>> {
 
 	const data = await response.json();
 
-	if (data.error) {
-		return {error: data.error, success: false};
+	if (data.success === false || data.error) {
+		return {data, error: data.error || Liferay.Language.get('execution-failed'), success: false};
 	}
 
 	return {data, success: true};

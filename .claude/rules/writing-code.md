@@ -52,8 +52,17 @@ When a Creator validates input before looping (e.g. a regex check on `baseName`)
 Do NOT wrap validation in `invoke(...)` "for consistency" with per-entity calls — it costs a meaningless null-rollback and hides the contract that input validation happens at the boundary.
 
 - **`BatchTransaction.run(...)` for per-entity transactions** — Every Creator's per-entity call must be wrapped in `com.liferay.support.tools.utils.BatchTransaction.run(() -> ...)` rather than inlining `TransactionInvokerUtil.invoke(_transactionConfig, ...)` with a local `_transactionConfig` field. The helper centralizes the transaction configuration (`Propagation.REQUIRED`, rollback on `Exception.class`) so that a future cross-cutting change (retry, metrics, MDC) can be applied in one place instead of 12+ Creators. Do not re-introduce local `TransactionConfig` fields in new Creators.
-- **Response key for batch items is always `items`** — Every Creator's response JSON uses the key `items` for the array of created entities, regardless of entity type. Do NOT invent entity-specific keys like `"users"`, `"roles"`, `"organizations"`. Exception: `WebContentCreator` uses a per-site multi-group response shape (`ok`/`totalRequested`/`totalCreated`/`perSite`) that cannot be flattened without information loss; this is the only documented exception. The full response contract is `{success, requested, count, skipped, items, error?}` — see the "Batch Creator response contract" bullet for invariants.
+- **Response key for batch items is always `items`** — Every Creator's response JSON uses the key `items` for the array of created entities, regardless of entity type. Do NOT invent entity-specific keys like `"users"`, `"roles"`, `"organizations"`. Exception: `WebContentCreator` uses a per-site multi-group response shape (`ok`/`totalRequested`/`totalCreated`/`perSite`) that cannot be flattened without information loss; this is the only documented exception. The exemption exists because `WebContentCreator` batches across multiple sites (`groupIds`), producing per-site results (`perSite: [{groupId, siteName, created, failed, error}, ...]`). Flattening into a single `items` array would lose per-site failure attribution — the UI could no longer display "Site A succeeded, Site B failed". The full response contract is `{success, requested, count, skipped, items, error?}` — see the "Batch Creator response contract" bullet for invariants.
 - **Typed `*BatchSpec` records absorb per-batch parameters** — When a Creator's method signature grows past ~5 parameters, extract the per-batch configuration into a Java `record` named `*BatchSpec` (e.g. `UserBatchSpec`, `WebContentBatchSpec`). The record composes the shared `BatchSpec(count, baseName)` via a `BatchSpec batch` field rather than inlining count/baseName. The record's compact constructor normalizes nullable/empty inputs to their documented defaults so the `*ResourceCommand` does not need to repeat defensive null checks. Reference implementations: `UserBatchSpec.java`, `WebContentBatchSpec.java`. Creators that currently have ≤5 parameters (e.g. `OrganizationCreator`, `RoleCreator`) should continue to use raw parameters + `BatchSpec` — do not introduce a dedicated spec where it is not needed.
+
+### Contract enforcement: Pattern A vs Pattern B
+
+The responsibility for assembling the unified response contract (`{success, requested, count, skipped, items, error?}`) depends on the Creator's return type:
+
+- **Pattern A** (`JSONObject` return) — the Creator itself builds and returns the contract-conformant JSON. The ResourceCommand passes it through unchanged.
+- **Pattern B** (`List<LiferayModel>` return) — the Creator returns a typed list; the ResourceCommand is responsible for wrapping it into the contract shape.
+
+Do not assume which pattern a Creator follows from its name or from documentation — verify by reading the return type of its `create` method. `CompanyCreator` was historically misclassified as Pattern A in planning documents but actually returns `List<Company>`.
 
 ## Input-boundary policy: reject user input, sanitize external data
 
@@ -74,6 +83,12 @@ Every batch-producing `*Creator` returns:
 - `success` is **strict**: `created == requested`, NOT `created > 0`. Requesting 10 and producing 3 is a **failure**, not a partial success.
 - Whenever `success == false`, `error` MUST be set. Enforce this with an unconditional `else` branch inside the `if (!success)` block so future `continue` paths cannot silently drop the error.
 - `requested` and `skipped` are load-bearing for partial-failure diagnostics — keep them even if the current frontend doesn't consume them.
+
+### Pattern B limitation: `skipped` is structurally untrackable
+
+Pattern B Creators return `List<LiferayModel>` and do not currently use catch-and-continue loops, so `skipped: 0` in the ResourceCommand is accurate today. However, if a future change adds a catch-and-continue path to a Pattern B Creator (e.g. catching `DuplicateException` and skipping), the ResourceCommand has no way to know — it only sees `list.size()` vs `requested` and cannot distinguish "skipped" from "errored".
+
+If catch-and-continue is needed in a Pattern B Creator, convert it to Pattern A (Creator assembles its own `JSONObject` with `skipped` tracking) or change the return type to a result object that carries `count + skipped + items`.
 
 ## `ResourceCommandUtil.setErrorResponse` writes `error` (not `errorMessage`)
 
@@ -114,6 +129,27 @@ The backend/frontend error field name is `error` — not `errorMessage`, `messag
 **Authoring rule**: when writing a Playwright assertion on localized text, assert on the **resolved English phrase** from `Language.properties` (e.g. `"Execution completed successfully."`), never on the key identifier. If your assertion string contains hyphens and matches the key name, it's a code smell — look up the actual value.
 
 **Adding a key**: always add the entry to `Language.properties` in the same commit that introduces the `Liferay.Language.get('...')` call.
+
+### Frontend i18n loading: JSP-injected ResourceBundle
+
+**Why:** Custom ESM builds (esbuild/Vite via `scripts/build.mjs`) bypass Liferay's `LanguageUtil.process()` server-side JS replacement. Standard `@liferay/npm-bundler` portlets get `Liferay.Language.get('key')` calls rewritten to literal values at serve-time by `BuiltInJSModuleServlet`. Custom ESM bundles are served as static resources via the OSGi HTTP Whiteboard — no rewriting occurs, so `Liferay.Language._cache` starts empty and every `get()` call returns the raw key.
+
+**What:** `view.jsp` injects the portlet's own ResourceBundle into `Liferay.Language._cache` before `<react:component>` renders. Use `portletConfig.getResourceBundle(locale)` — NOT `LanguageUtil.get(Locale, key)`, which only checks portal-global bundles and misses module-specific keys.
+
+```jsp
+<%
+ResourceBundle resourceBundle = portletConfig.getResourceBundle(locale);
+JSONObject languageKeys = JSONFactoryUtil.createJSONObject();
+Enumeration<String> enumeration = resourceBundle.getKeys();
+while (enumeration.hasMoreElements()) {
+	String key = enumeration.nextElement();
+	languageKeys.put(key, resourceBundle.getString(key));
+}
+%>
+<script>
+	Object.assign(Liferay.Language._cache, <%= languageKeys.toJSONString() %>);
+</script>
+```
 
 ### Playwright selector strategy
 
