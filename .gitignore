@@ -14,3 +14,4 @@ bin/
 liferay-theme.json
 .claude/plan/
 **/src/main/resources/META-INF/resources/__liferay__/
+coverage/

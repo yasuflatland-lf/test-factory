@@ -5,6 +5,7 @@ import com.liferay.asset.kernel.service.AssetCategoryLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.support.tools.utils.BatchTransaction;
+import com.liferay.support.tools.utils.ProgressCallback;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,7 +20,8 @@ import org.osgi.service.component.annotations.Reference;
 public class CategoryCreator {
 
 	public List<AssetCategory> create(
-			long userId, long groupId, long vocabularyId, BatchSpec batchSpec)
+			long userId, long groupId, long vocabularyId, BatchSpec batchSpec,
+			ProgressCallback progress)
 		throws Throwable {
 
 		int count = batchSpec.count();
@@ -43,6 +45,8 @@ public class CategoryCreator {
 						null, userId, groupId, 0L, titleMap,
 						Collections.emptyMap(), vocabularyId, new String[0],
 						serviceContext)));
+
+			progress.onProgress(i + 1, count);
 		}
 
 		return categories;

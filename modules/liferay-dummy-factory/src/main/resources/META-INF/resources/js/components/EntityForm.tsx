@@ -24,7 +24,7 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 		multiSite?: MultiSiteResult | null;
 		type: 'success' | 'warning' | 'danger';
 	} | null>(null);
-	const {percent, running} = useProgress(progressResourceURL);
+	const {percent, reset, running, start} = useProgress(progressResourceURL);
 
 	const isFieldVisible = (field: FieldDefinition): boolean => {
 		if (!field.visibleWhen) {
@@ -74,6 +74,7 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 
 		startSubmit();
 		setResult(null);
+		start('COMMON_PROGRESS_ID');
 
 		const actionURL = actionResourceURLs[config.actionURL];
 
@@ -83,6 +84,7 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 				type: 'danger',
 			});
 			endSubmit();
+			reset();
 			return;
 		}
 
@@ -100,6 +102,7 @@ function EntityForm({actionResourceURLs, config, dataResourceURL, progressResour
 		const response = await postResource(actionURL, submitValues);
 
 		endSubmit();
+		reset();
 
 		const payload = response.success
 			? ((response.data as unknown) as Partial<MultiSiteResult> | undefined)

@@ -26,6 +26,7 @@ import com.liferay.support.tools.service.image.ImageRequest;
 import com.liferay.support.tools.service.image.ImageSource;
 import com.liferay.support.tools.utils.BatchTransaction;
 import com.liferay.support.tools.utils.JournalUtils;
+import com.liferay.support.tools.utils.ProgressCallback;
 import com.liferay.support.tools.utils.RandomizeContentGenerator;
 
 import java.util.ArrayList;
@@ -36,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -43,7 +45,8 @@ import org.osgi.service.component.annotations.Reference;
 @Component(service = WebContentCreator.class)
 public class WebContentCreator {
 
-	public JSONObject create(long userId, WebContentBatchSpec spec)
+	public JSONObject create(
+			long userId, WebContentBatchSpec spec, ProgressCallback progress)
 		throws Throwable {
 
 		BatchSpec batch = spec.batch();
@@ -64,13 +67,17 @@ public class WebContentCreator {
 		int count = batch.count();
 		String baseName = batch.baseName();
 
+		int totalEntities = count * groupIds.length;
+		AtomicInteger globalIndex = new AtomicInteger(0);
+
 		List<PerSiteResult> perSiteResults = new ArrayList<>();
 
 		if (createContentsType == 0) {
 			for (long groupId : groupIds) {
 				PerSiteResult siteResult = _createSimpleForSite(
 					userId, groupId, count, baseName, baseArticle, folderId,
-					locales, neverExpire, neverReview);
+					locales, neverExpire, neverReview, progress,
+					totalEntities, globalIndex);
 
 				perSiteResults.add(siteResult);
 			}
@@ -80,7 +87,8 @@ public class WebContentCreator {
 				PerSiteResult siteResult = _createDummyForSite(
 					userId, groupId, count, baseName, folderId, locales,
 					titleWords, totalParagraphs, randomAmount, linkLists,
-					neverExpire, neverReview);
+					neverExpire, neverReview, progress, totalEntities,
+					globalIndex);
 
 				perSiteResults.add(siteResult);
 			}
@@ -101,7 +109,7 @@ public class WebContentCreator {
 					_createWithStructureTemplateForSite(
 						userId, groupId, count, baseName, folderId, locales,
 						ddmStructureId, ddmTemplateId, neverExpire,
-						neverReview);
+						neverReview, progress, totalEntities, globalIndex);
 
 				perSiteResults.add(siteResult);
 			}
@@ -181,7 +189,9 @@ public class WebContentCreator {
 	private PerSiteResult _createSimpleForSite(
 		long userId, long groupId, int count, String baseName,
 		String baseArticle, long folderId, String[] locales,
-		boolean neverExpire, boolean neverReview) {
+		boolean neverExpire, boolean neverReview,
+		ProgressCallback progress, int totalEntities,
+		AtomicInteger globalIndex) {
 
 		String siteName = _resolveSiteName(groupId);
 		int created = 0;
@@ -233,6 +243,9 @@ public class WebContentCreator {
 					});
 
 				created++;
+
+				progress.onProgress(
+					globalIndex.incrementAndGet(), totalEntities);
 			}
 			catch (Throwable throwable) {
 				if (throwable instanceof Error) {
@@ -243,6 +256,9 @@ public class WebContentCreator {
 					"Failed to create article " + (i + 1) + " of " + count +
 						" in group " + groupId,
 					throwable);
+
+				progress.onProgress(
+					globalIndex.incrementAndGet(), totalEntities);
 
 				return new PerSiteResult(
 					groupId, siteName, created, count - created,
@@ -256,7 +272,9 @@ public class WebContentCreator {
 	private PerSiteResult _createDummyForSite(
 		long userId, long groupId, int count, String baseName, long folderId,
 		String[] locales, int titleWords, int totalParagraphs, int randomAmount,
-		String linkLists, boolean neverExpire, boolean neverReview) {
+		String linkLists, boolean neverExpire, boolean neverReview,
+		ProgressCallback progress, int totalEntities,
+		AtomicInteger globalIndex) {
 
 		String siteName = _resolveSiteName(groupId);
 		int created = 0;
@@ -326,6 +344,9 @@ public class WebContentCreator {
 					});
 
 				created++;
+
+				progress.onProgress(
+					globalIndex.incrementAndGet(), totalEntities);
 			}
 			catch (Throwable throwable) {
 				if (throwable instanceof Error) {
@@ -336,6 +357,9 @@ public class WebContentCreator {
 					"Failed to create article " + (i + 1) + " of " + count +
 						" in group " + groupId,
 					throwable);
+
+				progress.onProgress(
+					globalIndex.incrementAndGet(), totalEntities);
 
 				return new PerSiteResult(
 					groupId, siteName, created, count - created,
@@ -349,7 +373,9 @@ public class WebContentCreator {
 	private PerSiteResult _createWithStructureTemplateForSite(
 		long userId, long groupId, int count, String baseName, long folderId,
 		String[] locales, long ddmStructureId, long ddmTemplateId,
-		boolean neverExpire, boolean neverReview) {
+		boolean neverExpire, boolean neverReview,
+		ProgressCallback progress, int totalEntities,
+		AtomicInteger globalIndex) {
 
 		String siteName = _resolveSiteName(groupId);
 		int created = 0;
@@ -402,6 +428,9 @@ public class WebContentCreator {
 					});
 
 				created++;
+
+				progress.onProgress(
+					globalIndex.incrementAndGet(), totalEntities);
 			}
 			catch (Throwable throwable) {
 				if (throwable instanceof Error) {
@@ -412,6 +441,9 @@ public class WebContentCreator {
 					"Failed to create article " + (i + 1) + " of " + count +
 						" in group " + groupId,
 					throwable);
+
+				progress.onProgress(
+					globalIndex.incrementAndGet(), totalEntities);
 
 				return new PerSiteResult(
 					groupId, siteName, created, count - created,

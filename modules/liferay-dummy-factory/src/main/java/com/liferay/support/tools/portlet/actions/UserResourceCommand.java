@@ -15,6 +15,8 @@ import com.liferay.support.tools.constants.LDFPortletKeys;
 import com.liferay.support.tools.service.BatchSpec;
 import com.liferay.support.tools.service.UserBatchSpec;
 import com.liferay.support.tools.service.UserCreator;
+import com.liferay.support.tools.utils.ProgressCallback;
+import com.liferay.support.tools.utils.ProgressManager;
 
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
@@ -38,6 +40,10 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 			ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 		throws Exception {
 
+		ProgressManager progressManager = new ProgressManager();
+
+		boolean progressStarted = false;
+
 		HttpServletRequest httpServletRequest =
 			_portal.getOriginalServletRequest(
 				_portal.getHttpServletRequest(resourceRequest));
@@ -48,6 +54,9 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 		JSONObject responseJson = JSONFactoryUtil.createJSONObject();
 
 		try {
+			progressManager.start(resourceRequest);
+			progressStarted = true;
+
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
 			BatchSpec batchSpec = ResourceCommandUtil.parseBatchSpec(data);
@@ -78,7 +87,9 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 			long companyId = _portal.getCompanyId(resourceRequest);
 
 			responseJson = _userCreator.create(
-				userId, companyId, userBatchSpec);
+				userId, companyId, userBatchSpec,
+				ProgressCallback.fromProgressManager(
+					progressManager));
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(
@@ -88,6 +99,11 @@ public class UserResourceCommand extends BaseMVCResourceCommand {
 			_log.error("Failed to create users", throwable);
 
 			ResourceCommandUtil.setErrorResponse(responseJson, throwable);
+		}
+		finally {
+			if (progressStarted) {
+				progressManager.finish();
+			}
 		}
 
 		JSONPortletResponseUtil.writeJSON(

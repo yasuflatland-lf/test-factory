@@ -4,6 +4,7 @@ import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.service.AssetVocabularyLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.support.tools.utils.BatchTransaction;
+import com.liferay.support.tools.utils.ProgressCallback;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +16,8 @@ import org.osgi.service.component.annotations.Reference;
 public class VocabularyCreator {
 
 	public List<AssetVocabulary> create(
-			long userId, long groupId, BatchSpec batchSpec)
+			long userId, long groupId, BatchSpec batchSpec,
+			ProgressCallback progress)
 		throws Throwable {
 
 		int count = batchSpec.count();
@@ -34,6 +36,8 @@ public class VocabularyCreator {
 				BatchTransaction.run(
 					() -> _assetVocabularyLocalService.addVocabulary(
 						userId, groupId, name, serviceContext)));
+
+			progress.onProgress(i + 1, count);
 		}
 
 		return vocabularies;

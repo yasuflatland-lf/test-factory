@@ -14,6 +14,8 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.support.tools.constants.LDFPortletKeys;
 import com.liferay.support.tools.service.MBReplyCreator;
+import com.liferay.support.tools.utils.ProgressCallback;
+import com.liferay.support.tools.utils.ProgressManager;
 
 import java.util.List;
 
@@ -47,7 +49,14 @@ public class MBReplyResourceCommand extends BaseMVCResourceCommand {
 
 		JSONObject responseJson = JSONFactoryUtil.createJSONObject();
 
+		ProgressManager progressManager = new ProgressManager();
+
+		boolean progressStarted = false;
+
 		try {
+			progressManager.start(resourceRequest);
+			progressStarted = true;
+
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
 			int count = GetterUtil.getInteger(data.getString("count"));
@@ -65,7 +74,9 @@ public class MBReplyResourceCommand extends BaseMVCResourceCommand {
 			long userId = _portal.getUserId(resourceRequest);
 
 			List<MBMessage> replies = _mbReplyCreator.create(
-				userId, threadId, count, body, format);
+				userId, threadId, count, body, format,
+				ProgressCallback.fromProgressManager(
+					progressManager));
 
 			JSONArray itemsArray = JSONFactoryUtil.createJSONArray();
 
@@ -103,6 +114,11 @@ public class MBReplyResourceCommand extends BaseMVCResourceCommand {
 			_log.error("Failed to create MB replies", throwable);
 
 			ResourceCommandUtil.setErrorResponse(responseJson, throwable);
+		}
+		finally {
+			if (progressStarted) {
+				progressManager.finish();
+			}
 		}
 
 		JSONPortletResponseUtil.writeJSON(

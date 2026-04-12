@@ -19,6 +19,7 @@ import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.support.tools.utils.BatchTransaction;
 import com.liferay.support.tools.utils.CommonUtil;
+import com.liferay.support.tools.utils.ProgressCallback;
 import com.liferay.support.tools.utils.ScreenNameSanitizer;
 
 import java.util.Calendar;
@@ -32,7 +33,8 @@ import org.osgi.service.component.annotations.Reference;
 public class UserCreator {
 
 	public JSONObject create(
-			long creatorUserId, long companyId, UserBatchSpec spec)
+			long creatorUserId, long companyId, UserBatchSpec spec,
+			ProgressCallback progress)
 		throws Throwable {
 
 		BatchSpec batchSpec = spec.batch();
@@ -174,6 +176,8 @@ public class UserCreator {
 
 				skippedDuplicates++;
 
+				progress.onProgress(i + 1, count);
+
 				continue;
 			}
 			catch (UserScreenNameException e) {
@@ -227,6 +231,8 @@ public class UserCreator {
 			}
 
 			created.put(userJson);
+
+			progress.onProgress(i + 1, count);
 		}
 
 		boolean success = created.length() == count;

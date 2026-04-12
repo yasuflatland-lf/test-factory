@@ -44,7 +44,8 @@ export function useProgress(resourceURL: string | undefined): UseProgressResult 
 						stop();
 					}
 				}
-				catch {
+				catch (err) {
+					console.warn('Progress polling failed, stopping updates', err);
 					stop();
 				}
 			}, 1000);

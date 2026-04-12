@@ -4,6 +4,7 @@ import com.liferay.message.boards.model.MBCategory;
 import com.liferay.message.boards.service.MBCategoryLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.support.tools.utils.BatchTransaction;
+import com.liferay.support.tools.utils.ProgressCallback;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +16,8 @@ import org.osgi.service.component.annotations.Reference;
 public class MBCategoryCreator {
 
 	public List<MBCategory> create(
-			long userId, long groupId, BatchSpec batchSpec, String description)
+			long userId, long groupId, BatchSpec batchSpec, String description,
+			ProgressCallback progress)
 		throws Throwable {
 
 		int count = batchSpec.count();
@@ -35,6 +37,8 @@ public class MBCategoryCreator {
 				BatchTransaction.run(
 					() -> _mbCategoryLocalService.addCategory(
 						null, userId, 0L, name, description, serviceContext)));
+
+			progress.onProgress(i + 1, count);
 		}
 
 		return categories;

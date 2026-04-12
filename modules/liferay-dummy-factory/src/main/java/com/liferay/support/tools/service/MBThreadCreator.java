@@ -5,6 +5,7 @@ import com.liferay.message.boards.service.MBMessageLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.support.tools.utils.BatchTransaction;
+import com.liferay.support.tools.utils.ProgressCallback;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,7 +19,7 @@ public class MBThreadCreator {
 
 	public List<MBMessage> create(
 			long userId, long groupId, long categoryId, BatchSpec batchSpec,
-			String body, String format)
+			String body, String format, ProgressCallback progress)
 		throws Throwable {
 
 		int count = batchSpec.count();
@@ -42,6 +43,8 @@ public class MBThreadCreator {
 						null, userId, userName, groupId, categoryId, 0L, 0L,
 						subject, body, format, Collections.emptyList(), false,
 						0.0, false, serviceContext)));
+
+			progress.onProgress(i + 1, count);
 		}
 
 		return messages;

@@ -34,6 +34,20 @@ jobs:
       - name: Run unit tests
         run: ./gradlew :modules:liferay-dummy-factory:test --no-daemon
 
+      - name: Run frontend tests with coverage
+        working-directory: modules/liferay-dummy-factory
+        run: npx vitest run --coverage
+
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          files: |
+            modules/liferay-dummy-factory/build/reports/jacoco/test/jacocoTestReport.xml
+            modules/liferay-dummy-factory/coverage/lcov.info
+          flags: backend,frontend
+          fail_ci_if_error: false
+
       - name: Upload test report
         if: always()
         uses: actions/upload-artifact@v7

@@ -14,6 +14,8 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.support.tools.constants.LDFPortletKeys;
 import com.liferay.support.tools.service.BatchSpec;
 import com.liferay.support.tools.service.DocumentCreator;
+import com.liferay.support.tools.utils.ProgressCallback;
+import com.liferay.support.tools.utils.ProgressManager;
 
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
@@ -45,7 +47,14 @@ public class DocumentResourceCommand extends BaseMVCResourceCommand {
 
 		JSONObject responseJson = JSONFactoryUtil.createJSONObject();
 
+		ProgressManager progressManager = new ProgressManager();
+
+		boolean progressStarted = false;
+
 		try {
+			progressManager.start(resourceRequest);
+			progressStarted = true;
+
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
 			BatchSpec batchSpec = ResourceCommandUtil.parseBatchSpec(data);
@@ -67,31 +76,25 @@ public class DocumentResourceCommand extends BaseMVCResourceCommand {
 
 			long userId = _portal.getUserId(resourceRequest);
 
-			try {
-				responseJson = _documentCreator.create(
-					userId, groupId, batchSpec, folderId, description,
-					uploadedFiles);
-			}
-			catch (Throwable throwable) {
-				if (throwable instanceof Error) {
-					throw (Error)throwable;
-				}
-
-				if (throwable instanceof Exception) {
-					throw (Exception)throwable;
-				}
-
-				throw new Exception(throwable);
-			}
+			responseJson = _documentCreator.create(
+				userId, groupId, batchSpec, folderId, description,
+				uploadedFiles,
+				ProgressCallback.fromProgressManager(
+					progressManager));
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(
 				responseJson, illegalArgumentException);
 		}
-		catch (Exception exception) {
-			_log.error("Failed to create documents", exception);
+		catch (Throwable throwable) {
+			_log.error("Failed to create documents", throwable);
 
-			ResourceCommandUtil.setErrorResponse(responseJson, exception);
+			ResourceCommandUtil.setErrorResponse(responseJson, throwable);
+		}
+		finally {
+			if (progressStarted) {
+				progressManager.finish();
+			}
 		}
 
 		JSONPortletResponseUtil.writeJSON(

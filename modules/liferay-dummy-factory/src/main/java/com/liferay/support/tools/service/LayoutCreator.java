@@ -14,6 +14,7 @@ import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.support.tools.utils.BatchTransaction;
+import com.liferay.support.tools.utils.ProgressCallback;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -23,8 +24,9 @@ public class LayoutCreator {
 
 	public JSONObject create(
 			long userId, BatchSpec batchSpec, long groupId, String type,
-			boolean privateLayout, boolean hidden)
-		throws Exception {
+			boolean privateLayout, boolean hidden,
+			ProgressCallback progress)
+		throws Throwable {
 
 		int count = batchSpec.count();
 		String baseName = batchSpec.baseName();
@@ -58,6 +60,8 @@ public class LayoutCreator {
 
 				skipped++;
 			}
+
+			progress.onProgress(i + 1, count);
 		}
 
 		int createdCount = layouts.length();
@@ -99,23 +103,14 @@ public class LayoutCreator {
 	private Layout _invokeAddLayout(
 			long userId, long groupId, boolean privateLayout, String name,
 			String type, boolean hidden)
-		throws Exception {
+		throws Throwable {
 
-		try {
-			return BatchTransaction.run(
-				() -> _layoutLocalService.addLayout(
-					StringPool.BLANK, userId, groupId, privateLayout,
-					LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, name,
-					StringPool.BLANK, StringPool.BLANK, type, hidden,
-					StringPool.BLANK, new ServiceContext()));
-		}
-		catch (Throwable t) {
-			if (t instanceof Exception) {
-				throw (Exception)t;
-			}
-
-			throw new Exception(t);
-		}
+		return BatchTransaction.run(
+			() -> _layoutLocalService.addLayout(
+				StringPool.BLANK, userId, groupId, privateLayout,
+				LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, name,
+				StringPool.BLANK, StringPool.BLANK, type, hidden,
+				StringPool.BLANK, new ServiceContext()));
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(LayoutCreator.class);

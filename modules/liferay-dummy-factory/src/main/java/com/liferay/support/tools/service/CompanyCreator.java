@@ -3,6 +3,7 @@ package com.liferay.support.tools.service;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.support.tools.utils.BatchTransaction;
+import com.liferay.support.tools.utils.ProgressCallback;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +16,7 @@ public class CompanyCreator {
 
 	public List<Company> create(
 			int count, String webId, String virtualHostname, String mx,
-			int maxUsers, boolean active)
+			int maxUsers, boolean active, ProgressCallback progress)
 		throws Throwable {
 
 		List<Company> companies = new ArrayList<>(count);
@@ -29,6 +30,8 @@ public class CompanyCreator {
 						null, prefix + webId, prefix + virtualHostname,
 						prefix + mx, maxUsers, active, false, null, null, null,
 						null, null, null)));
+
+			progress.onProgress(i + 1, count);
 		}
 
 		return companies;
