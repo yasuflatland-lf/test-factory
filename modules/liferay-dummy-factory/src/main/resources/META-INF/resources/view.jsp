@@ -17,7 +17,23 @@
 <portlet:resourceURL id="/ldf/data" var="dataResourceURL" />
 <portlet:resourceURL id="/ldf/progress" var="progressResourceURL" />
 
-<script src="/o/js/language/<%= themeDisplay.getLanguageId() %>/liferay-dummy-factory/all.js"></script>
+<%
+ResourceBundle resourceBundle = portletConfig.getResourceBundle(locale);
+JSONObject languageKeys = JSONFactoryUtil.createJSONObject();
+Enumeration<String> enumeration = resourceBundle.getKeys();
+
+while (enumeration.hasMoreElements()) {
+	String key = enumeration.nextElement();
+
+	languageKeys.put(key, resourceBundle.getString(key));
+}
+%>
+
+<script>
+	if (Liferay && Liferay.Language && Liferay.Language._cache) {
+		Object.assign(Liferay.Language._cache, <%= languageKeys.toJSONString() %>);
+	}
+</script>
 
 <react:component
 	module="{App} from liferay-dummy-factory"
