@@ -18,7 +18,7 @@ Detailed CE 7.4 API constraints: `docs/details/api-liferay-ce74.md`. Workspace f
 
 - **Single-JAR design** — MVCPortlet, MVCResourceCommand, and React frontend ship together in one bundle (`liferay.dummy.factory`).
 - **MVCPortlet + PanelApp** — Registered in Control Panel > Configuration. Uses `javax.portlet` namespace (Portlet API 3.0). `jakarta.portlet` is forbidden on CE 7.4 GA132 (see `docs/ADR/adr-0002-portlet-api-javax-namespace.md`).
-- **MVCResourceCommands** — Per-entity resource commands handle creation: `/ldf/company`, `/ldf/org`, `/ldf/user`, `/ldf/role`, `/ldf/site`, `/ldf/page`, `/ldf/wcm`, `/ldf/doc` (+ `/ldf/doc/upload`), `/ldf/vocabulary`, `/ldf/category`, `/ldf/mb-category`, `/ldf/mb-thread`, `/ldf/mb-reply`. `/ldf/data` (`DataListResourceCommand`) serves dropdown data; `/ldf/progress` (`ProgressResourceCommand`) reports batch progress.
+- **MVCResourceCommands** — Per-entity resource commands handle creation: `/ldf/blog`, `/ldf/company`, `/ldf/org`, `/ldf/user`, `/ldf/role`, `/ldf/site`, `/ldf/page`, `/ldf/wcm`, `/ldf/doc` (+ `/ldf/doc/upload`), `/ldf/vocabulary`, `/ldf/category`, `/ldf/mb-category`, `/ldf/mb-thread`, `/ldf/mb-reply`. `/ldf/data` (`DataListResourceCommand`) serves dropdown data; `/ldf/progress` (`ProgressResourceCommand`) reports batch progress.
 - **Value Objects** — `BatchSpec` (Java record) encapsulates `count + baseName` with constructor validation. `RoleType` and `SiteMembershipType` are type-safe enums mapping frontend strings to Liferay constants. Resource commands construct value objects from JSON before passing to Creators.
 - **DataListProvider SPI** — Dropdown sources are `DataListProvider` implementations discovered via OSGi `@Reference(cardinality=MULTIPLE, policy=DYNAMIC)`. Add a new type by creating `@Component(service=DataListProvider.class)` under `service/datalist/` — no changes to `DataListResourceCommand` needed.
 
@@ -110,7 +110,7 @@ The helper writes the failure message to the JSON field `error`. New resource co
 - Localization: always use `Liferay.Language.get('key-name')`. Never hard-code display text.
 - CSRF: include `'x-csrf-token': Liferay.authToken` in fetch headers when required by Liferay endpoints.
 - API calls use `portlet:resourceURL` with `credentials: 'include'`. GET passes parameters as URL query strings; POST uses `application/x-www-form-urlencoded` with JSON in a `data` parameter.
-- Build tooling is `@liferay/npm-scripts` — do not add webpack/babel config manually.
+- Build tooling is a custom esbuild script (`scripts/build.mjs`). `@liferay/npm-scripts` is retained for code formatting only (`format` / `checkFormat`). See `docs/ADR/adr-0003-custom-esbuild-over-npm-scripts.md`.
 
 ### `parseResponse` must check both `data.success === false` and `data.error`
 

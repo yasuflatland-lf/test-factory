@@ -34,7 +34,7 @@ We adopt a layered strategy, modeled after the Testing Library priority ladder:
 
 ### Generation contract
 
-`EntityForm.tsx` derives `entityKey` from the entity type (`ORG` → `org`, `MB_THREAD` → `mb-thread`), and form element ids are built as `${entityKey}-${kebab(fieldName)}-${typeSuffix}`. Submit and result ids are `${entityKey}-submit` and `${entityKey}-result`. See `.claude/rules/code-conventions.md` for the full rule.
+`EntityForm.tsx` derives `entityKey` from the entity type (`ORG` → `org`, `MB_THREAD` → `mb-thread`), and form element ids are built as `${entityKey}-${kebab(fieldName)}-${typeSuffix}`. Submit and result ids are `${entityKey}-submit` and `${entityKey}-result`. See `.claude/rules/writing-code.md` for the full rule.
 
 ### Placement scope
 
@@ -80,6 +80,6 @@ Big-bang: React components received testIds first, then every `*FunctionalSpec` 
 
 ## References
 
-- `.claude/rules/code-conventions.md` — `## JavaScript / React` section (Playwright selector strategy, testId naming, entityKey derivation, generation contract)
+- `.claude/rules/writing-code.md` — `## JavaScript / React` section (Playwright selector strategy, testId naming, entityKey derivation, generation contract)
 - `.claude/rules/testing.md` — `## Playwright Success Assertion Pattern`, `## Playwright / Headless Gotchas`
 - `.claude/plan/improve_playwright_test.md` — original migration plan and discussion notes

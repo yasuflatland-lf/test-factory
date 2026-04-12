@@ -63,6 +63,6 @@ When the project eventually bumps Node to the next LTS (22.x+), revisit this ADR
 
 - `modules/liferay-dummy-factory/package.json` — exact pins
 - `modules/liferay-dummy-factory/vitest.config.ts` — uses `resolve.dedupe: ['react', 'react-dom']`
-- `.claude/rules/code-conventions.md` — Dependency Version Pinning section
+- `.claude/rules/writing-code.md` — `## One package manager per repo` section (dependency version pinning reference)
 - `.claude/rules/testing.md` — Vitest Migration Gotchas section
 - PR #24 — upgrade React to 19.2.5 and migrate tests to Vitest
