@@ -15,7 +15,7 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.support.tools.constants.LDFPortletKeys;
-import com.liferay.support.tools.service.BatchSpec;
+import com.liferay.support.tools.service.WebContentBatchSpec;
 import com.liferay.support.tools.service.WebContentCreator;
 
 import java.util.ArrayList;
@@ -56,8 +56,6 @@ public class WcmResourceCommand extends BaseMVCResourceCommand {
 		try {
 			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
 
-			BatchSpec batchSpec = ResourceCommandUtil.parseBatchSpec(data);
-
 			long[] groupIds = _parseGroupIds(data);
 
 			if (groupIds.length == 0) {
@@ -65,66 +63,31 @@ public class WcmResourceCommand extends BaseMVCResourceCommand {
 					"groupIds must contain at least one positive group id");
 			}
 
-			long folderId = GetterUtil.getLong(data.getString("folderId"));
-			String[] locales = _parseLocales(
-				data.getString("locales"), groupIds[0]);
-			boolean neverExpire = GetterUtil.getBoolean(
-				data.getString("neverExpire"), true);
-			boolean neverReview = GetterUtil.getBoolean(
-				data.getString("neverReview"), true);
-
-			int createContentsType = GetterUtil.getInteger(
-				data.getString("createContentsType"));
+			WebContentBatchSpec spec = new WebContentBatchSpec(
+				ResourceCommandUtil.parseBatchSpec(data),
+				groupIds,
+				GetterUtil.getLong(data.getString("folderId")),
+				_parseLocales(data.getString("locales"), groupIds[0]),
+				GetterUtil.getBoolean(
+					data.getString("neverExpire"), true),
+				GetterUtil.getBoolean(
+					data.getString("neverReview"), true),
+				GetterUtil.getInteger(
+					data.getString("createContentsType")),
+				GetterUtil.getString(data.getString("baseArticle")),
+				GetterUtil.getInteger(
+					data.getString("titleWords"), 5),
+				GetterUtil.getInteger(
+					data.getString("totalParagraphs"), 3),
+				GetterUtil.getInteger(
+					data.getString("randomAmount"), 3),
+				GetterUtil.getString(data.getString("linkLists")),
+				GetterUtil.getLong(data.getString("ddmStructureId")),
+				GetterUtil.getLong(data.getString("ddmTemplateId")));
 
 			long userId = _portal.getUserId(resourceRequest);
 
-			if (createContentsType == 0) {
-				String baseArticle = GetterUtil.getString(
-					data.getString("baseArticle"));
-
-				responseJson = _webContentCreator.createSimple(
-					userId, groupIds, batchSpec, baseArticle, folderId, locales,
-					neverExpire, neverReview);
-			}
-			else if (createContentsType == 1) {
-				int titleWords = GetterUtil.getInteger(
-					data.getString("titleWords"), 5);
-				int totalParagraphs = GetterUtil.getInteger(
-					data.getString("totalParagraphs"), 3);
-				int randomAmount = GetterUtil.getInteger(
-					data.getString("randomAmount"), 3);
-				String linkLists = GetterUtil.getString(
-					data.getString("linkLists"));
-
-				responseJson = _webContentCreator.createDummy(
-					userId, groupIds, batchSpec, folderId, locales, titleWords,
-					totalParagraphs, randomAmount, linkLists, neverExpire,
-					neverReview);
-			}
-			else if (createContentsType == 2) {
-				long ddmStructureId = GetterUtil.getLong(
-					data.getString("ddmStructureId"));
-				long ddmTemplateId = GetterUtil.getLong(
-					data.getString("ddmTemplateId"));
-
-				if (ddmStructureId <= 0) {
-					throw new IllegalArgumentException(
-						"ddmStructureId must be a positive number");
-				}
-
-				if (ddmTemplateId <= 0) {
-					throw new IllegalArgumentException(
-						"ddmTemplateId must be a positive number");
-				}
-
-				responseJson = _webContentCreator.createWithStructureTemplate(
-					userId, groupIds, batchSpec, folderId, locales,
-					ddmStructureId, ddmTemplateId, neverExpire, neverReview);
-			}
-			else {
-				throw new IllegalArgumentException(
-					"Unknown createContentsType: " + createContentsType);
-			}
+			responseJson = _webContentCreator.create(userId, spec);
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
 			ResourceCommandUtil.setErrorResponse(
