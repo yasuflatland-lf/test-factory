@@ -89,6 +89,22 @@ describe('postResource', () => {
 
 		expect(result).toEqual({error: 'Server error: 500', success: false});
 	});
+
+	it('classifies {success: false} without error field as failure', async () => {
+		mockFetch.mockResolvedValueOnce({
+			json: () => Promise.resolve({count: 3, requested: 5, success: false}),
+			ok: true,
+		});
+
+		const result = await postResource('/api/resource', {num1: '10'});
+
+		expect(result.success).toBe(false);
+
+		if (!result.success) {
+			expect(result.error).toBe('Operation failed');
+			expect(result.data).toEqual({count: 3, requested: 5, success: false});
+		}
+	});
 });
 
 describe('fetchResource', () => {
@@ -146,5 +162,21 @@ describe('fetchResource', () => {
 		const result = await fetchResource('http://localhost/api/resource');
 
 		expect(result).toEqual({error: 'Server error: 404', success: false});
+	});
+
+	it('classifies {success: false} without error field as failure', async () => {
+		mockFetch.mockResolvedValueOnce({
+			json: () => Promise.resolve({items: [], success: false}),
+			ok: true,
+		});
+
+		const result = await fetchResource('http://localhost/api/resource');
+
+		expect(result.success).toBe(false);
+
+		if (!result.success) {
+			expect(result.error).toBe('Operation failed');
+			expect(result.data).toEqual({items: [], success: false});
+		}
 	});
 });
