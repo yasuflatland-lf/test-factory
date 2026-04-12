@@ -5,14 +5,8 @@ import com.liferay.support.tools.it.util.LdfResourceClient
 import spock.lang.Shared
 import spock.lang.Stepwise
 
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-
 @Stepwise
 class BlogsFunctionalSpec extends BaseLiferaySpec {
-
-	private static final Logger log = LoggerFactory.getLogger(
-		BlogsFunctionalSpec)
 
 	private static final String RUN_SUFFIX =
 		String.valueOf(System.currentTimeMillis())

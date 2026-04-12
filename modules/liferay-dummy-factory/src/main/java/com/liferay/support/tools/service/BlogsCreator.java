@@ -24,7 +24,6 @@ public class BlogsCreator {
 
 		BatchSpec batch = spec.batch();
 		int count = batch.count();
-		String baseName = batch.baseName();
 
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		JSONArray created = JSONFactoryUtil.createJSONArray();
@@ -39,7 +38,7 @@ public class BlogsCreator {
 
 		for (int i = 0; i < count; i++) {
 			final String title = BatchNaming.resolve(
-				baseName, count, i, " ");
+				batch.baseName(), count, i, " ");
 
 			try {
 				BlogsEntry entry = BatchTransaction.run(
@@ -82,16 +81,11 @@ public class BlogsCreator {
 				errorMessage =
 					"No blog entries were created (all attempts failed)";
 			}
-			else if (skipped > 0) {
+			else {
 				errorMessage =
 					"Only " + createdCount + " of " + count +
 						" blog entries were created; " + skipped +
 							" skipped due to errors.";
-			}
-			else {
-				errorMessage =
-					"Only " + createdCount + " of " + count +
-						" blog entries were created.";
 			}
 
 			result.put("error", errorMessage);

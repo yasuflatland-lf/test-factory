@@ -96,13 +96,6 @@ class BlogsBatchSpecTest {
 		return new _Builder();
 	}
 
-	@FunctionalInterface
-	private interface _Mutator {
-
-		void apply(_Builder builder);
-
-	}
-
 	private static class _Builder {
 
 		_Builder allowPingbacks(boolean allowPingbacks) {
