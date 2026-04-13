@@ -11,16 +11,16 @@ import com.liferay.support.tools.service.BatchSpec;
 import com.liferay.support.tools.service.VocabularyCreator;
 import com.liferay.support.tools.utils.ProgressCallback;
 import com.liferay.support.tools.workflow.adapter.TestModelProxyUtil;
-import com.liferay.support.tools.workflow.adapter.WorkflowStepResult;
+import com.liferay.support.tools.workflow.spi.WorkflowExecutionContext;
+import com.liferay.support.tools.workflow.spi.WorkflowStepResult;
 import com.liferay.support.tools.workflow.adapter.taxonomy.dto.VocabularyCreateRequest;
-import com.liferay.support.tools.workflow.adapter.taxonomy.dto.VocabularyStepItem;
 
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-class VocabularyCreateWorkflowAdapterTest {
+class VocabularyCreateWorkflowOperationAdapterTest {
 
 	@Test
 	void executeMapsCreatedVocabulariesIntoStepResult() throws Throwable {
@@ -29,16 +29,12 @@ class VocabularyCreateWorkflowAdapterTest {
 				_assetVocabulary(501L, 601L, "Vocabulary 1"),
 				_assetVocabulary(502L, 601L, "Vocabulary 2")));
 
-		VocabularyCreateWorkflowAdapter adapter =
-			new VocabularyCreateWorkflowAdapter(vocabularyCreator);
-		VocabularyCreateRequest request = new VocabularyCreateRequest(
-			41L, 601L, new BatchSpec(2, "Vocabulary"));
+		VocabularyCreateWorkflowOperationAdapter adapter =
+			new VocabularyCreateWorkflowOperationAdapter(vocabularyCreator);
+		WorkflowStepResult result = adapter.execute(
+			new WorkflowExecutionContext(41L),
+			Map.of("count", 2, "baseName", "Vocabulary", "groupId", 601L));
 
-		WorkflowStepResult<VocabularyStepItem> result = adapter.execute(
-			request);
-
-		assertEquals(
-			VocabularyCreateWorkflowAdapter.OPERATION, result.operation());
 		assertTrue(result.success());
 		assertEquals(2, result.requested());
 		assertEquals(2, result.count());
@@ -46,8 +42,14 @@ class VocabularyCreateWorkflowAdapterTest {
 		assertNull(result.error());
 		assertEquals(
 			List.of(
-				new VocabularyStepItem(501L, 601L, "Vocabulary 1"),
-				new VocabularyStepItem(502L, 601L, "Vocabulary 2")),
+				Map.of(
+					"vocabularyId", 501L,
+					"groupId", 601L,
+					"name", "Vocabulary 1"),
+				Map.of(
+					"vocabularyId", 502L,
+					"groupId", 601L,
+					"name", "Vocabulary 2")),
 			result.items());
 		assertEquals(41L, vocabularyCreator.userId);
 		assertEquals(601L, vocabularyCreator.groupId);
@@ -59,14 +61,14 @@ class VocabularyCreateWorkflowAdapterTest {
 
 	@Test
 	void executeNormalizesPartialResults() throws Throwable {
-		VocabularyCreateWorkflowAdapter adapter =
-			new VocabularyCreateWorkflowAdapter(
+		VocabularyCreateWorkflowOperationAdapter adapter =
+			new VocabularyCreateWorkflowOperationAdapter(
 				new StubVocabularyCreator(
 					List.of(_assetVocabulary(501L, 601L, "Vocabulary 1"))));
 
-		WorkflowStepResult<VocabularyStepItem> result = adapter.execute(
-			new VocabularyCreateRequest(
-				41L, 601L, new BatchSpec(2, "Vocabulary")));
+		WorkflowStepResult result = adapter.execute(
+			new WorkflowExecutionContext(41L),
+			Map.of("count", 2, "baseName", "Vocabulary", "groupId", 601L));
 
 		assertEquals(1, result.count());
 		assertEquals(1, result.skipped());

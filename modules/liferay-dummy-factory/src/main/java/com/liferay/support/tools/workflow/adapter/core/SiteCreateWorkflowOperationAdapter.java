@@ -37,16 +37,15 @@ public class SiteCreateWorkflowOperationAdapter
 			values.optionalLong("publicLayoutSetPrototypeId", 0L),
 			values.optionalLong("siteTemplateId", 0L));
 
-		return _toSpiResult(
-			WorkflowResultNormalizer.normalize(
-				_siteCreator.create(
+		return WorkflowResultNormalizer.normalize(
+			_siteCreator.create(
 				workflowExecutionContext.userId(),
 				workflowExecutionContext.companyId(), request.batch(),
 				request.membershipType(), request.parentGroupId(),
 				request.siteTemplateId(), request.manualMembership(),
 				request.inheritContent(), request.active(), request.description(),
 				request.publicLayoutSetPrototypeId(),
-				request.privateLayoutSetPrototypeId(), ProgressCallback.NOOP)));
+				request.privateLayoutSetPrototypeId(), ProgressCallback.NOOP));
 	}
 
 	@Override
@@ -56,13 +55,4 @@ public class SiteCreateWorkflowOperationAdapter
 
 	@Reference
 	private SiteCreator _siteCreator;
-
-	private static WorkflowStepResult _toSpiResult(
-		com.liferay.support.tools.workflow.adapter.core.WorkflowStepResult result) {
-
-		return new WorkflowStepResult(
-			result.success(), result.requested(), result.count(),
-			result.skipped(), result.items(), result.error());
-	}
-
 }

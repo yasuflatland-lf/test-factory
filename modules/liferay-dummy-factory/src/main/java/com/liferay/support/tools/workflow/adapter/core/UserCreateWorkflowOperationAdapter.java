@@ -45,12 +45,11 @@ public class UserCreateWorkflowOperationAdapter
 
 		UserBatchSpec userBatchSpec = request.toUserBatchSpec();
 
-		return _toSpiResult(
-			WorkflowResultNormalizer.normalize(
-				_userCreator.create(
+		return WorkflowResultNormalizer.normalize(
+			_userCreator.create(
 				workflowExecutionContext.userId(),
 				workflowExecutionContext.companyId(), userBatchSpec,
-				ProgressCallback.NOOP)));
+				ProgressCallback.NOOP));
 	}
 
 	@Override
@@ -60,13 +59,4 @@ public class UserCreateWorkflowOperationAdapter
 
 	@Reference
 	private UserCreator _userCreator;
-
-	private static WorkflowStepResult _toSpiResult(
-		com.liferay.support.tools.workflow.adapter.core.WorkflowStepResult result) {
-
-		return new WorkflowStepResult(
-			result.success(), result.requested(), result.count(),
-			result.skipped(), result.items(), result.error());
-	}
-
 }

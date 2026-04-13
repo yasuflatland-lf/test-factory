@@ -11,14 +11,15 @@ import com.liferay.support.tools.service.BatchSpec;
 import com.liferay.support.tools.service.MBThreadCreator;
 import com.liferay.support.tools.utils.ProgressCallback;
 import com.liferay.support.tools.workflow.adapter.TestModelProxyUtil;
-import com.liferay.support.tools.workflow.adapter.WorkflowStepResult;
+import com.liferay.support.tools.workflow.spi.WorkflowExecutionContext;
+import com.liferay.support.tools.workflow.spi.WorkflowStepResult;
 
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-class MBThreadCreateWorkflowAdapterTest {
+class MBThreadCreateWorkflowOperationAdapterTest {
 
 	@Test
 	void executeMapsCreatedThreadsIntoStepResult() throws Throwable {
@@ -27,24 +28,30 @@ class MBThreadCreateWorkflowAdapterTest {
 				_mbMessage(901L, 1001L, 1101L, 1201L, "Thread 1"),
 				_mbMessage(902L, 1001L, 1101L, 1202L, "Thread 2")));
 
-		MBThreadCreateWorkflowAdapter adapter =
-			new MBThreadCreateWorkflowAdapter(mbThreadCreator);
-		MBThreadCreateRequest request = new MBThreadCreateRequest(
-			61L, 1001L, 1101L, new BatchSpec(2, "Thread"), "body", null);
+		MBThreadCreateWorkflowOperationAdapter adapter =
+			new MBThreadCreateWorkflowOperationAdapter(mbThreadCreator);
 
-		WorkflowStepResult<MBThreadStepItem> result = adapter.execute(
-			request);
+		WorkflowStepResult result = adapter.execute(
+			new WorkflowExecutionContext(61L),
+			Map.of(
+				"baseName", "Thread", "body", "body", "categoryId", 1101L,
+				"count", 2, "groupId", 1001L));
 
 		assertEquals(
-			MBThreadCreateWorkflowAdapter.OPERATION, result.operation());
+			MBThreadCreateWorkflowOperationAdapter.OPERATION,
+			adapter.operationName());
 		assertTrue(result.success());
 		assertEquals(2, result.count());
 		assertEquals(0, result.skipped());
 		assertNull(result.error());
 		assertEquals(
 			List.of(
-				new MBThreadStepItem(1101L, 1001L, 901L, "Thread 1", 1201L),
-				new MBThreadStepItem(1101L, 1001L, 902L, "Thread 2", 1202L)),
+				Map.of(
+					"categoryId", 1101L, "groupId", 1001L, "messageId",
+					901L, "subject", "Thread 1", "threadId", 1201L),
+				Map.of(
+					"categoryId", 1101L, "groupId", 1001L, "messageId",
+					902L, "subject", "Thread 2", "threadId", 1202L)),
 			result.items());
 		assertEquals(61L, mbThreadCreator.userId);
 		assertEquals(1001L, mbThreadCreator.groupId);
@@ -72,15 +79,16 @@ class MBThreadCreateWorkflowAdapterTest {
 
 	@Test
 	void executeNormalizesPartialResults() throws Throwable {
-		MBThreadCreateWorkflowAdapter adapter =
-			new MBThreadCreateWorkflowAdapter(
+		MBThreadCreateWorkflowOperationAdapter adapter =
+			new MBThreadCreateWorkflowOperationAdapter(
 				new StubMBThreadCreator(
 					List.of(_mbMessage(901L, 1001L, 1101L, 1201L, "Thread 1"))));
 
-		WorkflowStepResult<MBThreadStepItem> result = adapter.execute(
-			new MBThreadCreateRequest(
-				61L, 1001L, 1101L, new BatchSpec(2, "Thread"), "body",
-				"markdown"));
+		WorkflowStepResult result = adapter.execute(
+			new WorkflowExecutionContext(61L),
+			Map.of(
+				"baseName", "Thread", "body", "body", "categoryId", 1101L,
+				"count", 2, "format", "markdown", "groupId", 1001L));
 
 		assertEquals(1, result.count());
 		assertEquals(1, result.skipped());

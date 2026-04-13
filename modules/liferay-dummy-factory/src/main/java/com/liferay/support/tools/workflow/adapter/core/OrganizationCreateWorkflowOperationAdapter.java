@@ -29,12 +29,11 @@ public class OrganizationCreateWorkflowOperationAdapter
 			values.optionalLong("parentOrganizationId", 0L),
 			values.optionalBoolean("site", false));
 
-		return _toSpiResult(
-			WorkflowResultNormalizer.normalize(
-				_organizationCreator.create(
+		return WorkflowResultNormalizer.normalize(
+			_organizationCreator.create(
 				workflowExecutionContext.userId(), request.batch(),
 				request.parentOrganizationId(), request.site(),
-				ProgressCallback.NOOP)));
+				ProgressCallback.NOOP));
 	}
 
 	@Override
@@ -44,13 +43,4 @@ public class OrganizationCreateWorkflowOperationAdapter
 
 	@Reference
 	private OrganizationCreator _organizationCreator;
-
-	private static WorkflowStepResult _toSpiResult(
-		com.liferay.support.tools.workflow.adapter.core.WorkflowStepResult result) {
-
-		return new WorkflowStepResult(
-			result.success(), result.requested(), result.count(),
-			result.skipped(), result.items(), result.error());
-	}
-
 }

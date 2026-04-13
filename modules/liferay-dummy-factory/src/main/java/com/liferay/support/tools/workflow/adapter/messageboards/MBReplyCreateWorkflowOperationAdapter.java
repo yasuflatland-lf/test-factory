@@ -19,6 +19,13 @@ import org.osgi.service.component.annotations.Reference;
 public class MBReplyCreateWorkflowOperationAdapter
 	implements com.liferay.support.tools.workflow.spi.WorkflowOperationAdapter {
 
+	public MBReplyCreateWorkflowOperationAdapter() {
+	}
+
+	MBReplyCreateWorkflowOperationAdapter(MBReplyCreator mbReplyCreator) {
+		_mbReplyCreator = mbReplyCreator;
+	}
+
 	@Override
 	public WorkflowStepResult execute(
 			WorkflowExecutionContext workflowExecutionContext,

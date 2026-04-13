@@ -10,14 +10,15 @@ import com.liferay.message.boards.model.MBMessage;
 import com.liferay.support.tools.service.MBReplyCreator;
 import com.liferay.support.tools.utils.ProgressCallback;
 import com.liferay.support.tools.workflow.adapter.TestModelProxyUtil;
-import com.liferay.support.tools.workflow.adapter.WorkflowStepResult;
+import com.liferay.support.tools.workflow.spi.WorkflowExecutionContext;
+import com.liferay.support.tools.workflow.spi.WorkflowStepResult;
 
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-class MBReplyCreateWorkflowAdapterTest {
+class MBReplyCreateWorkflowOperationAdapterTest {
 
 	@Test
 	void executeMapsCreatedRepliesIntoStepResult() throws Throwable {
@@ -26,25 +27,26 @@ class MBReplyCreateWorkflowAdapterTest {
 				_mbReply(1301L, 1401L, 1501L, 1601L, "Reply 1", "Body 1"),
 				_mbReply(1302L, 1401L, 1501L, 1601L, "Reply 2", "Body 2")));
 
-		MBReplyCreateWorkflowAdapter adapter =
-			new MBReplyCreateWorkflowAdapter(mbReplyCreator);
-		MBReplyCreateRequest request = new MBReplyCreateRequest(
-			71L, 1601L, 2, "reply body", null);
+		MBReplyCreateWorkflowOperationAdapter adapter =
+			new MBReplyCreateWorkflowOperationAdapter(mbReplyCreator);
 
-		WorkflowStepResult<MBReplyStepItem> result = adapter.execute(request);
+		WorkflowStepResult result = adapter.execute(
+			new WorkflowExecutionContext(71L),
+			Map.of("body", "reply body", "count", 2, "threadId", 1601L));
 
-		assertEquals(
-			MBReplyCreateWorkflowAdapter.OPERATION, result.operation());
+		assertEquals("mbReply.create", adapter.operationName());
 		assertTrue(result.success());
 		assertEquals(2, result.count());
 		assertEquals(0, result.skipped());
 		assertNull(result.error());
 		assertEquals(
 			List.of(
-				new MBReplyStepItem(
-					"Body 1", 1501L, 1401L, 1301L, "Reply 1", 1601L),
-				new MBReplyStepItem(
-					"Body 2", 1501L, 1401L, 1302L, "Reply 2", 1601L)),
+				Map.of(
+					"body", "Body 1", "messageId", 1301L, "subject",
+					"Reply 1"),
+				Map.of(
+					"body", "Body 2", "messageId", 1302L, "subject",
+					"Reply 2")),
 			result.items());
 		assertEquals(71L, mbReplyCreator.userId);
 		assertEquals(1601L, mbReplyCreator.threadId);
@@ -69,15 +71,18 @@ class MBReplyCreateWorkflowAdapterTest {
 
 	@Test
 	void executeNormalizesPartialResults() throws Throwable {
-		MBReplyCreateWorkflowAdapter adapter =
-			new MBReplyCreateWorkflowAdapter(
+		MBReplyCreateWorkflowOperationAdapter adapter =
+			new MBReplyCreateWorkflowOperationAdapter(
 				new StubMBReplyCreator(
 					List.of(
 						_mbReply(
 							1301L, 1401L, 1501L, 1601L, "Reply 1", "Body 1"))));
 
-		WorkflowStepResult<MBReplyStepItem> result = adapter.execute(
-			new MBReplyCreateRequest(71L, 1601L, 2, "reply body", "markdown"));
+		WorkflowStepResult result = adapter.execute(
+			new WorkflowExecutionContext(71L),
+			Map.of(
+				"body", "reply body", "count", 2, "format", "markdown",
+				"threadId", 1601L));
 
 		assertEquals(1, result.count());
 		assertEquals(1, result.skipped());

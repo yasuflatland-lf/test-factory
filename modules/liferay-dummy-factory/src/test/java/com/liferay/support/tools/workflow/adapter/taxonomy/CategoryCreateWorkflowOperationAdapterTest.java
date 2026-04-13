@@ -11,16 +11,16 @@ import com.liferay.support.tools.service.BatchSpec;
 import com.liferay.support.tools.service.CategoryCreator;
 import com.liferay.support.tools.utils.ProgressCallback;
 import com.liferay.support.tools.workflow.adapter.TestModelProxyUtil;
-import com.liferay.support.tools.workflow.adapter.WorkflowStepResult;
+import com.liferay.support.tools.workflow.spi.WorkflowExecutionContext;
+import com.liferay.support.tools.workflow.spi.WorkflowStepResult;
 import com.liferay.support.tools.workflow.adapter.taxonomy.dto.CategoryCreateRequest;
-import com.liferay.support.tools.workflow.adapter.taxonomy.dto.CategoryStepItem;
 
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-class CategoryCreateWorkflowAdapterTest {
+class CategoryCreateWorkflowOperationAdapterTest {
 
 	@Test
 	void executeMapsCreatedCategoriesIntoStepResult() throws Throwable {
@@ -29,14 +29,16 @@ class CategoryCreateWorkflowAdapterTest {
 				_assetCategory(101L, 201L, 301L, "Category 1"),
 				_assetCategory(102L, 201L, 301L, "Category 2")));
 
-		CategoryCreateWorkflowAdapter adapter =
-			new CategoryCreateWorkflowAdapter(categoryCreator);
-		CategoryCreateRequest request = new CategoryCreateRequest(
-			11L, 201L, 301L, new BatchSpec(2, "Category"));
+		CategoryCreateWorkflowOperationAdapter adapter =
+			new CategoryCreateWorkflowOperationAdapter(categoryCreator);
+		WorkflowStepResult result = adapter.execute(
+			new WorkflowExecutionContext(11L),
+			Map.of(
+				"count", 2,
+				"baseName", "Category",
+				"groupId", 201L,
+				"vocabularyId", 301L));
 
-		WorkflowStepResult<CategoryStepItem> result = adapter.execute(request);
-
-		assertEquals(CategoryCreateWorkflowAdapter.OPERATION, result.operation());
 		assertTrue(result.success());
 		assertEquals(2, result.requested());
 		assertEquals(2, result.count());
@@ -44,8 +46,16 @@ class CategoryCreateWorkflowAdapterTest {
 		assertNull(result.error());
 		assertEquals(
 			List.of(
-				new CategoryStepItem(101L, 201L, 301L, "Category 1"),
-				new CategoryStepItem(102L, 201L, 301L, "Category 2")),
+				Map.of(
+					"categoryId", 101L,
+					"groupId", 201L,
+					"vocabularyId", 301L,
+					"name", "Category 1"),
+				Map.of(
+					"categoryId", 102L,
+					"groupId", 201L,
+					"vocabularyId", 301L,
+					"name", "Category 2")),
 			result.items());
 		assertEquals(11L, categoryCreator.userId);
 		assertEquals(201L, categoryCreator.groupId);
@@ -57,14 +67,18 @@ class CategoryCreateWorkflowAdapterTest {
 
 	@Test
 	void executeNormalizesPartialResults() throws Throwable {
-		CategoryCreateWorkflowAdapter adapter =
-			new CategoryCreateWorkflowAdapter(
+		CategoryCreateWorkflowOperationAdapter adapter =
+			new CategoryCreateWorkflowOperationAdapter(
 				new StubCategoryCreator(
 					List.of(_assetCategory(101L, 201L, 301L, "Category 1"))));
 
-		WorkflowStepResult<CategoryStepItem> result = adapter.execute(
-			new CategoryCreateRequest(
-				11L, 201L, 301L, new BatchSpec(2, "Category")));
+		WorkflowStepResult result = adapter.execute(
+			new WorkflowExecutionContext(11L),
+			Map.of(
+				"count", 2,
+				"baseName", "Category",
+				"groupId", 201L,
+				"vocabularyId", 301L));
 
 		assertEquals(1, result.count());
 		assertEquals(1, result.skipped());

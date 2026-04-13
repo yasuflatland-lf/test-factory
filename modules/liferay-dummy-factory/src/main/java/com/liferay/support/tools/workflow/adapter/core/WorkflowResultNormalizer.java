@@ -2,6 +2,7 @@ package com.liferay.support.tools.workflow.adapter.core;
 
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.support.tools.workflow.spi.WorkflowStepResult;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -39,7 +40,7 @@ final class WorkflowResultNormalizer {
 		}
 
 		return new WorkflowStepResult(
-			requested, count, skipped, success, error, items);
+			success, requested, count, skipped, items, error);
 	}
 
 	private static boolean _requireBoolean(

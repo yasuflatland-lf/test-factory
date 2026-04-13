@@ -30,11 +30,10 @@ public class RoleCreateWorkflowOperationAdapter
 			values.optionalString("description", ""),
 			values.optionalEnum("roleType", RoleType::fromString, RoleType.REGULAR));
 
-		return _toSpiResult(
-			WorkflowResultNormalizer.normalize(
-				_roleCreator.create(
+		return WorkflowResultNormalizer.normalize(
+			_roleCreator.create(
 				workflowExecutionContext.userId(), request.batch(),
-				request.roleType(), request.description(), ProgressCallback.NOOP)));
+				request.roleType(), request.description(), ProgressCallback.NOOP));
 	}
 
 	@Override
@@ -44,13 +43,4 @@ public class RoleCreateWorkflowOperationAdapter
 
 	@Reference
 	private RoleCreator _roleCreator;
-
-	private static WorkflowStepResult _toSpiResult(
-		com.liferay.support.tools.workflow.adapter.core.WorkflowStepResult result) {
-
-		return new WorkflowStepResult(
-			result.success(), result.requested(), result.count(),
-			result.skipped(), result.items(), result.error());
-	}
-
 }

@@ -19,6 +19,13 @@ import org.osgi.service.component.annotations.Reference;
 public class CompanyCreateWorkflowOperationAdapter
 	implements com.liferay.support.tools.workflow.spi.WorkflowOperationAdapter {
 
+	public CompanyCreateWorkflowOperationAdapter() {
+	}
+
+	CompanyCreateWorkflowOperationAdapter(CompanyCreator companyCreator) {
+		_companyCreator = companyCreator;
+	}
+
 	@Override
 	public WorkflowStepResult execute(
 			WorkflowExecutionContext workflowExecutionContext,

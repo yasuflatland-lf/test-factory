@@ -11,14 +11,15 @@ import com.liferay.support.tools.service.BatchSpec;
 import com.liferay.support.tools.service.MBCategoryCreator;
 import com.liferay.support.tools.utils.ProgressCallback;
 import com.liferay.support.tools.workflow.adapter.TestModelProxyUtil;
-import com.liferay.support.tools.workflow.adapter.WorkflowStepResult;
+import com.liferay.support.tools.workflow.spi.WorkflowExecutionContext;
+import com.liferay.support.tools.workflow.spi.WorkflowStepResult;
 
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-class MBCategoryCreateWorkflowAdapterTest {
+class MBCategoryCreateWorkflowOperationAdapterTest {
 
 	@Test
 	void executeMapsCreatedCategoriesIntoStepResult() throws Throwable {
@@ -27,24 +28,30 @@ class MBCategoryCreateWorkflowAdapterTest {
 				_mbCategory(701L, 801L, "MB Category 1"),
 				_mbCategory(702L, 801L, "MB Category 2")));
 
-		MBCategoryCreateWorkflowAdapter adapter =
-			new MBCategoryCreateWorkflowAdapter(mbCategoryCreator);
-		MBCategoryCreateRequest request = new MBCategoryCreateRequest(
-			51L, 801L, new BatchSpec(2, "MB Category"), "desc");
+		MBCategoryCreateWorkflowOperationAdapter adapter =
+			new MBCategoryCreateWorkflowOperationAdapter(mbCategoryCreator);
 
-		WorkflowStepResult<MBCategoryStepItem> result = adapter.execute(
-			request);
+		WorkflowStepResult result = adapter.execute(
+			new WorkflowExecutionContext(51L),
+			Map.of(
+				"baseName", "MB Category", "count", 2, "description",
+				"desc", "groupId", 801L));
 
 		assertEquals(
-			MBCategoryCreateWorkflowAdapter.OPERATION, result.operation());
+			MBCategoryCreateWorkflowOperationAdapter.OPERATION,
+			adapter.operationName());
 		assertTrue(result.success());
 		assertEquals(2, result.count());
 		assertEquals(0, result.skipped());
 		assertNull(result.error());
 		assertEquals(
 			List.of(
-				new MBCategoryStepItem(701L, 801L, "MB Category 1"),
-				new MBCategoryStepItem(702L, 801L, "MB Category 2")),
+				Map.of(
+					"categoryId", 701L, "groupId", 801L, "name",
+					"MB Category 1"),
+				Map.of(
+					"categoryId", 702L, "groupId", 801L, "name",
+					"MB Category 2")),
 			result.items());
 		assertEquals(51L, mbCategoryCreator.userId);
 		assertEquals(801L, mbCategoryCreator.groupId);
@@ -62,14 +69,16 @@ class MBCategoryCreateWorkflowAdapterTest {
 
 	@Test
 	void executeNormalizesPartialResults() throws Throwable {
-		MBCategoryCreateWorkflowAdapter adapter =
-			new MBCategoryCreateWorkflowAdapter(
+		MBCategoryCreateWorkflowOperationAdapter adapter =
+			new MBCategoryCreateWorkflowOperationAdapter(
 				new StubMBCategoryCreator(
 					List.of(_mbCategory(701L, 801L, "MB Category 1"))));
 
-		WorkflowStepResult<MBCategoryStepItem> result = adapter.execute(
-			new MBCategoryCreateRequest(
-				51L, 801L, new BatchSpec(2, "MB Category"), "desc"));
+		WorkflowStepResult result = adapter.execute(
+			new WorkflowExecutionContext(51L),
+			Map.of(
+				"baseName", "MB Category", "count", 2, "description",
+				"desc", "groupId", 801L));
 
 		assertEquals(1, result.count());
 		assertEquals(1, result.skipped());

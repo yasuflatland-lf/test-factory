@@ -25,6 +25,13 @@ import org.osgi.service.component.annotations.Reference;
 public class CategoryCreateWorkflowOperationAdapter
 	implements WorkflowOperationAdapter {
 
+	CategoryCreateWorkflowOperationAdapter() {
+	}
+
+	CategoryCreateWorkflowOperationAdapter(CategoryCreator categoryCreator) {
+		_categoryCreator = categoryCreator;
+	}
+
 	@Override
 	public WorkflowStepResult execute(
 			WorkflowExecutionContext workflowExecutionContext,
