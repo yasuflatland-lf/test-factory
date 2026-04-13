@@ -122,7 +122,8 @@ public class WorkflowFunctionFactory {
 
 		return new WorkflowStepResult(
 			result.success(), (int)result.requested(), (int)result.count(),
-			(int)result.skipped(), result.error(), result.items(), Map.of());
+			(int)result.skipped(), result.error(), result.items(),
+			result.data());
 	}
 
 	private static long _userId(

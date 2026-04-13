@@ -95,4 +95,35 @@ class WorkflowFunctionFactoryTest {
 		assertTrue(capturedContext.get().companyId() != 888L);
 	}
 
+	@Test
+	void createPreservesAdapterStepData() throws Exception {
+		WorkflowOperationAdapter adapter = new WorkflowOperationAdapter() {
+
+			@Override
+			public com.liferay.support.tools.workflow.spi.WorkflowStepResult execute(
+				WorkflowExecutionContext workflowExecutionContext,
+				Map<String, Object> parameters) {
+
+				return new com.liferay.support.tools.workflow.spi.WorkflowStepResult(
+					true, 1, 1, 0, List.of(Map.of("ok", true)), null,
+					Map.of("slug", "demo-site"));
+			}
+
+			@Override
+			public String operationName() {
+				return "custom.data.operation";
+			}
+		};
+
+		WorkflowFunction workflowFunction = new WorkflowFunctionFactory().create(
+			adapter);
+
+		WorkflowStepResult result = workflowFunction.executor().execute(
+			new WorkflowStepExecutionRequest(
+				"w-1", "s-1", "custom.data.operation", "idem-1", Map.of(),
+				new DefaultWorkflowExecutionContext(Map.of(), 1001L, 2002L)));
+
+		assertEquals("demo-site", result.data().get("slug"));
+	}
+
 }

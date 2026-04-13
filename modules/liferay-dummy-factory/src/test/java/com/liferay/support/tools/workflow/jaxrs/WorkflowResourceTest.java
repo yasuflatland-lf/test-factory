@@ -87,6 +87,23 @@ class WorkflowResourceTest {
 	}
 
 	@Test
+	void planAcceptsExplicitNullParameterValues() {
+		WorkflowResource workflowResource = new WorkflowResource();
+
+		WorkflowRequestDto request = new WorkflowRequestDto(
+			"1.0", "wf-1", Map.of(),
+			List.of(
+				new WorkflowStepDto(
+					"step-1", "unknown.operation", "idem-1",
+					List.of(
+						new WorkflowParameterDto("count", null, null),
+						new WorkflowParameterDto("baseName", "Demo", null)),
+					null)));
+
+		assertNotNull(workflowResource.plan(request));
+	}
+
+	@Test
 	void schemaRejectsStepRootIndexInReferencePattern() {
 		WorkflowResource workflowResource = new WorkflowResource();
 

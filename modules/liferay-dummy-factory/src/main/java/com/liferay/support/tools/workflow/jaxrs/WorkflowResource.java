@@ -503,7 +503,7 @@ public class WorkflowResource {
 							"Parameter name is required."));
 				}
 
-				boolean hasValue = workflowParameterDto.value() != null;
+				boolean hasValue = true;
 				boolean hasFrom = (workflowParameterDto.from() != null) &&
 					!workflowParameterDto.from().isBlank();
 
