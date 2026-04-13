@@ -29,7 +29,7 @@ class MBReplyCreateWorkflowAdapterTest {
 		MBReplyCreateWorkflowAdapter adapter =
 			new MBReplyCreateWorkflowAdapter(mbReplyCreator);
 		MBReplyCreateRequest request = new MBReplyCreateRequest(
-			71L, 1601L, 2, null, null);
+			71L, 1601L, 2, "reply body", null);
 
 		WorkflowStepResult<MBReplyStepItem> result = adapter.execute(request);
 
@@ -48,7 +48,7 @@ class MBReplyCreateWorkflowAdapterTest {
 			result.items());
 		assertEquals(71L, mbReplyCreator.userId);
 		assertEquals(1601L, mbReplyCreator.threadId);
-		assertEquals("This is a test reply.", mbReplyCreator.body);
+		assertEquals("reply body", mbReplyCreator.body);
 		assertEquals("html", mbReplyCreator.format);
 		assertSame(ProgressCallback.NOOP, mbReplyCreator.progressCallback);
 	}
@@ -57,7 +57,14 @@ class MBReplyCreateWorkflowAdapterTest {
 	void requestRejectsInvalidCount() {
 		assertThrows(
 			IllegalArgumentException.class,
-			() -> new MBReplyCreateRequest(71L, 1601L, 0, "", ""));
+			() -> new MBReplyCreateRequest(71L, 1601L, 0, "reply body", ""));
+	}
+
+	@Test
+	void requestRejectsMissingBody() {
+		assertThrows(
+			IllegalArgumentException.class,
+			() -> new MBReplyCreateRequest(71L, 1601L, 1, null, ""));
 	}
 
 	@Test
@@ -70,7 +77,7 @@ class MBReplyCreateWorkflowAdapterTest {
 							1301L, 1401L, 1501L, 1601L, "Reply 1", "Body 1"))));
 
 		WorkflowStepResult<MBReplyStepItem> result = adapter.execute(
-			new MBReplyCreateRequest(71L, 1601L, 2, "reply", "markdown"));
+			new MBReplyCreateRequest(71L, 1601L, 2, "reply body", "markdown"));
 
 		assertEquals(1, result.count());
 		assertEquals(1, result.skipped());

@@ -12,7 +12,15 @@ public record MBCategoryCreateRequest(
 		userId = WorkflowInputValidator.requirePositiveId(userId, "userId");
 		groupId = WorkflowInputValidator.requirePositiveId(groupId, "groupId");
 		batch = Objects.requireNonNull(batch, "batch is required");
-		description = WorkflowInputValidator.normalizeText(description);
+		description = _requireText(description, "description");
+	}
+
+	private static String _requireText(String value, String fieldName) {
+		if ((value == null) || value.isBlank()) {
+			throw new IllegalArgumentException(fieldName + " is required");
+		}
+
+		return value;
 	}
 
 }

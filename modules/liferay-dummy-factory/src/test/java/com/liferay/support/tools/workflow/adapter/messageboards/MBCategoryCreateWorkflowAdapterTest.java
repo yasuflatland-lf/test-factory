@@ -53,11 +53,11 @@ class MBCategoryCreateWorkflowAdapterTest {
 	}
 
 	@Test
-	void requestNormalizesNullDescription() {
-		MBCategoryCreateRequest request = new MBCategoryCreateRequest(
-			51L, 801L, new BatchSpec(1, "MB Category"), null);
-
-		assertEquals("", request.description());
+	void requestRejectsMissingDescription() {
+		assertThrows(
+			IllegalArgumentException.class,
+			() -> new MBCategoryCreateRequest(
+				51L, 801L, new BatchSpec(1, "MB Category"), null));
 	}
 
 	@Test
@@ -69,7 +69,7 @@ class MBCategoryCreateWorkflowAdapterTest {
 
 		WorkflowStepResult<MBCategoryStepItem> result = adapter.execute(
 			new MBCategoryCreateRequest(
-				51L, 801L, new BatchSpec(2, "MB Category"), ""));
+				51L, 801L, new BatchSpec(2, "MB Category"), "desc"));
 
 		assertEquals(1, result.count());
 		assertEquals(1, result.skipped());

@@ -30,7 +30,7 @@ class MBThreadCreateWorkflowAdapterTest {
 		MBThreadCreateWorkflowAdapter adapter =
 			new MBThreadCreateWorkflowAdapter(mbThreadCreator);
 		MBThreadCreateRequest request = new MBThreadCreateRequest(
-			61L, 1001L, 1101L, new BatchSpec(2, "Thread"), null, null);
+			61L, 1001L, 1101L, new BatchSpec(2, "Thread"), "body", null);
 
 		WorkflowStepResult<MBThreadStepItem> result = adapter.execute(
 			request);
@@ -49,7 +49,7 @@ class MBThreadCreateWorkflowAdapterTest {
 		assertEquals(61L, mbThreadCreator.userId);
 		assertEquals(1001L, mbThreadCreator.groupId);
 		assertEquals(1101L, mbThreadCreator.categoryId);
-		assertEquals("This is a test message.", mbThreadCreator.body);
+		assertEquals("body", mbThreadCreator.body);
 		assertEquals("html", mbThreadCreator.format);
 		assertSame(ProgressCallback.NOOP, mbThreadCreator.progressCallback);
 	}
@@ -59,7 +59,15 @@ class MBThreadCreateWorkflowAdapterTest {
 		assertThrows(
 			IllegalArgumentException.class,
 			() -> new MBThreadCreateRequest(
-				61L, 1001L, -1L, new BatchSpec(1, "Thread"), "", ""));
+				61L, 1001L, -1L, new BatchSpec(1, "Thread"), "body", ""));
+	}
+
+	@Test
+	void requestRejectsMissingBody() {
+		assertThrows(
+			IllegalArgumentException.class,
+			() -> new MBThreadCreateRequest(
+				61L, 1001L, 1101L, new BatchSpec(1, "Thread"), null, ""));
 	}
 
 	@Test

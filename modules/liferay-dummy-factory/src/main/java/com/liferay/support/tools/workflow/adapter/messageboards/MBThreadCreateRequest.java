@@ -15,9 +15,16 @@ public record MBThreadCreateRequest(
 		categoryId = WorkflowInputValidator.requireNonNegativeId(
 			categoryId, "categoryId");
 		batch = Objects.requireNonNull(batch, "batch is required");
-		body = WorkflowInputValidator.normalizeText(
-			body, "This is a test message.");
+		body = _requireText(body, "body");
 		format = WorkflowInputValidator.normalizeText(format, "html");
+	}
+
+	private static String _requireText(String value, String fieldName) {
+		if ((value == null) || value.isBlank()) {
+			throw new IllegalArgumentException(fieldName + " is required");
+		}
+
+		return value;
 	}
 
 }
