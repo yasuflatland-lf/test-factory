@@ -56,6 +56,23 @@ class MBReplyCreateWorkflowOperationAdapterTest {
 	}
 
 	@Test
+	void executeHonorsUserIdOverrideParameter() throws Throwable {
+		StubMBReplyCreator mbReplyCreator = new StubMBReplyCreator(
+			List.of(_mbReply(1301L, 1401L, 1501L, 1601L, "Reply 1", "Body 1")));
+
+		MBReplyCreateWorkflowOperationAdapter adapter =
+			new MBReplyCreateWorkflowOperationAdapter(mbReplyCreator);
+
+		adapter.execute(
+			new WorkflowExecutionContext(71L),
+			Map.of(
+				"body", "reply body", "count", 1, "threadId", 1601L, "userId",
+				72L));
+
+		assertEquals(72L, mbReplyCreator.userId);
+	}
+
+	@Test
 	void requestRejectsInvalidCount() {
 		assertThrows(
 			IllegalArgumentException.class,

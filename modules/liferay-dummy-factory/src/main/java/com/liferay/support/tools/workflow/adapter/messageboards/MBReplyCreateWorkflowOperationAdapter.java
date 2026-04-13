@@ -33,8 +33,26 @@ public class MBReplyCreateWorkflowOperationAdapter
 		throws Throwable {
 
 		WorkflowParameterValues values = new WorkflowParameterValues(parameters);
+
+		long userId = workflowExecutionContext.userId();
+
+		// Honor explicit per-step override if present; schema documents `userId`
+		// as an optional parameter for impersonation-like workflows.
+		if ((parameters != null) && parameters.containsKey("userId")) {
+			long overrideUserId = values.optionalLong("userId", Long.MIN_VALUE);
+
+			if (overrideUserId != Long.MIN_VALUE) {
+				if (overrideUserId <= 0) {
+					throw new IllegalArgumentException(
+						"userId must be positive");
+				}
+
+				userId = overrideUserId;
+			}
+		}
+
 		MBReplyCreateRequest request = new MBReplyCreateRequest(
-			workflowExecutionContext.userId(), values.requirePositiveLong("threadId"),
+			userId, values.requirePositiveLong("threadId"),
 			values.requireCount(), values.requireText("body"),
 			values.optionalString("format", "html"));
 

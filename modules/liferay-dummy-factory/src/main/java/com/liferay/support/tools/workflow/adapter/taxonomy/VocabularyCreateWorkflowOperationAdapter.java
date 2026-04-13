@@ -41,8 +41,10 @@ public class VocabularyCreateWorkflowOperationAdapter
 		throws Throwable {
 
 		WorkflowParameterValues values = new WorkflowParameterValues(parameters);
+		long userId = _resolveUserIdOverride(
+			values, workflowExecutionContext, parameters);
 		VocabularyCreateRequest request = new VocabularyCreateRequest(
-			workflowExecutionContext.userId(), values.requirePositiveLong("groupId"),
+			userId, values.requirePositiveLong("groupId"),
 			new BatchSpec(values.requireCount(), values.requireText("baseName")));
 
 		List<AssetVocabulary> vocabularies = _vocabularyCreator.create(
@@ -89,6 +91,35 @@ public class VocabularyCreateWorkflowOperationAdapter
 
 		return new WorkflowStepResult(
 			success, requested, createdCount, skipped, items, error);
+	}
+
+	private static long _resolveUserIdOverride(
+		WorkflowParameterValues values,
+		WorkflowExecutionContext workflowExecutionContext,
+		Map<String, Object> parameters) {
+
+		if (parameters == null) {
+			return workflowExecutionContext.userId();
+		}
+
+		Object rawUserId = parameters.get("userId");
+
+		if (rawUserId == null) {
+			return workflowExecutionContext.userId();
+		}
+
+		if ((rawUserId instanceof String string) && string.isBlank()) {
+			return workflowExecutionContext.userId();
+		}
+
+		long userId = values.optionalLong(
+			"userId", workflowExecutionContext.userId());
+
+		if (userId <= 0) {
+			throw new IllegalArgumentException("userId must be greater than 0");
+		}
+
+		return userId;
 	}
 
 }

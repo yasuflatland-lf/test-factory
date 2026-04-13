@@ -60,6 +60,25 @@ class VocabularyCreateWorkflowOperationAdapterTest {
 	}
 
 	@Test
+	void executeHonorsUserIdOverride() throws Throwable {
+		StubVocabularyCreator vocabularyCreator = new StubVocabularyCreator(
+			List.of(_assetVocabulary(501L, 601L, "Vocabulary 1")));
+
+		VocabularyCreateWorkflowOperationAdapter adapter =
+			new VocabularyCreateWorkflowOperationAdapter(vocabularyCreator);
+
+		adapter.execute(
+			new WorkflowExecutionContext(41L),
+			Map.of(
+				"userId", 99L,
+				"count", 1,
+				"baseName", "Vocabulary",
+				"groupId", 601L));
+
+		assertEquals(99L, vocabularyCreator.userId);
+	}
+
+	@Test
 	void executeNormalizesPartialResults() throws Throwable {
 		VocabularyCreateWorkflowOperationAdapter adapter =
 			new VocabularyCreateWorkflowOperationAdapter(

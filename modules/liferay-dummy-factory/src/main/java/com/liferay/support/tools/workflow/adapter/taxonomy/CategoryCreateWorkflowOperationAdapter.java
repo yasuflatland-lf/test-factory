@@ -39,8 +39,21 @@ public class CategoryCreateWorkflowOperationAdapter
 		throws Throwable {
 
 		WorkflowParameterValues values = new WorkflowParameterValues(parameters);
+
+		long userId = workflowExecutionContext.userId();
+
+		if (parameters.containsKey("userId")) {
+			long overrideUserId = values.optionalLong("userId", 0);
+
+			if (overrideUserId <= 0) {
+				throw new IllegalArgumentException("userId must be positive");
+			}
+
+			userId = overrideUserId;
+		}
+
 		CategoryCreateRequest request = new CategoryCreateRequest(
-			workflowExecutionContext.userId(), values.requirePositiveLong("groupId"),
+			userId, values.requirePositiveLong("groupId"),
 			values.requirePositiveLong("vocabularyId"),
 			new BatchSpec(values.requireCount(), values.requireText("baseName")));
 

@@ -66,6 +66,25 @@ class CategoryCreateWorkflowOperationAdapterTest {
 	}
 
 	@Test
+	void executeHonorsUserIdOverride() throws Throwable {
+		StubCategoryCreator categoryCreator = new StubCategoryCreator(
+			List.of(_assetCategory(101L, 201L, 301L, "Category 1")));
+
+		CategoryCreateWorkflowOperationAdapter adapter =
+			new CategoryCreateWorkflowOperationAdapter(categoryCreator);
+		adapter.execute(
+			new WorkflowExecutionContext(11L),
+			Map.of(
+				"userId", 99L,
+				"count", 1,
+				"baseName", "Category",
+				"groupId", 201L,
+				"vocabularyId", 301L));
+
+		assertEquals(99L, categoryCreator.userId);
+	}
+
+	@Test
 	void executeNormalizesPartialResults() throws Throwable {
 		CategoryCreateWorkflowOperationAdapter adapter =
 			new CategoryCreateWorkflowOperationAdapter(
