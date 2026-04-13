@@ -1,6 +1,7 @@
 package com.liferay.support.tools.workflow;
 
 import java.util.LinkedHashMap;
+import java.util.Collections;
 import java.util.Map;
 
 public record WorkflowStepExecutionRequest(
@@ -24,7 +25,8 @@ public record WorkflowStepExecutionRequest(
 			throw new IllegalArgumentException("idempotencyKey is required");
 		}
 
-		parameters = Map.copyOf(new LinkedHashMap<>(parameters));
+		parameters = Collections.unmodifiableMap(
+			new LinkedHashMap<>(parameters));
 
 		if (context == null) {
 			throw new IllegalArgumentException("context is required");

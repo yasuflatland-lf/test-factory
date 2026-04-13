@@ -14,6 +14,11 @@ public record WorkflowStepDefinition(
 			throw new IllegalArgumentException("step id is required");
 		}
 
+		if (!id.matches("[A-Za-z0-9_-]+")) {
+			throw new IllegalArgumentException(
+				"step id must contain only letters, digits, hyphens, or underscores");
+		}
+
 		if ((operation == null) || operation.isBlank()) {
 			throw new IllegalArgumentException("operation is required");
 		}

@@ -1,6 +1,7 @@
 package com.liferay.support.tools.workflow;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -238,7 +239,7 @@ public class WorkflowEngine {
 				_RESOLVER.resolve(workflowParameter.source(), workflowExecutionContext));
 		}
 
-		return Map.copyOf(parameters);
+		return Collections.unmodifiableMap(parameters);
 	}
 
 	private static void _validateReference(

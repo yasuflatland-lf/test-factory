@@ -93,35 +93,8 @@ public class WorkflowFunctionFactory {
 		}
 	}
 
-	private static long _inputLong(
-		WorkflowExecutionContextView workflowExecutionContextView, String key) {
-
-		Object value = workflowExecutionContextView.input().get(key);
-
-		if (value instanceof Number number) {
-			return number.longValue();
-		}
-
-		if (value instanceof String string) {
-			try {
-				return Long.parseLong(string.trim());
-			}
-			catch (NumberFormatException numberFormatException) {
-				return 0L;
-			}
-		}
-
-		return 0L;
-	}
-
 	private static long _runtimeCompanyId(
 		WorkflowExecutionContextView workflowExecutionContextView) {
-
-		long inputCompanyId = _inputLong(workflowExecutionContextView, "companyId");
-
-		if (inputCompanyId > 0) {
-			return inputCompanyId;
-		}
 
 		if (workflowExecutionContextView instanceof DefaultWorkflowExecutionContext
 				defaultWorkflowExecutionContext) {
@@ -134,12 +107,6 @@ public class WorkflowFunctionFactory {
 
 	private static long _runtimeUserId(
 		WorkflowExecutionContextView workflowExecutionContextView) {
-
-		long inputUserId = _inputLong(workflowExecutionContextView, "userId");
-
-		if (inputUserId > 0) {
-			return inputUserId;
-		}
 
 		if (workflowExecutionContextView instanceof DefaultWorkflowExecutionContext
 				defaultWorkflowExecutionContext) {

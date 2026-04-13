@@ -1,6 +1,7 @@
 package com.liferay.support.tools.workflow;
 
 import java.util.LinkedHashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -23,7 +24,7 @@ public record WorkflowDefinition(
 			throw new IllegalArgumentException("steps is required");
 		}
 
-		input = Map.copyOf(new LinkedHashMap<>(input));
+		input = Collections.unmodifiableMap(new LinkedHashMap<>(input));
 		steps = List.copyOf(steps);
 	}
 

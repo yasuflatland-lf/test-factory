@@ -1,6 +1,7 @@
 package com.liferay.support.tools.workflow;
 
 import java.util.LinkedHashMap;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
@@ -16,7 +17,7 @@ public class DefaultWorkflowExecutionContext
 
 		_currentCompanyId = currentCompanyId;
 		_currentUserId = currentUserId;
-		_input = Map.copyOf(new LinkedHashMap<>((input == null) ? Map.of() : input));
+		_input = _immutableCopy(input);
 	}
 
 	public long currentCompanyId() {
@@ -59,5 +60,12 @@ public class DefaultWorkflowExecutionContext
 	private final Map<String, Object> _input;
 	private final Map<String, WorkflowStepResult> _stepResults =
 		new LinkedHashMap<>();
+
+	private static Map<String, Object> _immutableCopy(
+		Map<String, Object> source) {
+
+		return Collections.unmodifiableMap(
+			new LinkedHashMap<>((source == null) ? Map.of() : source));
+	}
 
 }

@@ -25,6 +25,7 @@ import com.liferay.support.tools.workflow.dto.WorkflowStepDto;
 import com.liferay.support.tools.workflow.dto.WorkflowValidationErrorDto;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -207,11 +208,11 @@ public class WorkflowResource {
 	private List<Map<String, Object>> _referenceSyntax() {
 		return List.of(
 			Map.of(
-				"pattern", "input.<property>[.<nestedProperty>...]",
+				"pattern", "input[.<property>[.<nestedProperty>|[index]>...]]",
 				"example", "input.groupId",
 				"description", "Read a value from workflow input."),
 			Map.of(
-				"pattern", "steps.<stepId>.<property>[.<nestedProperty>|[index]...]",
+				"pattern", "steps.<stepId>[.<property>[.<nestedProperty>|[index]>...]]",
 				"example", "steps.createSite.items[0].groupId",
 				"description", "Read a value from an earlier step result."));
 	}
@@ -243,7 +244,7 @@ public class WorkflowResource {
 						Map.of(
 							"type", "string",
 							"pattern",
-							"^(input|steps\\.[A-Za-z0-9_-]+)(\\.[A-Za-z_][A-Za-z0-9_-]*|\\[[0-9]+\\])*$")),
+							"^(input(\\.[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*|\\[[0-9]+\\])*)?|steps\\.[A-Za-z0-9_-]+(\\.[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*|\\[[0-9]+\\])*)?)$")),
 					"additionalProperties", false)));
 
 		Map<String, Object> schema = new LinkedHashMap<>();
@@ -336,7 +337,8 @@ public class WorkflowResource {
 			new com.liferay.support.tools.workflow.WorkflowDefinition(
 				workflowRequestDto.schemaVersion(), workflowRequestDto.workflowId(),
 				(workflowRequestDto.input() == null) ? Map.of() :
-					Map.copyOf(new LinkedHashMap<>(workflowRequestDto.input())),
+					Collections.unmodifiableMap(
+						new LinkedHashMap<>(workflowRequestDto.input())),
 				stepDefinitions),
 			stepsById);
 	}
