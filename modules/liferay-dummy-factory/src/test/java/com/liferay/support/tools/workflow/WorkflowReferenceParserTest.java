@@ -41,4 +41,18 @@ class WorkflowReferenceParserTest {
 			() -> new WorkflowReferenceParser().parse("steps.step1.items[abc]"));
 	}
 
+	@Test
+	void parseRejectsInputRootIndex() {
+		assertThrows(
+			IllegalArgumentException.class,
+			() -> new WorkflowReferenceParser().parse("input[0]"));
+	}
+
+	@Test
+	void parseRejectsStepRootIndex() {
+		assertThrows(
+			IllegalArgumentException.class,
+			() -> new WorkflowReferenceParser().parse("steps.createSite[0]"));
+	}
+
 }
