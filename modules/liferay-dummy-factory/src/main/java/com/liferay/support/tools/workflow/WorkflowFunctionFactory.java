@@ -12,8 +12,8 @@ import com.liferay.support.tools.workflow.adapter.core.dto.UserCreateRequest;
 import com.liferay.support.tools.workflow.adapter.messageboards.MBCategoryCreateRequest;
 import com.liferay.support.tools.workflow.adapter.messageboards.MBReplyCreateRequest;
 import com.liferay.support.tools.workflow.adapter.messageboards.MBThreadCreateRequest;
-import com.liferay.support.tools.workflow.adapter.taxonomy.CategoryCreateRequest;
-import com.liferay.support.tools.workflow.adapter.taxonomy.VocabularyCreateRequest;
+import com.liferay.support.tools.workflow.adapter.taxonomy.dto.CategoryCreateRequest;
+import com.liferay.support.tools.workflow.adapter.taxonomy.dto.VocabularyCreateRequest;
 import com.liferay.support.tools.workflow.spi.WorkflowExecutionContext;
 
 import java.lang.reflect.RecordComponent;
@@ -269,7 +269,9 @@ public class WorkflowFunctionFactory {
 			request -> _invoke(
 				() -> _toStepResult(
 					adapter.execute(
-						new WorkflowExecutionContext(_userId(request, _values(request))),
+						new WorkflowExecutionContext(
+							_userId(request, _values(request)),
+							_companyId(request, _values(request), false)),
 						request.parameters()))));
 	}
 

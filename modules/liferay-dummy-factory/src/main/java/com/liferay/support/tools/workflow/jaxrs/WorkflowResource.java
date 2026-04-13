@@ -126,18 +126,6 @@ public class WorkflowResource {
 		cardinality = ReferenceCardinality.MULTIPLE,
 		policy = ReferencePolicy.DYNAMIC
 	)
-	protected void bindLegacyWorkflowOperationAdapter(
-		com.liferay.support.tools.workflow.adapter.WorkflowOperationAdapter<?, ?>
-			workflowOperationAdapter) {
-
-		_legacyWorkflowOperationAdapters.put(
-			workflowOperationAdapter.operation(), workflowOperationAdapter);
-	}
-
-	@Reference(
-		cardinality = ReferenceCardinality.MULTIPLE,
-		policy = ReferencePolicy.DYNAMIC
-	)
 	protected void bindSpiWorkflowOperationAdapter(
 		com.liferay.support.tools.workflow.spi.WorkflowOperationAdapter
 			workflowOperationAdapter) {
@@ -146,38 +134,11 @@ public class WorkflowResource {
 			workflowOperationAdapter.operationName(), workflowOperationAdapter);
 	}
 
-	@Reference(
-		cardinality = ReferenceCardinality.MULTIPLE,
-		policy = ReferencePolicy.DYNAMIC
-	)
-	protected void bindWorkflowCoreOperationAdapter(
-		com.liferay.support.tools.workflow.adapter.core.WorkflowOperationAdapter<?>
-			workflowOperationAdapter) {
-
-		_workflowCoreOperationAdapters.put(
-			workflowOperationAdapter.getOperationName(), workflowOperationAdapter);
-	}
-
-	protected void unbindLegacyWorkflowOperationAdapter(
-		com.liferay.support.tools.workflow.adapter.WorkflowOperationAdapter<?, ?>
-			workflowOperationAdapter) {
-
-		_legacyWorkflowOperationAdapters.remove(workflowOperationAdapter.operation());
-	}
-
 	protected void unbindSpiWorkflowOperationAdapter(
 		com.liferay.support.tools.workflow.spi.WorkflowOperationAdapter
 			workflowOperationAdapter) {
 
 		_spiWorkflowOperationAdapters.remove(workflowOperationAdapter.operationName());
-	}
-
-	protected void unbindWorkflowCoreOperationAdapter(
-		com.liferay.support.tools.workflow.adapter.core.WorkflowOperationAdapter<?>
-			workflowOperationAdapter) {
-
-		_workflowCoreOperationAdapters.remove(
-			workflowOperationAdapter.getOperationName());
 	}
 
 	private long _currentCompanyId(HttpServletRequest httpServletRequest) {
@@ -339,27 +300,11 @@ public class WorkflowResource {
 	private Map<String, WorkflowFunction> _workflowFunctions() {
 		Map<String, WorkflowFunction> workflowFunctions = new LinkedHashMap<>();
 
-		for (com.liferay.support.tools.workflow.adapter.core.WorkflowOperationAdapter<?>
-				workflowOperationAdapter : _workflowCoreOperationAdapters.values()) {
-
-			workflowFunctions.put(
-				workflowOperationAdapter.getOperationName(),
-				_workflowFunctionFactory.create(workflowOperationAdapter));
-		}
-
 		for (com.liferay.support.tools.workflow.spi.WorkflowOperationAdapter
 				workflowOperationAdapter : _spiWorkflowOperationAdapters.values()) {
 
 			workflowFunctions.put(
 				workflowOperationAdapter.operationName(),
-				_workflowFunctionFactory.create(workflowOperationAdapter));
-		}
-
-		for (com.liferay.support.tools.workflow.adapter.WorkflowOperationAdapter<?, ?>
-				workflowOperationAdapter : _legacyWorkflowOperationAdapters.values()) {
-
-			workflowFunctions.put(
-				workflowOperationAdapter.operation(),
 				_workflowFunctionFactory.create(workflowOperationAdapter));
 		}
 
@@ -601,12 +546,6 @@ public class WorkflowResource {
 	@Reference
 	private Portal _portal;
 
-	private final Map<String, com.liferay.support.tools.workflow.adapter.
-		WorkflowOperationAdapter<?, ?>> _legacyWorkflowOperationAdapters =
-			new ConcurrentHashMap<>();
-	private final Map<String, com.liferay.support.tools.workflow.adapter.core.
-		WorkflowOperationAdapter<?>> _workflowCoreOperationAdapters =
-			new ConcurrentHashMap<>();
 	private final WorkflowFunctionFactory _workflowFunctionFactory =
 		new WorkflowFunctionFactory();
 	private final WorkflowReferenceParser _workflowReferenceParser =
