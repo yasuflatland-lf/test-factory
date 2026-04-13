@@ -5,6 +5,8 @@ import com.liferay.support.tools.service.VocabularyCreator;
 import com.liferay.support.tools.utils.ProgressCallback;
 import com.liferay.support.tools.workflow.adapter.WorkflowOperationAdapter;
 import com.liferay.support.tools.workflow.adapter.WorkflowStepResult;
+import com.liferay.support.tools.workflow.adapter.taxonomy.dto.VocabularyCreateRequest;
+import com.liferay.support.tools.workflow.adapter.taxonomy.dto.VocabularyStepItem;
 
 import java.util.List;
 

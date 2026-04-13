@@ -5,6 +5,8 @@ import com.liferay.support.tools.service.CategoryCreator;
 import com.liferay.support.tools.utils.ProgressCallback;
 import com.liferay.support.tools.workflow.adapter.WorkflowOperationAdapter;
 import com.liferay.support.tools.workflow.adapter.WorkflowStepResult;
+import com.liferay.support.tools.workflow.adapter.taxonomy.dto.CategoryCreateRequest;
+import com.liferay.support.tools.workflow.adapter.taxonomy.dto.CategoryStepItem;
 
 import java.util.List;
 

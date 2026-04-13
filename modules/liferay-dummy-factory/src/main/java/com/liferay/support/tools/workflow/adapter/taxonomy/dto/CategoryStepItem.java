@@ -1,4 +1,4 @@
-package com.liferay.support.tools.workflow.adapter.taxonomy;
+package com.liferay.support.tools.workflow.adapter.taxonomy.dto;
 
 import com.liferay.asset.kernel.model.AssetCategory;
 
