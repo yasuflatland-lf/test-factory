@@ -6,7 +6,7 @@ import org.osgi.service.component.annotations.Component;
 
 @Component(
 	property = {
-		"osgi.jaxrs.application.base=/o/ldf-workflow",
+		"osgi.jaxrs.application.base=/ldf-workflow",
 		"osgi.jaxrs.name=ldf-workflow"
 	},
 	service = Application.class

@@ -114,6 +114,19 @@ final class CreatorJsonNormalizer {
 			return number.longValue();
 		}
 
+		if (value instanceof String string) {
+			if (string.isBlank()) {
+				throw new IllegalArgumentException(key + " must be a number");
+			}
+
+			try {
+				return Long.parseLong(string.trim());
+			}
+			catch (NumberFormatException numberFormatException) {
+				throw new IllegalArgumentException(key + " must be a number");
+			}
+		}
+
 		throw new IllegalArgumentException(key + " must be a number");
 	}
 
