@@ -6,24 +6,18 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.support.tools.constants.LDFPortletKeys;
 import com.liferay.support.tools.service.BatchSpec;
 import com.liferay.support.tools.service.CategoryCreator;
-import com.liferay.support.tools.utils.ProgressCallback;
-import com.liferay.support.tools.utils.ProgressManager;
 
 import java.util.List;
 
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -42,93 +36,60 @@ public class CategoryResourceCommand extends BaseMVCResourceCommand {
 			ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 		throws Exception {
 
-		HttpServletRequest httpServletRequest =
-			_portal.getOriginalServletRequest(
-				_portal.getHttpServletRequest(resourceRequest));
+		PortletJsonCommandTemplate.serveJsonWithProgress(
+			resourceRequest, resourceResponse, _portal, _log,
+			"Failed to create categories",
+			(context, data, responseJson) -> {
+				BatchSpec batchSpec = ResourceCommandUtil.parseBatchSpec(data);
 
-		String dataString = ParamUtil.getString(
-			httpServletRequest, "data");
+				long groupId = GetterUtil.getLong(data.getString("groupId"));
+				long vocabularyId = GetterUtil.getLong(
+					data.getString("vocabularyId"));
 
-		JSONObject responseJson = JSONFactoryUtil.createJSONObject();
+				if (groupId <= 0) {
+					throw new IllegalArgumentException(
+						"groupId must be greater than 0");
+				}
 
-		ProgressManager progressManager = new ProgressManager();
+				if (vocabularyId <= 0) {
+					throw new IllegalArgumentException(
+						"vocabularyId is required");
+				}
 
-		boolean progressStarted = false;
+				List<AssetCategory> categories = _categoryCreator.create(
+					context.getUserId(), groupId, vocabularyId, batchSpec,
+					context.getProgressCallback());
 
-		try {
-			progressManager.start(resourceRequest);
-			progressStarted = true;
+				JSONArray itemsArray = JSONFactoryUtil.createJSONArray();
 
-			JSONObject data = JSONFactoryUtil.createJSONObject(dataString);
+				for (AssetCategory category : categories) {
+					JSONObject categoryJson = JSONFactoryUtil.createJSONObject();
 
-			BatchSpec batchSpec = ResourceCommandUtil.parseBatchSpec(data);
+					categoryJson.put("categoryId", category.getCategoryId());
+					categoryJson.put("name", category.getName());
 
-			long groupId = GetterUtil.getLong(data.getString("groupId"));
-			long vocabularyId = GetterUtil.getLong(
-				data.getString("vocabularyId"));
+					itemsArray.put(categoryJson);
+				}
 
-			if (groupId <= 0) {
-				throw new IllegalArgumentException(
-					"groupId must be greater than 0");
-			}
+				int requested = batchSpec.count();
+				int created = categories.size();
+				boolean success = (created == requested);
 
-			if (vocabularyId <= 0) {
-				throw new IllegalArgumentException(
-					"vocabularyId is required");
-			}
+				responseJson.put("count", created);
+				responseJson.put("items", itemsArray);
+				responseJson.put("requested", requested);
+				responseJson.put("skipped", 0);
+				responseJson.put("success", success);
 
-			long userId = _portal.getUserId(resourceRequest);
+				if (!success) {
+					responseJson.put(
+						"error",
+						"Only " + created + " of " + requested +
+							" categories were created.");
+				}
 
-			List<AssetCategory> categories = _categoryCreator.create(
-				userId, groupId, vocabularyId, batchSpec,
-				ProgressCallback.fromProgressManager(
-					progressManager));
-
-			JSONArray itemsArray = JSONFactoryUtil.createJSONArray();
-
-			for (AssetCategory category : categories) {
-				JSONObject categoryJson = JSONFactoryUtil.createJSONObject();
-
-				categoryJson.put("categoryId", category.getCategoryId());
-				categoryJson.put("name", category.getName());
-
-				itemsArray.put(categoryJson);
-			}
-
-			int requested = batchSpec.count();
-			int created = categories.size();
-			boolean success = (created == requested);
-
-			responseJson.put("count", created);
-			responseJson.put("items", itemsArray);
-			responseJson.put("requested", requested);
-			responseJson.put("skipped", 0);
-			responseJson.put("success", success);
-
-			if (!success) {
-				responseJson.put(
-					"error",
-					"Only " + created + " of " + requested +
-						" categories were created.");
-			}
-		}
-		catch (IllegalArgumentException illegalArgumentException) {
-			ResourceCommandUtil.setErrorResponse(
-				responseJson, illegalArgumentException);
-		}
-		catch (Throwable throwable) {
-			_log.error("Failed to create categories", throwable);
-
-			ResourceCommandUtil.setErrorResponse(responseJson, throwable);
-		}
-		finally {
-			if (progressStarted) {
-				progressManager.finish();
-			}
-		}
-
-		JSONPortletResponseUtil.writeJSON(
-			resourceRequest, resourceResponse, responseJson);
+				return responseJson;
+			});
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
