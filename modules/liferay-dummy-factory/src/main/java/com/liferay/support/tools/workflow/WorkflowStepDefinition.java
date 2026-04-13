@@ -22,6 +22,10 @@ public record WorkflowStepDefinition(
 			throw new IllegalArgumentException("idempotencyKey is required");
 		}
 
+		if (parameters == null) {
+			throw new IllegalArgumentException("parameters is required");
+		}
+
 		parameters = List.copyOf(parameters);
 
 		if (onErrorPolicy == null) {

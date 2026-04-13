@@ -7,7 +7,7 @@ public class WorkflowValidationException extends IllegalArgumentException {
 	public WorkflowValidationException(List<WorkflowValidationError> errors) {
 		super(_buildMessage(errors));
 
-		_errors = List.copyOf(errors);
+		_errors = (errors == null) ? List.of() : List.copyOf(errors);
 	}
 
 	public List<WorkflowValidationError> getErrors() {

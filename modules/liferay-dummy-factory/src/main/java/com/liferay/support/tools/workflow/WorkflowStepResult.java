@@ -30,25 +30,33 @@ public record WorkflowStepResult(
 				"skipped must be greater than or equal to 0");
 		}
 
-		if ((count + skipped) > requested) {
-			throw new IllegalArgumentException(
-				"count + skipped must be less than or equal to requested");
+		error = _normalizeError(error);
+		items = _copyItems(items);
+		data = Map.copyOf(new LinkedHashMap<>(_nullSafeMap(data)));
+
+		if (count != items.size()) {
+			throw new IllegalArgumentException("count must match items size");
 		}
 
-		error = _normalizeError(error);
+		if ((count + skipped) != requested) {
+			throw new IllegalArgumentException(
+				"count + skipped must equal requested");
+		}
 
 		if (success && (count != requested)) {
 			throw new IllegalArgumentException(
 				"success requires count to equal requested");
 		}
 
+		if (success && (error != null)) {
+			throw new IllegalArgumentException(
+				"error must be null when success is true");
+		}
+
 		if (!success && (error == null)) {
 			throw new IllegalArgumentException(
 				"error is required when success is false");
 		}
-
-		items = _copyItems(items);
-		data = Map.copyOf(new LinkedHashMap<>(_nullSafeMap(data)));
 	}
 
 	public Map<String, Object> asMap() {

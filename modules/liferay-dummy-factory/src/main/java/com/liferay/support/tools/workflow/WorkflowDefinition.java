@@ -15,6 +15,14 @@ public record WorkflowDefinition(
 			throw new IllegalArgumentException("schemaVersion is required");
 		}
 
+		if (input == null) {
+			throw new IllegalArgumentException("input is required");
+		}
+
+		if (steps == null) {
+			throw new IllegalArgumentException("steps is required");
+		}
+
 		input = Map.copyOf(new LinkedHashMap<>(input));
 		steps = List.copyOf(steps);
 	}
