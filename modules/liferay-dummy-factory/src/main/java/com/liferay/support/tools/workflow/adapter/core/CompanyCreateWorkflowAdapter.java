@@ -43,13 +43,19 @@ public class CompanyCreateWorkflowAdapter
 		}
 
 		int createdCount = items.size();
+		if (createdCount > request.count()) {
+			throw new IllegalStateException(
+				"Company creator returned more companies than requested");
+		}
+
+		int skipped = request.count() - createdCount;
 		boolean success = (createdCount == request.count());
 		String error = success ? null :
 			"Only " + createdCount + " of " + request.count() +
 				" companies were created.";
 
 		return new WorkflowStepResult(
-			request.count(), createdCount, 0, success, error, items);
+			request.count(), createdCount, skipped, success, error, items);
 	}
 
 	@Override

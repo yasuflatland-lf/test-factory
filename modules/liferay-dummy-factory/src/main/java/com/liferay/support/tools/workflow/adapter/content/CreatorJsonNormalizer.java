@@ -16,69 +16,105 @@ final class CreatorJsonNormalizer {
 
 		JSONObject jsonObject = _requireJSONObject(creatorResult);
 
+		boolean success = _requireBoolean(jsonObject, "success");
+		long requested = _requireLong(jsonObject, "requested");
+		long count = _requireLong(jsonObject, "count");
+		long skipped = _requireLong(jsonObject, "skipped");
+		JSONArray itemsArray = _requireJSONArray(jsonObject, "items");
+		String error = _optionalString(jsonObject, "error");
+
+		List<Map<String, Object>> items = _toList(itemsArray);
+
+		if (count != items.size()) {
+			throw new IllegalArgumentException("count must match items size");
+		}
+
 		return new WorkflowStepResult(
-			jsonObject.getBoolean("success"),
-			jsonObject.getLong("requested"),
-			jsonObject.getLong("count"),
-			jsonObject.getLong("skipped"),
-			_toList(jsonObject.getJSONArray("items")),
-			jsonObject.getString("error", null));
+			success, requested, count, skipped, items, error);
 	}
 
 	public static WorkflowStepResult normalizeWebContentResult(
 		Object creatorResult) {
 
 		JSONObject jsonObject = _requireJSONObject(creatorResult);
-		JSONArray perSite = jsonObject.getJSONArray("perSite");
-		List<Map<String, Object>> items = new ArrayList<>();
+		JSONArray perSite = _requireJSONArray(jsonObject, "perSite");
+		List<Map<String, Object>> items = new ArrayList<>(perSite.length());
 		long skipped = 0;
 
-		if (perSite != null) {
-			for (int i = 0; i < perSite.length(); i++) {
-				JSONObject siteJson = perSite.getJSONObject(i);
-				long created = siteJson.getLong("created");
-				long failed = siteJson.getLong("failed");
-				String error = siteJson.getString("error", null);
+		for (int i = 0; i < perSite.length(); i++) {
+			Object value = perSite.get(i);
 
-				Map<String, Object> item = new LinkedHashMap<>();
-
-				item.put("groupId", siteJson.getLong("groupId"));
-				item.put("siteName", siteJson.getString("siteName"));
-				item.put("requested", created + failed);
-				item.put("count", created);
-				item.put("skipped", failed);
-				item.put("success", (failed == 0) && (error == null));
-				item.put("created", created);
-				item.put("failed", failed);
-
-				if (error != null) {
-					item.put("error", error);
-				}
-
-				items.add(item);
-				skipped += failed;
+			if (!(value instanceof JSONObject siteJson)) {
+				throw new IllegalArgumentException(
+					"perSite[" + i + "] must be a JSONObject");
 			}
+
+			long groupId = _requireLong(siteJson, "groupId");
+			String siteName = _requireString(siteJson, "siteName");
+			long created = _requireLong(siteJson, "created");
+			long failed = _requireLong(siteJson, "failed");
+			String error = _optionalString(siteJson, "error");
+
+			Map<String, Object> item = new LinkedHashMap<>();
+
+			item.put("groupId", groupId);
+			item.put("siteName", siteName);
+			item.put("requested", created + failed);
+			item.put("count", created);
+			item.put("skipped", failed);
+			item.put("success", (failed == 0) && (error == null));
+			item.put("created", created);
+			item.put("failed", failed);
+
+			if (error != null) {
+				item.put("error", error);
+			}
+
+			items.add(item);
+			skipped += failed;
 		}
 
-		long requested = jsonObject.getLong("totalRequested");
-		long count = jsonObject.getLong("totalCreated");
-		boolean success = jsonObject.getBoolean("ok");
+		long requested = _requireLong(jsonObject, "totalRequested");
+		long count = _requireLong(jsonObject, "totalCreated");
+		boolean success = _requireBoolean(jsonObject, "ok");
+		String error = _resolveWebContentError(success, count, requested, items);
 
 		return new WorkflowStepResult(
-			success, requested, count, skipped, items,
-			_resolveWebContentError(success, count, requested, items));
+			success, requested, count, skipped, items, error);
 	}
 
-	private static Object _normalizeValue(Object value) {
+	private static boolean _requireBoolean(
+		JSONObject jsonObject, String key) {
+
+		Object value = _requireValue(jsonObject, key);
+
+		if (value instanceof Boolean booleanValue) {
+			return booleanValue;
+		}
+
+		throw new IllegalArgumentException(key + " must be a boolean");
+	}
+
+	private static JSONArray _requireJSONArray(
+		JSONObject jsonObject, String key) {
+
+		Object value = _requireValue(jsonObject, key);
+
 		if (value instanceof JSONArray jsonArray) {
-			return _toList(jsonArray);
+			return jsonArray;
 		}
 
-		if (value instanceof JSONObject jsonObject) {
-			return _toMap(jsonObject);
+		throw new IllegalArgumentException(key + " must be a JSONArray");
+	}
+
+	private static long _requireLong(JSONObject jsonObject, String key) {
+		Object value = _requireValue(jsonObject, key);
+
+		if (value instanceof Number number) {
+			return number.longValue();
 		}
 
-		return value;
+		throw new IllegalArgumentException(key + " must be a number");
 	}
 
 	private static JSONObject _requireJSONObject(Object creatorResult) {
@@ -88,6 +124,48 @@ final class CreatorJsonNormalizer {
 		}
 
 		return jsonObject;
+	}
+
+	private static String _requireString(JSONObject jsonObject, String key) {
+		Object value = _requireValue(jsonObject, key);
+
+		if (value instanceof String string) {
+			return string;
+		}
+
+		throw new IllegalArgumentException(key + " must be a string");
+	}
+
+	private static Object _requireValue(JSONObject jsonObject, String key) {
+		if (!jsonObject.has(key)) {
+			throw new IllegalArgumentException(key + " is required");
+		}
+
+		Object value = jsonObject.get(key);
+
+		if (value == null) {
+			throw new IllegalArgumentException(key + " is required");
+		}
+
+		return value;
+	}
+
+	private static String _optionalString(JSONObject jsonObject, String key) {
+		if (!jsonObject.has(key)) {
+			return null;
+		}
+
+		Object value = jsonObject.get(key);
+
+		if (value == null) {
+			return null;
+		}
+
+		if (value instanceof String string) {
+			return string;
+		}
+
+		throw new IllegalArgumentException(key + " must be a string");
 	}
 
 	private static String _resolveWebContentError(
@@ -115,25 +193,17 @@ final class CreatorJsonNormalizer {
 	}
 
 	private static List<Map<String, Object>> _toList(JSONArray jsonArray) {
-		List<Map<String, Object>> items = new ArrayList<>();
-
-		if (jsonArray == null) {
-			return items;
-		}
+		List<Map<String, Object>> items = new ArrayList<>(jsonArray.length());
 
 		for (int i = 0; i < jsonArray.length(); i++) {
 			Object value = jsonArray.get(i);
 
-			if (value instanceof JSONObject jsonObject) {
-				items.add(_toMap(jsonObject));
+			if (!(value instanceof JSONObject jsonObject)) {
+				throw new IllegalArgumentException(
+					"items[" + i + "] must be a JSONObject");
 			}
-			else {
-				Map<String, Object> item = new LinkedHashMap<>();
 
-				item.put("value", _normalizeValue(value));
-
-				items.add(item);
-			}
+			items.add(_toMap(jsonObject));
 		}
 
 		return items;
@@ -147,6 +217,18 @@ final class CreatorJsonNormalizer {
 		}
 
 		return normalized;
+	}
+
+	private static Object _normalizeValue(Object value) {
+		if (value instanceof JSONArray jsonArray) {
+			return _toList(jsonArray);
+		}
+
+		if (value instanceof JSONObject jsonObject) {
+			return _toMap(jsonObject);
+		}
+
+		return value;
 	}
 
 }

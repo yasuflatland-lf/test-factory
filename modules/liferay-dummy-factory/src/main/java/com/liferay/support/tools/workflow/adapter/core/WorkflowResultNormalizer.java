@@ -14,40 +14,98 @@ final class WorkflowResultNormalizer {
 	static WorkflowStepResult normalize(JSONObject jsonObject) {
 		Objects.requireNonNull(jsonObject, "jsonObject");
 
-		JSONArray itemsArray = jsonObject.getJSONArray("items");
+		JSONArray itemsArray = _requireJSONArray(jsonObject, "items");
+		int requested = _requireInt(jsonObject, "requested");
+		int count = _requireInt(jsonObject, "count");
+		int skipped = _requireInt(jsonObject, "skipped");
+		boolean success = _requireBoolean(jsonObject, "success");
+		String error = _optionalString(jsonObject, "error");
 
-		List<Map<String, Object>> items = new ArrayList<>();
+		List<Map<String, Object>> items = new ArrayList<>(itemsArray.length());
 
-		if (itemsArray != null) {
-			for (int i = 0; i < itemsArray.length(); i++) {
-				Object value = itemsArray.get(i);
+		for (int i = 0; i < itemsArray.length(); i++) {
+			Object value = itemsArray.get(i);
 
-				if (value instanceof JSONObject itemJSONObject) {
-					items.add(_toMap(itemJSONObject));
-				}
-				else {
-					Map<String, Object> wrappedValue = new LinkedHashMap<>();
-
-					wrappedValue.put("value", _normalizeValue(value));
-
-					items.add(wrappedValue);
-				}
+			if (!(value instanceof JSONObject itemJSONObject)) {
+				throw new IllegalArgumentException(
+					"items[" + i + "] must be a JSONObject");
 			}
+
+			items.add(_toMap(itemJSONObject));
 		}
 
-		int count = jsonObject.has("count") ? jsonObject.getInt("count") :
-			items.size();
-		int requested = jsonObject.has("requested") ?
-			jsonObject.getInt("requested") : count;
-		int skipped = jsonObject.has("skipped") ?
-			jsonObject.getInt("skipped") : 0;
-		boolean success = jsonObject.has("success") ?
-			jsonObject.getBoolean("success") : (count == requested);
-		String error = jsonObject.has("error") ?
-			jsonObject.getString("error") : null;
+		if (count != items.size()) {
+			throw new IllegalArgumentException("count must match items size");
+		}
 
 		return new WorkflowStepResult(
 			requested, count, skipped, success, error, items);
+	}
+
+	private static boolean _requireBoolean(
+		JSONObject jsonObject, String key) {
+
+		Object value = _requireValue(jsonObject, key);
+
+		if (value instanceof Boolean booleanValue) {
+			return booleanValue;
+		}
+
+		throw new IllegalArgumentException(key + " must be a boolean");
+	}
+
+	private static int _requireInt(JSONObject jsonObject, String key) {
+		Object value = _requireValue(jsonObject, key);
+
+		if (value instanceof Number number) {
+			return number.intValue();
+		}
+
+		throw new IllegalArgumentException(key + " must be a number");
+	}
+
+	private static JSONArray _requireJSONArray(
+		JSONObject jsonObject, String key) {
+
+		Object value = _requireValue(jsonObject, key);
+
+		if (value instanceof JSONArray jsonArray) {
+			return jsonArray;
+		}
+
+		throw new IllegalArgumentException(key + " must be a JSONArray");
+	}
+
+	private static Object _requireValue(JSONObject jsonObject, String key) {
+		if (!jsonObject.has(key)) {
+			throw new IllegalArgumentException(key + " is required");
+		}
+
+		Object value = jsonObject.get(key);
+
+		if (value == null) {
+			throw new IllegalArgumentException(key + " is required");
+		}
+
+		return value;
+	}
+
+	private static String _optionalString(JSONObject jsonObject, String key) {
+		if (!jsonObject.has(key)) {
+			return null;
+		}
+
+		Object value = jsonObject.get(key);
+
+		if (value == null) {
+			return null;
+		}
+
+		if (value instanceof String string) {
+			return string;
+		}
+
+		throw new IllegalArgumentException(key + " must be a string");
 	}
 
 	private static List<Object> _toList(JSONArray jsonArray) {
