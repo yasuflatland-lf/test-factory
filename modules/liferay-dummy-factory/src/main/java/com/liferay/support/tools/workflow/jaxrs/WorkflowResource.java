@@ -31,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -57,6 +58,9 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 @Path("/")
 @Produces(MediaType.APPLICATION_JSON)
 public class WorkflowResource {
+
+	private static final Pattern _STEP_ID_PATTERN = Pattern.compile(
+		"[A-Za-z0-9_-]+");
 
 	@POST
 	@Path("execute")
@@ -456,6 +460,12 @@ public class WorkflowResource {
 						"STEP_ID_REQUIRED", "/steps/" + i + "/id",
 						"Step id is required."));
 			}
+			else if (!_STEP_ID_PATTERN.matcher(workflowStepDto.id()).matches()) {
+				errors.add(
+					new WorkflowValidationErrorDto(
+						"STEP_ID_INVALID", "/steps/" + i + "/id",
+						"Step id must contain only letters, digits, hyphens, or underscores."));
+			}
 
 			if ((workflowStepDto.operation() == null) ||
 				workflowStepDto.operation().isBlank()) {
@@ -500,22 +510,11 @@ public class WorkflowResource {
 						new WorkflowValidationErrorDto(
 							"STEP_PARAMETER_NAME_REQUIRED",
 							"/steps/" + i + "/params/" + j + "/name",
-							"Parameter name is required."));
+						"Parameter name is required."));
 				}
 
-				boolean hasValue = true;
 				boolean hasFrom = (workflowParameterDto.from() != null) &&
 					!workflowParameterDto.from().isBlank();
-
-				if (hasValue == hasFrom) {
-					errors.add(
-						new WorkflowValidationErrorDto(
-							"STEP_PARAMETER_VALUE_OR_FROM_REQUIRED",
-							"/steps/" + i + "/params/" + j,
-							"Exactly one of value or from is required."));
-
-					continue;
-				}
 
 				if (!hasFrom) {
 					continue;

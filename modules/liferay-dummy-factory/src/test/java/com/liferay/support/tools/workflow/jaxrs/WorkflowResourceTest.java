@@ -104,6 +104,31 @@ class WorkflowResourceTest {
 	}
 
 	@Test
+	void planRejectsUnsupportedStepIdCharacters() {
+		WorkflowResource workflowResource = new WorkflowResource();
+
+		WorkflowRequestDto request = new WorkflowRequestDto(
+			"1.0", "wf-1", Map.of(),
+			List.of(
+				new WorkflowStepDto(
+					"bad id", "unknown.operation", "idem-1",
+					List.of(
+						new WorkflowParameterDto("count", 1, null),
+						new WorkflowParameterDto("baseName", "Demo", null)),
+					null)));
+
+		List<String> errorCodes = workflowResource.plan(
+			request
+		).errors(
+		).stream(
+		).map(
+			error -> error.code()
+		).toList();
+
+		assertTrue(errorCodes.contains("STEP_ID_INVALID"));
+	}
+
+	@Test
 	void schemaRejectsStepRootIndexInReferencePattern() {
 		WorkflowResource workflowResource = new WorkflowResource();
 
