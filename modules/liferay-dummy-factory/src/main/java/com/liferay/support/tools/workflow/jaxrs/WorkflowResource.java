@@ -475,6 +475,13 @@ public class WorkflowResource {
 					"SCHEMA_VERSION_REQUIRED", "/schemaVersion",
 					"schemaVersion is required."));
 		}
+		else if (!workflowRequestDto.schemaVersion().equals("1.0")) {
+			errors.add(
+				new WorkflowValidationErrorDto(
+					"SCHEMA_VERSION_UNSUPPORTED", "/schemaVersion",
+					"Unsupported schemaVersion: " +
+						workflowRequestDto.schemaVersion()));
+		}
 
 		if ((workflowRequestDto.steps() == null) || workflowRequestDto.steps().isEmpty()) {
 			errors.add(

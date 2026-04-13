@@ -264,7 +264,8 @@ public class WorkflowFunctionFactory {
 		com.liferay.support.tools.workflow.spi.WorkflowOperationAdapter adapter) {
 
 		return new DefaultWorkflowFunction(
-			_descriptor(adapter.operationName()),
+			_descriptorOrGeneric(
+				adapter.operationName(), adapter.getClass().getSimpleName()),
 			request -> _invoke(
 				() -> _toStepResult(
 					adapter.execute(
@@ -309,6 +310,21 @@ public class WorkflowFunctionFactory {
 		}
 
 		return descriptor;
+	}
+
+	private static WorkflowFunctionDescriptor _descriptorOrGeneric(
+		String operation, String adapterName) {
+
+		WorkflowFunctionDescriptor descriptor = _DESCRIPTORS.get(operation);
+
+		if (descriptor != null) {
+			return descriptor;
+		}
+
+		return new WorkflowFunctionDescriptor(
+			operation,
+			"Dynamically registered workflow operation: " + adapterName,
+			List.of(), "WorkflowStepResult");
 	}
 
 	private static <T> WorkflowStepResult _execute(

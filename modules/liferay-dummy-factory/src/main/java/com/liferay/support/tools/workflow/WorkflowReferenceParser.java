@@ -10,8 +10,7 @@ public class WorkflowReferenceParser {
 			throw new IllegalArgumentException("reference expression is required");
 		}
 
-		if (expression.equals("input") || expression.startsWith("input.") ||
-			expression.startsWith("input[")) {
+		if (expression.equals("input") || expression.startsWith("input.")) {
 
 			return new WorkflowReference(
 				expression, WorkflowReferenceTarget.INPUT, null,
@@ -30,6 +29,11 @@ public class WorkflowReferenceParser {
 
 			String segmentExpression = (delimiter == -1) ? "" :
 				remaining.substring(delimiter);
+
+			if (segmentExpression.startsWith("[")) {
+				throw new IllegalArgumentException(
+					"reference cannot start with index after stepId");
+			}
 
 			return new WorkflowReference(
 				expression, WorkflowReferenceTarget.STEP_RESULT, stepId,
