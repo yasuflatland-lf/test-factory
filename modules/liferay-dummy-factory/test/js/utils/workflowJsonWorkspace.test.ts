@@ -35,7 +35,7 @@ describe('workflowJsonWorkspace selector', () => {
 		expect(entry.labelKey).toBe('workflow-json');
 		expect(Liferay.Language.get(entry.labelKey)).toBe('Workflow JSON');
 		expect(Liferay.Language.get(entry.descriptionKey)).toBe(
-			'Author, validate, plan, and execute raw workflow requests from one workspace.'
+			'Edit raw workflow JSON here.'
 		);
 	});
 });
@@ -53,7 +53,7 @@ describe('workflowJsonWorkspace samples', () => {
 		expect(sample).not.toBeNull();
 		expect(sample?.titleKey).toBe('workflow-json-sample-company-title');
 		expect(Liferay.Language.get(sample!.titleKey)).toBe(
-			'Create a company, user, and organization'
+			'Company, user, and organization'
 		);
 
 		const parsed = JSON.parse(sample!.json);
@@ -85,7 +85,7 @@ describe('workflowJsonWorkspace samples', () => {
 		]);
 		expect(
 			Liferay.Language.get(samples[2].descriptionKey)
-		).toBe('Create a vocabulary and then create a category inside it.');
+		).toBe('Create a vocabulary, then a category.');
 	});
 
 	it('copies the current json text to the clipboard', async () => {
@@ -98,6 +98,11 @@ describe('workflowJsonWorkspace samples', () => {
 
 		expect(clipboard.writeText).toHaveBeenCalledOnce();
 		expect(clipboard.writeText).toHaveBeenCalledWith(sample);
+	});
+
+	it('returns null for an unknown sample id', () => {
+		expect(getWorkflowJsonSample('missing-sample-id')).toBeNull();
+		expect(loadWorkflowJsonSample('missing-sample-id')).toBeNull();
 	});
 });
 
@@ -112,7 +117,7 @@ describe('workflowJsonWorkspace validation and actions', () => {
 		const result = await validateWorkflowJson('/o/ldf-workflow/plan', '{"oops"');
 
 		expect(result).toEqual({
-			error: 'Invalid JSON. Fix syntax errors before validating.',
+			error: 'Invalid JSON. Fix syntax errors first.',
 			success: false,
 		});
 		expect(mockPostResource).not.toHaveBeenCalled();
@@ -122,7 +127,7 @@ describe('workflowJsonWorkspace validation and actions', () => {
 		const result = validateWorkflowJsonText('[]');
 
 		expect(result).toEqual({
-			error: 'Workflow JSON must be an object at the top level.',
+			error: 'Workflow JSON must start with an object.',
 			ok: false,
 		});
 	});
@@ -137,7 +142,7 @@ describe('workflowJsonWorkspace validation and actions', () => {
 		);
 
 		expect(result).toEqual({
-			error: 'At least one workflow step is required.',
+			error: 'At least one step is required.',
 			ok: false,
 		});
 	});
