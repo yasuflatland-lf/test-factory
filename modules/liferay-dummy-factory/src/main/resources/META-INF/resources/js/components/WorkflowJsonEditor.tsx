@@ -6,6 +6,7 @@ import {
 	executeWorkflowJson,
 	getWorkflowJsonSamples,
 	loadWorkflowJsonSample,
+	planWorkflowJson,
 	validateWorkflowJson,
 	validateWorkflowJsonText,
 	type WorkflowJsonSample,
@@ -16,6 +17,7 @@ type WorkflowJsonResultTone = 'danger' | 'info' | 'success' | 'warning';
 interface WorkflowJsonWorkspaceResult {
 	action: 'copy' | 'execute' | 'load' | 'plan' | 'schema' | 'validate';
 	body: string;
+	summary: string;
 	title: string;
 	tone: WorkflowJsonResultTone;
 }
@@ -69,6 +71,20 @@ function _getResponseBody(response: unknown): string {
 	return _stringifyValue(response);
 }
 
+function _getResponseSummary(body: string): string {
+	const normalized = body.replace(/\s+/g, ' ').trim();
+
+	if (!normalized) {
+		return 'No details returned.';
+	}
+
+	if (normalized.length <= 160) {
+		return normalized;
+	}
+
+	return `${normalized.slice(0, 157)}...`;
+}
+
 function _hasValidationErrors(data: unknown): boolean {
 	if (!data || typeof data !== 'object' || Array.isArray(data)) {
 		return false;
@@ -108,6 +124,7 @@ function _createResult(
 	return {
 		action,
 		body,
+		summary: _getResponseSummary(body),
 		title,
 		tone,
 	};
@@ -128,6 +145,7 @@ function WorkflowJsonEditor({
 	const [result, setResult] = useState<WorkflowJsonWorkspaceResult | null>(
 		null
 	);
+	const [resultDetailsVisible, setResultDetailsVisible] = useState(false);
 	const [selectedSampleId, setSelectedSampleId] = useState(
 		_workflowJsonSamples[0]?.id ?? ''
 	);
@@ -159,6 +177,7 @@ function WorkflowJsonEditor({
 		tone: WorkflowJsonResultTone
 	) {
 		setResult(_createResult(action, title, body, tone));
+		setResultDetailsVisible(false);
 	}
 
 	async function _handleLoadSample() {
@@ -254,7 +273,7 @@ function WorkflowJsonEditor({
 	}
 
 	async function _handleWorkflowAction(
-		action: Exclude<WorkflowJsonWorkspaceResult['action'], 'copy' | 'load'>,
+		action: 'execute' | 'plan' | 'validate',
 		resourceURL?: string
 	) {
 		const currentValidation = validateWorkflowJsonText(draftValue);
@@ -285,6 +304,8 @@ function WorkflowJsonEditor({
 			const response =
 				action === 'execute'
 					? await executeWorkflowJson(resourceURL, draftValue)
+					: action === 'plan'
+						? await planWorkflowJson(resourceURL, draftValue)
 					: await validateWorkflowJson(resourceURL, draftValue);
 
 			if (!response.success) {
@@ -368,11 +389,17 @@ function WorkflowJsonEditor({
 							</ul>
 						</div>
 					)}
+				</aside>
 
-					<div className="btn-group workflow-json-sample-actions">
+				<div className="workflow-json-panel workflow-json-editor-panel">
+					<div
+						className="workflow-json-action-row workflow-json-toolbar"
+						data-testid="workflow-json-toolbar"
+					>
 						<button
 							className="btn btn-primary"
 							data-testid="workflow-json-load-sample"
+							disabled={!selectedSample || isBusy}
 							onClick={_handleLoadSample}
 							type="button"
 						>
@@ -382,54 +409,23 @@ function WorkflowJsonEditor({
 						<button
 							className="btn btn-secondary"
 							data-testid="workflow-json-copy-json"
+							disabled={isBusy}
 							onClick={_handleCopyJson}
 							type="button"
 						>
 							{Liferay.Language.get('copy-json')}
 						</button>
-					</div>
 
-					<button
-						className="btn btn-outline-primary workflow-json-schema-button"
-						data-testid="workflow-json-download-schema"
-						disabled={!canDownloadSchema || isBusy}
-						onClick={_handleSchemaDownload}
-						type="button"
-					>
-						{Liferay.Language.get('download-schema')}
-					</button>
-				</aside>
-
-				<div className="workflow-json-panel workflow-json-editor-panel">
-					<p className="workflow-json-intro">
-						{Liferay.Language.get('workflow-json-help-text')}
-					</p>
-
-					<label className="workflow-json-label" htmlFor="workflow-json-editor">
-						{Liferay.Language.get('workflow-json-editor')}
-					</label>
-
-					<textarea
-						className={`workflow-json-textarea ${
-							validationError ? 'is-invalid' : ''
-						}`}
-						data-testid="workflow-json-textarea"
-						id="workflow-json-editor"
-						onChange={(event) => _applyValue(event.target.value)}
-						spellCheck={false}
-						value={draftValue}
-					/>
-
-					{validationError && (
-						<div
-							className="workflow-json-inline-error"
-							data-testid="workflow-json-editor-error"
+						<button
+							className="btn btn-outline-primary"
+							data-testid="workflow-json-download-schema"
+							disabled={!canDownloadSchema || isBusy}
+							onClick={_handleSchemaDownload}
+							type="button"
 						>
-							{validationError}
-						</div>
-					)}
+							{Liferay.Language.get('download-schema')}
+						</button>
 
-					<div className="workflow-json-action-row">
 						<button
 							className="btn btn-primary"
 							data-testid="workflow-json-validate"
@@ -463,6 +459,34 @@ function WorkflowJsonEditor({
 						</button>
 					</div>
 
+					<p className="workflow-json-intro">
+						{Liferay.Language.get('workflow-json-help-text')}
+					</p>
+
+					<label className="workflow-json-label" htmlFor="workflow-json-editor">
+						{Liferay.Language.get('workflow-json-editor')}
+					</label>
+
+					<textarea
+						className={`workflow-json-textarea ${
+							validationError ? 'is-invalid' : ''
+						}`}
+						data-testid="workflow-json-textarea"
+						id="workflow-json-editor"
+						onChange={(event) => _applyValue(event.target.value)}
+						spellCheck={false}
+						value={draftValue}
+					/>
+
+					{validationError && (
+						<div
+							className="workflow-json-inline-error"
+							data-testid="workflow-json-editor-error"
+						>
+							{validationError}
+						</div>
+					)}
+
 					<div className="workflow-json-helper-note">
 						{Liferay.Language.get('workflow-json-action-help')}
 					</div>
@@ -488,18 +512,42 @@ function WorkflowJsonEditor({
 									<h4 data-testid="workflow-json-result-title">
 										{result.title}
 									</h4>
+									<p
+										className="workflow-json-result-summary"
+										data-testid="workflow-json-result-summary"
+									>
+										{result.summary}
+									</p>
 								</div>
-								<span className="workflow-json-result-action">
-									{_getActionLabel(result.action)}
-								</span>
+
+								<div className="workflow-json-action-row">
+									<span className="workflow-json-result-action">
+										{_getActionLabel(result.action)}
+									</span>
+
+									<button
+										className="btn btn-sm btn-outline-secondary"
+										data-testid="workflow-json-result-toggle-details"
+										onClick={() =>
+											setResultDetailsVisible(
+												(currentValue) => !currentValue
+											)
+										}
+										type="button"
+									>
+										{resultDetailsVisible ? 'Hide details' : 'Show details'}
+									</button>
+								</div>
 							</div>
 
-							<pre
-								className="workflow-json-result-body"
-								data-testid="workflow-json-result-body"
-							>
-								{result.body}
-							</pre>
+							{resultDetailsVisible && (
+								<pre
+									className="workflow-json-result-body"
+									data-testid="workflow-json-result-body"
+								>
+									{result.body}
+								</pre>
+							)}
 						</section>
 					)}
 				</div>

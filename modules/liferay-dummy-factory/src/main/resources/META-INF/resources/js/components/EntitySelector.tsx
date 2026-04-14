@@ -1,19 +1,17 @@
 import {
 	ENTITY_DISPLAY_LABELS,
 	ENTITY_LABELS,
-	ENTITY_TYPES,
 	EntityType,
 } from '../config/constants';
 
 interface EntitySelectorProps {
+	entities: EntityType[];
 	onSelect: (entityType: EntityType) => void;
 	selected: EntityType;
 	testId?: string;
 }
 
-const ENTITY_LIST = Object.values(ENTITY_TYPES);
-
-function EntitySelector({onSelect, selected, testId}: EntitySelectorProps) {
+function EntitySelector({entities, onSelect, selected, testId}: EntitySelectorProps) {
 	const getLabel = (entityType: EntityType) =>
 		ENTITY_DISPLAY_LABELS[entityType] ??
 		Liferay.Language.get(ENTITY_LABELS[entityType]);
@@ -24,7 +22,7 @@ function EntitySelector({onSelect, selected, testId}: EntitySelectorProps) {
 			data-testid={testId}
 		>
 			<ul className="nav nav-nested">
-				{ENTITY_LIST.map((entityType) => (
+				{entities.map((entityType) => (
 					<li className="nav-item" key={entityType}>
 						<button
 							className={`btn btn-unstyled nav-link ${

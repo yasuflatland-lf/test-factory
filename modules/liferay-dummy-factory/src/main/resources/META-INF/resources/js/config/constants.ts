@@ -18,6 +18,19 @@ export const ENTITY_TYPES = {
 
 export type EntityType = typeof ENTITY_TYPES[keyof typeof ENTITY_TYPES];
 
+export const APP_TABS = {
+	OTHER_ENTITIES: 'OTHER_ENTITIES',
+	WORKFLOW_JSON: 'WORKFLOW_JSON',
+} as const;
+
+export type AppTab = typeof APP_TABS[keyof typeof APP_TABS];
+
+const entityTypes = Object.values(ENTITY_TYPES) as EntityType[];
+
+export const OTHER_ENTITY_TYPES = entityTypes.filter(
+	(entityType) => entityType !== ENTITY_TYPES.WORKFLOW_JSON
+);
+
 export const ENTITY_LABELS: Record<EntityType, string> = {
 	WORKFLOW_JSON: 'workflow-json',
 	BLOGS: 'blogs',
