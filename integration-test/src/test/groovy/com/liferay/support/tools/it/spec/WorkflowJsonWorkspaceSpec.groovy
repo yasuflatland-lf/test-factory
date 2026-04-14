@@ -77,11 +77,11 @@ class WorkflowJsonWorkspaceSpec extends BaseLiferaySpec {
 		String initialEditorValue = editor.inputValue()
 
 		page.locator(
-			"[data-testid=\"${WORKFLOW_JSON_SAMPLE_LOAD_TEST_ID}\"]"
-		).first().waitFor(new Locator.WaitForOptions().setTimeout(30_000))
+			"[data-testid=\"workflow-json-load-sample\"]"
+		).waitFor(new Locator.WaitForOptions().setTimeout(30_000))
 		page.locator(
-			"[data-testid=\"${WORKFLOW_JSON_SAMPLE_LOAD_TEST_ID}\"]"
-		).first().click()
+			"[data-testid=\"workflow-json-load-sample\"]"
+		).click()
 
 		String editorJson = _waitForEditorJson(editor, initialEditorValue)
 		Map<String, Object> loadedWorkflowRequest = _normalizeWorkflowRequest(
@@ -99,12 +99,12 @@ class WorkflowJsonWorkspaceSpec extends BaseLiferaySpec {
 		Response validateResponse = page.waitForResponse(
 			{ Response response ->
 				response.request().method() == 'POST' &&
-					response.url().contains('/o/ldf-workflow/plan')
+				response.url().contains('/o/ldf-workflow/plan')
 			},
 			{
 				page.locator(
 					"[data-testid=\"${WORKFLOW_JSON_VALIDATE_TEST_ID}\"]"
-				).click()
+				).click(new Locator.ClickOptions().setForce(true))
 			}
 		)
 
@@ -121,12 +121,12 @@ class WorkflowJsonWorkspaceSpec extends BaseLiferaySpec {
 		Response planResponse = page.waitForResponse(
 			{ Response response ->
 				response.request().method() == 'POST' &&
-					response.url().contains('/o/ldf-workflow/plan')
+				response.url().contains('/o/ldf-workflow/plan')
 			},
 			{
 				page.locator(
 					"[data-testid=\"${WORKFLOW_JSON_PLAN_TEST_ID}\"]"
-				).click()
+				).click(new Locator.ClickOptions().setForce(true))
 			}
 		)
 
@@ -143,12 +143,12 @@ class WorkflowJsonWorkspaceSpec extends BaseLiferaySpec {
 		Response executeResponse = page.waitForResponse(
 			{ Response response ->
 				response.request().method() == 'POST' &&
-					response.url().contains('/o/ldf-workflow/execute')
+				response.url().contains('/o/ldf-workflow/execute')
 			},
 			{
 				page.locator(
 					"[data-testid=\"${WORKFLOW_JSON_EXECUTE_TEST_ID}\"]"
-				).click()
+				).click(new Locator.ClickOptions().setForce(true))
 			}
 		)
 
