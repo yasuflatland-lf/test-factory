@@ -13,6 +13,7 @@ Liferay Portal CE Workspace: MVCPortlet + React portlet + Spock integration test
 
 - Concrete commands, selectors, version pins, API constraints → `docs/details/` (read on demand)
 - Past architectural decisions and their rationale → `docs/ADR/` (read on demand)
+- Workflow API specifics live in `docs/details/workflow-api.md`; it is the source of truth for `site.create`, `organization.create`, and the taxonomy-only startup fallback.
 
 ## Core contracts — break these and things go silently wrong
 
