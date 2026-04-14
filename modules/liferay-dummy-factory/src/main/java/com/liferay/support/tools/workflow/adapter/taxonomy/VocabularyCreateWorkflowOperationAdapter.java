@@ -25,10 +25,10 @@ import org.osgi.service.component.annotations.Reference;
 public class VocabularyCreateWorkflowOperationAdapter
 	implements WorkflowOperationAdapter {
 
-	VocabularyCreateWorkflowOperationAdapter() {
+	public VocabularyCreateWorkflowOperationAdapter() {
 	}
 
-	VocabularyCreateWorkflowOperationAdapter(
+	public VocabularyCreateWorkflowOperationAdapter(
 		VocabularyCreator vocabularyCreator) {
 
 		_vocabularyCreator = vocabularyCreator;

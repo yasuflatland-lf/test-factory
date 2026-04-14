@@ -16,6 +16,10 @@ import com.liferay.support.tools.workflow.WorkflowReferenceParser;
 import com.liferay.support.tools.workflow.WorkflowReferenceValue;
 import com.liferay.support.tools.workflow.WorkflowStepDefinition;
 import com.liferay.support.tools.workflow.WorkflowValidationError;
+import com.liferay.support.tools.workflow.adapter.taxonomy.CategoryCreateWorkflowOperationAdapter;
+import com.liferay.support.tools.workflow.adapter.taxonomy.VocabularyCreateWorkflowOperationAdapter;
+import com.liferay.support.tools.service.CategoryCreator;
+import com.liferay.support.tools.service.VocabularyCreator;
 import com.liferay.support.tools.workflow.dto.WorkflowExecuteResponseDto;
 import com.liferay.support.tools.workflow.dto.WorkflowOnErrorDto;
 import com.liferay.support.tools.workflow.dto.WorkflowParameterDto;
@@ -313,6 +317,13 @@ public class WorkflowResource {
 				_workflowFunctionFactory.create(workflowOperationAdapter));
 		}
 
+		_addFallbackWorkflowFunction(
+			workflowFunctions,
+			new VocabularyCreateWorkflowOperationAdapter(_vocabularyCreator));
+		_addFallbackWorkflowFunction(
+			workflowFunctions,
+			new CategoryCreateWorkflowOperationAdapter(_categoryCreator));
+
 		return workflowFunctions.entrySet().stream(
 		).sorted(
 			Map.Entry.comparingByKey()
@@ -321,6 +332,16 @@ public class WorkflowResource {
 			(map, entry) -> map.put(entry.getKey(), entry.getValue()),
 			Map::putAll
 		);
+	}
+
+	private void _addFallbackWorkflowFunction(
+		Map<String, WorkflowFunction> workflowFunctions,
+		com.liferay.support.tools.workflow.spi.WorkflowOperationAdapter
+			workflowOperationAdapter) {
+
+		workflowFunctions.putIfAbsent(
+			workflowOperationAdapter.operationName(),
+			_workflowFunctionFactory.create(workflowOperationAdapter));
 	}
 
 	private WorkflowPlan _toPlan(WorkflowRequestDto workflowRequestDto) {
@@ -546,6 +567,12 @@ public class WorkflowResource {
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private CategoryCreator _categoryCreator;
+
+	@Reference
+	private VocabularyCreator _vocabularyCreator;
 
 	private final WorkflowFunctionFactory _workflowFunctionFactory =
 		new WorkflowFunctionFactory();
