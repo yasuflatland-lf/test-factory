@@ -71,3 +71,25 @@ export async function postResource<T>(
 		return toErrorResponse<T>(error);
 	}
 }
+
+export async function postJsonResource<T>(
+	resourceURL: string,
+	payload: unknown
+): Promise<ApiResponse<T>> {
+	try {
+		const response = await fetch(resourceURL, {
+			body: JSON.stringify(payload),
+			credentials: 'include',
+			headers: {
+				'Content-Type': 'application/json',
+				'x-csrf-token': Liferay.authToken,
+			},
+			method: 'POST',
+		});
+
+		return parseResponse<T>(response);
+	}
+	catch (error) {
+		return toErrorResponse<T>(error);
+	}
+}

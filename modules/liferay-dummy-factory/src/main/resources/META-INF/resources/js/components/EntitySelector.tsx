@@ -1,4 +1,9 @@
-import {ENTITY_LABELS, ENTITY_TYPES, EntityType} from '../config/constants';
+import {
+	ENTITY_DISPLAY_LABELS,
+	ENTITY_LABELS,
+	ENTITY_TYPES,
+	EntityType,
+} from '../config/constants';
 
 interface EntitySelectorProps {
 	onSelect: (entityType: EntityType) => void;
@@ -9,6 +14,10 @@ interface EntitySelectorProps {
 const ENTITY_LIST = Object.values(ENTITY_TYPES);
 
 function EntitySelector({onSelect, selected, testId}: EntitySelectorProps) {
+	const getLabel = (entityType: EntityType) =>
+		ENTITY_DISPLAY_LABELS[entityType] ??
+		Liferay.Language.get(ENTITY_LABELS[entityType]);
+
 	return (
 		<nav
 			className="menubar menubar-transparent menubar-vertical-expand-md"
@@ -25,7 +34,7 @@ function EntitySelector({onSelect, selected, testId}: EntitySelectorProps) {
 							onClick={() => onSelect(entityType)}
 							type="button"
 						>
-							{Liferay.Language.get(ENTITY_LABELS[entityType])}
+							{getLabel(entityType)}
 						</button>
 					</li>
 				))}
