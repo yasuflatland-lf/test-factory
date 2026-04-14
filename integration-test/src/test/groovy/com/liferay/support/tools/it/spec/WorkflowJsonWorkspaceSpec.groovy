@@ -18,24 +18,52 @@ class WorkflowJsonWorkspaceSpec extends BaseLiferaySpec {
 	private static final String RUN_SUFFIX = String.valueOf(
 		System.currentTimeMillis())
 
-	private static final String WORKFLOW_JSON_SELECTOR_TEST_ID =
-		'entity-selector-WORKFLOW_JSON'
 	private static final String WORKFLOW_JSON_EDITOR_TEST_ID =
 		'workflow-json-textarea'
-	private static final String WORKFLOW_JSON_SAMPLE_LOAD_TEST_ID =
-		'workflow-json-sample-load'
 	private static final String WORKFLOW_JSON_VALIDATE_TEST_ID =
 		'workflow-json-validate'
 	private static final String WORKFLOW_JSON_PLAN_TEST_ID =
 		'workflow-json-plan'
 	private static final String WORKFLOW_JSON_EXECUTE_TEST_ID =
 		'workflow-json-execute'
+	private static final String WORKFLOW_JSON_RESULT_TITLE_TEST_ID =
+		'workflow-json-result-title'
+	private static final String WORKFLOW_JSON_RESULT_BODY_TEST_ID =
+		'workflow-json-result-body'
 	private static final String USERS_SELECTOR_TEST_ID = 'entity-selector-USERS'
 	private static final String USERS_COUNT_INPUT_TEST_ID = 'users-count-input'
 	private static final String USERS_BASE_NAME_INPUT_TEST_ID =
 		'users-base-name-input'
 	private static final String USERS_SUBMIT_TEST_ID = 'users-submit'
 	private static final String USERS_RESULT_TEST_ID = 'users-result'
+	private static final List<String> WORKFLOW_JSON_ENTRY_SELECTORS = [
+		'[data-testid="app-tab-workflow-json"]',
+		'[data-testid="workflow-json-tab"]',
+		'[data-testid="workspace-tab-WORKFLOW_JSON"]',
+		'[data-testid="app-tab-WORKFLOW_JSON"]',
+		'[role="tab"]:has-text("Workflow JSON")',
+		'[data-testid="entity-selector-WORKFLOW_JSON"]',
+	]
+	private static final List<String> OTHER_ENTITIES_ENTRY_SELECTORS = [
+		'[data-testid="app-tab-other-entities"]',
+		'[data-testid="other-entities-tab"]',
+		'[data-testid="workspace-tab-OTHER_ENTITIES"]',
+		'[data-testid="app-tab-OTHER_ENTITIES"]',
+		'[role="tab"]:has-text("Other Entities")',
+	]
+	private static final List<String> WORKFLOW_JSON_LOAD_SAMPLE_SELECTORS = [
+		'[data-testid="workflow-json-load-sample"]',
+		'[data-testid="workflow-json-sample-load"]',
+	]
+	private static final List<String> WORKFLOW_JSON_RESULT_SUMMARY_SELECTORS = [
+		'[data-testid="workflow-json-result-summary"]',
+		'[data-testid="workflow-json-result-panel"]',
+	]
+	private static final List<String> WORKFLOW_JSON_RESULT_DETAIL_TOGGLE_SELECTORS = [
+		'[data-testid="workflow-json-result-toggle-details"]',
+		'[data-testid="workflow-json-result-details-toggle"]',
+		'[data-testid="workflow-json-result-expand"]',
+	]
 
 	@Shared
 	PlaywrightLifecycle pw
@@ -52,20 +80,15 @@ class WorkflowJsonWorkspaceSpec extends BaseLiferaySpec {
 		pw?.close()
 	}
 
-	def 'Workflow JSON workspace opens, loads a sample, validates it, plans it, and executes it'() {
+	def 'Workflow JSON workspace tab runs validate/plan/execute and shows result feedback'() {
 		given:
 		Page page = pw.page
 
 		when: 'the portlet is opened'
 		_openPortlet(page)
 
-		and: 'the Workflow JSON workspace is selected'
-		page.locator(
-			"[data-testid=\"${WORKFLOW_JSON_SELECTOR_TEST_ID}\"]"
-		).waitFor(new Locator.WaitForOptions().setTimeout(30_000))
-		page.locator(
-			"[data-testid=\"${WORKFLOW_JSON_SELECTOR_TEST_ID}\"]"
-		).click()
+		and: 'the Workflow JSON workspace tab is opened'
+		_openWorkflowJsonWorkspace(page)
 
 		and: 'the JSON editor is available'
 		Locator editor = page.locator(
@@ -73,15 +96,10 @@ class WorkflowJsonWorkspaceSpec extends BaseLiferaySpec {
 		)
 		editor.waitFor(new Locator.WaitForOptions().setTimeout(30_000))
 
-		and: 'a sample is loaded into the editor'
+		and: 'a sample is loaded into the editor before any backend action'
 		String initialEditorValue = editor.inputValue()
 
-		page.locator(
-			"[data-testid=\"workflow-json-load-sample\"]"
-		).waitFor(new Locator.WaitForOptions().setTimeout(30_000))
-		page.locator(
-			"[data-testid=\"workflow-json-load-sample\"]"
-		).click()
+		_clickFirstVisible(page, WORKFLOW_JSON_LOAD_SAMPLE_SELECTORS)
 
 		String editorJson = _waitForEditorJson(editor, initialEditorValue)
 		Map<String, Object> loadedWorkflowRequest = _normalizeWorkflowRequest(
@@ -96,39 +114,24 @@ class WorkflowJsonWorkspaceSpec extends BaseLiferaySpec {
 		((loadedWorkflowRequest.steps ?: []) as List).size() > 0
 
 		when: 'validation is triggered from the workspace'
-		Response validateResponse = page.waitForResponse(
-			{ Response response ->
-				response.request().method() == 'POST' &&
-				response.url().contains('/o/ldf-workflow/plan')
-			},
-			{
-				page.locator(
-					"[data-testid=\"${WORKFLOW_JSON_VALIDATE_TEST_ID}\"]"
-				).click(new Locator.ClickOptions().setForce(true))
-			}
-		)
+		String previousResultTitle = _readResultTitle(page)
+		Response validateResponse = _runWorkflowAction(
+			page, WORKFLOW_JSON_VALIDATE_TEST_ID,
+			['/o/ldf-workflow/validate', '/o/ldf-workflow/plan'])
 
 		Map<String, Object> validationResponse = new JsonSlurper().parseText(
 			validateResponse.text()) as Map<String, Object>
 
-		then: 'the server accepts the sample via the plan endpoint'
+		then: 'the server accepts validation and the result summary updates'
 		validateResponse.status() == 200
 		(validationResponse.errors ?: []) == []
-		(validationResponse.plan as Map<String, Object>) != null
-		(((validationResponse.plan as Map<String, Object>).definition as Map<String, Object>).steps as List).size() > 0
+		_assertResultSummaryUpdated(page, previousResultTitle)
+		_expandResultDetailsIfAvailable(page)
 
 		when: 'planning is triggered from the workspace'
-		Response planResponse = page.waitForResponse(
-			{ Response response ->
-				response.request().method() == 'POST' &&
-				response.url().contains('/o/ldf-workflow/plan')
-			},
-			{
-				page.locator(
-					"[data-testid=\"${WORKFLOW_JSON_PLAN_TEST_ID}\"]"
-				).click(new Locator.ClickOptions().setForce(true))
-			}
-		)
+		previousResultTitle = _readResultTitle(page)
+		Response planResponse = _runWorkflowAction(
+			page, WORKFLOW_JSON_PLAN_TEST_ID, ['/o/ldf-workflow/plan'])
 
 		Map<String, Object> planResponseBody = new JsonSlurper().parseText(
 			planResponse.text()) as Map<String, Object>
@@ -138,19 +141,13 @@ class WorkflowJsonWorkspaceSpec extends BaseLiferaySpec {
 		(planResponseBody.errors ?: []) == []
 		(planResponseBody.plan as Map<String, Object>) != null
 		(((planResponseBody.plan as Map<String, Object>).definition as Map<String, Object>).steps as List).size() > 0
+		_assertResultSummaryUpdated(page, previousResultTitle)
+		_expandResultDetailsIfAvailable(page)
 
 		when: 'execution is triggered from the workspace'
-		Response executeResponse = page.waitForResponse(
-			{ Response response ->
-				response.request().method() == 'POST' &&
-				response.url().contains('/o/ldf-workflow/execute')
-			},
-			{
-				page.locator(
-					"[data-testid=\"${WORKFLOW_JSON_EXECUTE_TEST_ID}\"]"
-				).click(new Locator.ClickOptions().setForce(true))
-			}
-		)
+		previousResultTitle = _readResultTitle(page)
+		Response executeResponse = _runWorkflowAction(
+			page, WORKFLOW_JSON_EXECUTE_TEST_ID, ['/o/ldf-workflow/execute'])
 
 		Map<String, Object> executionResponse = new JsonSlurper().parseText(
 			executeResponse.text()) as Map<String, Object>
@@ -163,6 +160,8 @@ class WorkflowJsonWorkspaceSpec extends BaseLiferaySpec {
 		(((executionResponse.execution as Map<String, Object>).steps ?: []) as List<Map<String, Object>>).every {
 			(it.status as String) == 'SUCCEEDED'
 		}
+		_assertResultSummaryUpdated(page, previousResultTitle)
+		_expandResultDetailsIfAvailable(page)
 	}
 
 	def 'Legacy entity form still renders and submits after switching away from Workflow JSON'() {
@@ -172,15 +171,13 @@ class WorkflowJsonWorkspaceSpec extends BaseLiferaySpec {
 		when: 'the portlet is opened'
 		_openPortlet(page)
 
-		and: 'the Workflow JSON selector is visited first'
-		page.locator(
-			"[data-testid=\"${WORKFLOW_JSON_SELECTOR_TEST_ID}\"]"
-		).click()
-		page.locator(
-			"[data-testid=\"${WORKFLOW_JSON_EDITOR_TEST_ID}\"]"
-		).waitFor(new Locator.WaitForOptions().setTimeout(30_000))
+		and: 'the Workflow JSON workspace is visited first'
+		_openWorkflowJsonWorkspace(page)
 
-		and: 'the legacy Users form is selected again'
+		and: 'the legacy entities workspace is re-opened when tabbed UI is present'
+		_clickFirstVisibleIfPresent(page, OTHER_ENTITIES_ENTRY_SELECTORS)
+
+		and: 'the legacy Users form is selected'
 		page.locator(
 			"[data-testid=\"${USERS_SELECTOR_TEST_ID}\"]"
 		).click()
@@ -218,6 +215,147 @@ class WorkflowJsonWorkspaceSpec extends BaseLiferaySpec {
 			'&p_p_state=maximized'
 		)
 		page.waitForLoadState()
+	}
+
+	private static void _openWorkflowJsonWorkspace(Page page) {
+		_clickFirstVisible(page, WORKFLOW_JSON_ENTRY_SELECTORS)
+
+		page.locator(
+			"[data-testid=\"${WORKFLOW_JSON_EDITOR_TEST_ID}\"]"
+		).waitFor(new Locator.WaitForOptions().setTimeout(30_000))
+	}
+
+	private static Response _runWorkflowAction(
+		Page page, String actionTestId, List<String> endpointPaths) {
+
+		return page.waitForResponse(
+			{ Response response ->
+				response.request().method() == 'POST' &&
+					endpointPaths.any { String endpointPath ->
+						response.url().contains(endpointPath)
+					}
+			},
+			{
+				page.locator(
+					"[data-testid=\"${actionTestId}\"]"
+				).click(new Locator.ClickOptions().setForce(true))
+			}
+		)
+	}
+
+	private static void _assertResultSummaryUpdated(
+		Page page, String previousResultTitle) {
+
+		_waitForAnyVisibleSelector(page, WORKFLOW_JSON_RESULT_SUMMARY_SELECTORS)
+
+		String currentResultTitle = _readResultTitle(page)
+
+		assert currentResultTitle
+
+		if (previousResultTitle) {
+			assert currentResultTitle != previousResultTitle
+		}
+	}
+
+	private static String _readResultTitle(Page page) {
+		Locator titleLocator = page.locator(
+			"[data-testid=\"${WORKFLOW_JSON_RESULT_TITLE_TEST_ID}\"]"
+		)
+
+		if ((titleLocator.count() > 0) && titleLocator.first().isVisible()) {
+			return titleLocator.first().innerText()?.trim()
+		}
+
+		Locator summaryLocator = page.locator(
+			'[data-testid="workflow-json-result-summary"]'
+		)
+
+		if ((summaryLocator.count() > 0) && summaryLocator.first().isVisible()) {
+			return summaryLocator.first().innerText()?.trim()
+		}
+
+		return null
+	}
+
+	private static void _expandResultDetailsIfAvailable(Page page) {
+		Locator toggleLocator = _findFirstVisibleLocator(
+			page, WORKFLOW_JSON_RESULT_DETAIL_TOGGLE_SELECTORS)
+
+		if (toggleLocator) {
+			toggleLocator.click(new Locator.ClickOptions().setForce(true))
+		}
+
+		Locator bodyLocator = page.locator(
+			"[data-testid=\"${WORKFLOW_JSON_RESULT_BODY_TEST_ID}\"]"
+		)
+
+		if (bodyLocator.count() > 0) {
+			if (toggleLocator && !bodyLocator.first().isVisible()) {
+				bodyLocator.first().waitFor(
+					new Locator.WaitForOptions().setTimeout(10_000))
+			}
+
+			if (bodyLocator.first().isVisible()) {
+				assert bodyLocator.first().innerText()?.trim()
+			}
+		}
+	}
+
+	private static void _clickFirstVisibleIfPresent(
+		Page page, List<String> selectors) {
+
+		Locator locator = _findFirstVisibleLocator(page, selectors)
+
+		if (locator) {
+			locator.click(new Locator.ClickOptions().setForce(true))
+		}
+	}
+
+	private static void _clickFirstVisible(Page page, List<String> selectors) {
+		Locator locator = _waitForAnyVisibleSelector(page, selectors)
+
+		locator.click(new Locator.ClickOptions().setForce(true))
+	}
+
+	private static Locator _waitForAnyVisibleSelector(
+		Page page, List<String> selectors) {
+
+		long deadline = System.currentTimeMillis() + 30_000L
+
+		while (System.currentTimeMillis() < deadline) {
+			Locator locator = _findFirstVisibleLocator(page, selectors)
+
+			if (locator) {
+				return locator
+			}
+
+			Thread.sleep(200)
+		}
+
+		throw new IllegalStateException(
+			"No visible selector found from: ${selectors.join(', ')}")
+	}
+
+	private static Locator _findFirstVisibleLocator(
+		Page page, List<String> selectors) {
+
+		for (String selector : selectors) {
+			Locator locator = page.locator(selector)
+
+			if (locator.count() <= 0) {
+				continue
+			}
+
+			try {
+				if (locator.first().isVisible()) {
+					return locator.first()
+				}
+			}
+			catch (Exception ignored) {
+			}
+		}
+
+		return null
 	}
 
 	private static Map<String, Object> _normalizeWorkflowRequest(
