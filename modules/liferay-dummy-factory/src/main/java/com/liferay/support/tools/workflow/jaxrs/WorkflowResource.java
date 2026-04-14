@@ -317,6 +317,10 @@ public class WorkflowResource {
 				_workflowFunctionFactory.create(workflowOperationAdapter));
 		}
 
+		// The taxonomy adapters were the only operations observed to be
+		// intermittently unavailable during bundle startup in the integration
+		// test environment. Keep the fallback narrowly scoped so we preserve the
+		// normal OSGi registration path for all other workflow operations.
 		_addFallbackWorkflowFunction(
 			workflowFunctions,
 			new VocabularyCreateWorkflowOperationAdapter(_vocabularyCreator));
@@ -339,6 +343,9 @@ public class WorkflowResource {
 		com.liferay.support.tools.workflow.spi.WorkflowOperationAdapter
 			workflowOperationAdapter) {
 
+		// Only fill gaps. If the adapter is already registered through OSGi,
+		// leave that instance in place so the fallback never overrides normal
+		// component wiring or hides a wider registration problem.
 		workflowFunctions.putIfAbsent(
 			workflowOperationAdapter.operationName(),
 			_workflowFunctionFactory.create(workflowOperationAdapter));
