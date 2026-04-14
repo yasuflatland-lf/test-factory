@@ -111,6 +111,8 @@ When testing the workflow JSON workspace, prefer stable `data-testid` locators o
 
 ### Selector guidance
 
-- Use stable ids like `workflow-json-textarea` and `workflow-json-sample-load`.
+- Use stable ids like `app-tab-workflow-json`, `app-tab-other-entities`, `workflow-json-textarea`, `workflow-json-load-sample`, and `workflow-json-result-toggle-details`.
 - Avoid introducing proxy selectors in the shell when the real control already exists in the workspace.
 - If a click is supposed to change the editor value, assert the value change directly before waiting on the backend response.
+- Keep the workflow JSON workspace blank until a sample is loaded explicitly.
+- When verifying results, prefer the compact summary first and only expand the details panel when the payload itself matters.

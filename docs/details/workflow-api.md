@@ -24,6 +24,10 @@ This document describes the workflow JAX-RS API mounted at `/o/ldf-workflow`.
 
 ## UI Contract Notes
 
+- The workflow JSON workspace now lives in its own tab.
+  - `Workflow JSON` is the dedicated authoring surface.
+  - Legacy entity forms stay under `Other Entities`.
+  - The shell should preserve the old entity default inside `Other Entities` instead of auto-loading workflow content.
 - The workflow JSON workspace should not force `workflowId` during client-side preflight.
   - The backend accepts requests without it.
   - Keep the editor aligned with the backend schema instead of adding UI-only required fields.
@@ -33,6 +37,14 @@ This document describes the workflow JAX-RS API mounted at `/o/ldf-workflow`.
 - The first render should stay blank unless the user loads a sample explicitly.
   - That keeps the load-sample control meaningful.
   - It also avoids hiding the "what changed" part of the sample loader behind an already-populated editor.
+- The editor action strip should stay grouped in one place.
+  - `load sample`, `copy`, `schema`, `validate`, `plan`, and `execute` belong together above the editor.
+  - The sample picker itself is metadata, not part of the request payload.
+- Results should be compact by default.
+  - Show a short summary first.
+  - Keep the full response behind an explicit details toggle so the editor stays readable.
+- `validate` and `plan` are separate UI actions but currently share the same plan resource path.
+  - If that backend contract changes, update both the UI wiring and the Playwright assertions together.
 
 ## Operational Notes
 
