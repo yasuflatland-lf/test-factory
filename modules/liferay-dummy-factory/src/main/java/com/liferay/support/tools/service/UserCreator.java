@@ -159,6 +159,24 @@ public class UserCreator {
 							}
 						}
 
+						if ((siteRoleIds.length > 0) &&
+							(groupIds != null) && (groupIds.length > 0)) {
+
+							for (long groupId : groupIds) {
+								if (groupId > 0) {
+									Group group =
+										_groupLocalService.fetchGroup(groupId);
+
+									if ((group != null) && group.isSite()) {
+										_userGroupRoleLocalService.
+											addUserGroupRoles(
+												u.getUserId(), groupId,
+												siteRoleIds);
+									}
+								}
+							}
+						}
+
 						if (generatePersonalSiteLayouts) {
 							_userLayoutInitializer.init(u);
 							_layoutSetPrototypeLinker.linkUserPersonalSite(

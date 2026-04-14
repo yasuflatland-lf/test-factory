@@ -25,10 +25,11 @@ import org.osgi.service.component.annotations.Reference;
 public class CategoryCreateWorkflowOperationAdapter
 	implements WorkflowOperationAdapter {
 
-	CategoryCreateWorkflowOperationAdapter() {
+	public CategoryCreateWorkflowOperationAdapter() {
 	}
 
-	CategoryCreateWorkflowOperationAdapter(CategoryCreator categoryCreator) {
+	public CategoryCreateWorkflowOperationAdapter(
+		CategoryCreator categoryCreator) {
 		_categoryCreator = categoryCreator;
 	}
 

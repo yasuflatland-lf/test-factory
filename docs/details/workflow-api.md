@@ -22,6 +22,13 @@ This document describes the workflow JAX-RS API mounted at `/o/ldf-workflow`.
   - `osgi.jaxrs.name=ldf-workflow`
   - `osgi.jaxrs.application.select=(osgi.jaxrs.name=ldf-workflow)`
 
+## Operational Notes
+
+- `site.create` creates a normal top-level site unless a parent site or other site-specific options are passed explicitly.
+- `organization.create` creates an organization and only creates an organization site when the `site` parameter is set to `true`.
+- `vocabulary.create` and `category.create` have a narrow startup fallback in the JAX-RS resource: if the OSGi adapter registration is temporarily missing, the resource registers those two operations directly from the creator services so `/functions` and `/plan` stay usable.
+- The fallback is intentionally scoped to taxonomy operations only. Other workflow functions still rely on the normal OSGi adapter registration path.
+
 ## Reference Syntax
 
 - `input.<property>[.<nestedProperty>|[index]...]`

@@ -23,6 +23,10 @@ class WorkflowHttpClient {
 		return _post('/o/ldf-workflow/plan', requestBody)
 	}
 
+	Map functions() {
+		return _get('/o/ldf-workflow/functions')
+	}
+
 	private Map _post(String path, Map<String, Object> requestBody) {
 		String authToken = _authToken()
 		String url = "${_baseUrl}${path}"
@@ -49,6 +53,38 @@ class WorkflowHttpClient {
 		if (status >= 400) {
 			throw new IllegalStateException(
 				"POST ${path} returned HTTP ${status}: ${responseBody}")
+		}
+
+		if (!responseBody.trim()) {
+			return [:]
+		}
+
+		return new JsonSlurper().parseText(responseBody) as Map
+	}
+
+	private Map _get(String path) {
+		String authToken = _authToken()
+		String url = "${_baseUrl}${path}"
+
+		if (authToken) {
+			url = "${url}?p_auth=${URLEncoder.encode(authToken, 'UTF-8')}"
+		}
+
+		def response = _page.request().get(
+			url,
+			RequestOptions.create(
+			).setHeader(
+				'Accept', 'application/json'
+			).setTimeout(
+				60_000
+			))
+
+		int status = response.status()
+		String responseBody = response.text() ?: ''
+
+		if (status >= 400) {
+			throw new IllegalStateException(
+				"GET ${path} returned HTTP ${status}: ${responseBody}")
 		}
 
 		if (!responseBody.trim()) {
