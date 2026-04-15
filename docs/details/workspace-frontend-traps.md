@@ -32,3 +32,21 @@ Forcing both onto Vite for "consistency" requires re-implementing the AMD bridge
 **What:** When adding a new `MVCResourceCommand` (e.g. `/ldf/blog`), add both entries to `view.jsp` in the same commit:
 1. `<portlet:resourceURL id="/ldf/blog" var="blogResourceURL" />`
 2. `actionResourceURLs.put("/ldf/blog", blogResourceURL)` in the HashMap initialization
+
+## J29: Workflow JSON workspaces should start empty, not preloaded
+
+**Why:** If the editor starts with the first sample already in place, the "load sample" action becomes a no-op on first render. That hides the effect of the control and makes E2E flows wait for a value change that never happens.
+
+**What:** For sample-driven workspaces, keep the editor blank on first render and let the user load a sample explicitly. Store the selected sample separately from the textarea value so sample metadata stays client-side.
+
+## J30: Workflow JSON preflight should match the backend schema, not the UI's assumptions
+
+**Why:** The backend accepts workflow requests without `workflowId`, so a client-side validator that requires it rejects valid payloads and blocks `/plan` and `/execute` unnecessarily.
+
+**What:** Client preflight should validate schema version and step structure, but it must not invent extra required fields that the server does not require. Keep runtime helpers and sample JSON aligned with the shared contract.
+
+## J31: Workflow JSON actions need the right transport and imports
+
+**Why:** JSON workflow actions post directly to `/plan` and `/execute`. If the workspace keeps using the generic form transport, the action payload shape and response handling drift from the server contract. Missing imports for action helpers fail only at click time, which is easy to miss in static inspection.
+
+**What:** Use the JSON transport helper for workflow actions, import the action handlers at the component boundary, and cover the click path in unit tests so missing imports are caught before Playwright waits on a response.

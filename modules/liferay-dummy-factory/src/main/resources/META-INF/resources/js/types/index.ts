@@ -62,3 +62,60 @@ export interface EntityFormConfig {
 export type ApiResponse<T = unknown> =
 	| {success: true; data: T}
 	| {success: false; data?: T; error: string};
+
+export interface WorkflowValidationError {
+	code: string;
+	message: string;
+	path: string;
+}
+
+export interface WorkflowOnErrorPolicy {
+	policy: string;
+}
+
+export interface WorkflowParameter {
+	from?: string;
+	name: string;
+	value?: unknown;
+}
+
+export interface WorkflowStepInput {
+	id: string;
+	idempotencyKey: string;
+	onError: WorkflowOnErrorPolicy;
+	operation: string;
+	params: WorkflowParameter[];
+}
+
+export interface WorkflowRequestPayload {
+	input?: Record<string, unknown>;
+	schemaVersion: string;
+	steps: WorkflowStepInput[];
+	workflowId?: string;
+}
+
+export interface WorkflowPlanResponse {
+	errors: WorkflowValidationError[];
+	plan?: Record<string, unknown> | null;
+}
+
+export interface WorkflowExecuteResponse {
+	errors: WorkflowValidationError[];
+	execution?: Record<string, unknown> | null;
+}
+
+export interface WorkflowSchemaResponse {
+	basePath: string;
+	endpoint: string;
+	notes?: string[];
+	referenceSyntax?: Array<Record<string, string>>;
+	schema: Record<string, unknown>;
+}
+
+export interface WorkflowSample {
+	description: string;
+	id: string;
+	request: WorkflowRequestPayload;
+	summary: string;
+	title: string;
+}

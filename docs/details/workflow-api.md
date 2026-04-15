@@ -12,7 +12,7 @@ This document describes the workflow JAX-RS API mounted at `/o/ldf-workflow`.
 ## Contract Shape
 
 - `plan` and `execute` reuse the existing workflow DTOs in `com.liferay.support.tools.workflow.dto`.
-- Requests use `schemaVersion`, `workflowId`, `input`, and ordered `steps`.
+- Requests use `schemaVersion`, optional `workflowId`, optional `input`, and ordered `steps`.
 - Each step executes from top to bottom.
 - Step parameters use exactly one of:
   - `value`: literal JSON value
@@ -21,6 +21,30 @@ This document describes the workflow JAX-RS API mounted at `/o/ldf-workflow`.
   - `osgi.jaxrs.application.base=/o/ldf-workflow`
   - `osgi.jaxrs.name=ldf-workflow`
   - `osgi.jaxrs.application.select=(osgi.jaxrs.name=ldf-workflow)`
+
+## UI Contract Notes
+
+- The workflow JSON workspace now lives in its own tab.
+  - `Workflow JSON` is the dedicated authoring surface.
+  - Legacy entity forms stay under `Other Entities`.
+  - The shell should preserve the old entity default inside `Other Entities` instead of auto-loading workflow content.
+- The workflow JSON workspace should not force `workflowId` during client-side preflight.
+  - The backend accepts requests without it.
+  - Keep the editor aligned with the backend schema instead of adding UI-only required fields.
+- Keep workspace metadata separate from the request payload.
+  - Sample titles, helper labels, and editor state are client-side concerns.
+  - Only the JSON request body should be sent to `/plan` and `/execute`.
+- The first render should stay blank unless the user loads a sample explicitly.
+  - That keeps the load-sample control meaningful.
+  - It also avoids hiding the "what changed" part of the sample loader behind an already-populated editor.
+- The editor action strip should stay grouped in one place.
+  - `load sample`, `copy`, `schema`, `validate`, `plan`, and `execute` belong together above the editor.
+  - The sample picker itself is metadata, not part of the request payload.
+- Results should be compact by default.
+  - Show a short summary first.
+  - Keep the full response behind an explicit details toggle so the editor stays readable.
+- `validate` and `plan` are separate UI actions but currently share the same plan resource path.
+  - If that backend contract changes, update both the UI wiring and the Playwright assertions together.
 
 ## Operational Notes
 
@@ -111,3 +135,6 @@ Examples:
 - Only sequential execution is supported.
 - Only `FAIL_FAST` is supported for `onError.policy`.
 - The JSON Schema is generic by step shape; per-operation required parameters are exposed through `/functions` and runtime validation rather than embedded as operation-specific JSON Schema branches.
+- The UI workspace is intentionally thinner than the backend schema:
+  - it preflights shape and required step structure
+  - it does not invent extra required fields that the server does not require

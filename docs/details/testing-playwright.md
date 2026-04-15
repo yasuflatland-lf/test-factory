@@ -90,3 +90,29 @@ The IDs match between layers, so you can create with one API and verify/delete w
 | `MBCategory` | `message-board-section`  |
 | `MBThread`   | `message-board-thread`   |
 | `MBMessage`  | `message-board-message`  |
+
+## Workflow JSON workspace E2E
+
+When testing the workflow JSON workspace, prefer stable `data-testid` locators over visible copy or proxy controls.
+
+### What to assert
+
+- The workspace opens after selecting `Workflow JSON`.
+- The editor starts blank unless the user explicitly loads a sample.
+- Clicking the in-editor sample loader changes the textarea value.
+- `validate` / `plan` / `execute` should be asserted through the response path, not only through button clicks.
+- Legacy entity forms still need a small regression check in the same spec so the new workspace does not break the old shell.
+
+### Why this pattern
+
+- Text labels change more often than test ids.
+- A preloaded sample can make the sample-loader appear to work while actually doing nothing.
+- Waiting on `response` or a result panel is safer than waiting on button presence alone.
+
+### Selector guidance
+
+- Use stable ids like `app-tab-workflow-json`, `app-tab-create-entities`, `workflow-json-textarea`, `workflow-json-load-sample`, and `workflow-json-result-toggle-details`.
+- Avoid introducing proxy selectors in the shell when the real control already exists in the workspace.
+- If a click is supposed to change the editor value, assert the value change directly before waiting on the backend response.
+- Keep the workflow JSON workspace blank until a sample is loaded explicitly.
+- When verifying results, prefer the compact summary first and only expand the details panel when the payload itself matters.
