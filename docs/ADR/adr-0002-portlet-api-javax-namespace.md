@@ -1,3 +1,6 @@
+> **Superseded by ADR-0008** — This ADR described the CE 7.4 constraint requiring `javax.portlet`.
+> With the migration to DXP 2026.q1.3-lts, `jakarta.portlet` is now required. See `adr-0008-dxp-2026-migration.md`.
+
 # ADR-0002: Use javax.portlet (3.0) for the Portlet API
 
 ## Status

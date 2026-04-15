@@ -1,6 +1,6 @@
 # liferay-dummy-factory
 
-Liferay Portal CE Workspace: MVCPortlet + React portlet + Spock integration tests against `liferay/portal:7.4.3.132-ga132`.
+Liferay DXP Workspace: MVCPortlet + React portlet + Spock integration tests against `liferay/dxp:2026.q1.3-lts`.
 
 ## Routing — read the matching L2 file for the task you're starting
 
@@ -22,7 +22,7 @@ Liferay Portal CE Workspace: MVCPortlet + React portlet + Spock integration test
 3. **Creator pattern** — batch `*Creator` classes wrap per-entity work in `TransactionInvokerUtil.invoke` + `throws Throwable`. Detail in `.claude/rules/writing-code.md`.
 4. **Batch response contract** — Creators return `{success, count, requested, skipped, error?, items}` with `success := created == requested` (strict). `error` MUST be set whenever `success == false`.
 5. **JSONWS-first verification** — test post-conditions through `/api/jsonws/...`, not Playwright UI navigation. Detail in `.claude/rules/testing.md`.
-6. **`javax.portlet` only** — `jakarta.portlet` does not work on CE 7.4 GA132. See `docs/ADR/adr-0002-portlet-api-javax-namespace.md`.
+6. **`jakarta.portlet` required** — DXP 2026.q1.3-lts exports `jakarta.portlet;version='4.0'` and its PortletTracker tracks `jakarta.portlet.Portlet`. Use `jakarta.portlet.*` imports and set `jakarta.portlet.name` / `jakarta.portlet.version=4.0` in `@Component` properties. See `docs/ADR/adr-0008-dxp-2026-migration.md`.
 7. **`data-testid` is mechanically named** — `${entityKey}-${kebab(field)}-${typeSuffix}`. Do not invent ids; follow the contract in `.claude/rules/writing-code.md`.
 8. **One package manager per repo** — `yarn.lock` only. Never coexist with `package-lock.json`.
 
