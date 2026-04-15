@@ -51,7 +51,7 @@ function App({actionResourceURLs, dataResourceURL, progressResourceURL}: AppProp
 								className={`btn btn-unstyled nav-link ${
 									selectedTab === APP_TABS.OTHER_ENTITIES ? 'active' : ''
 								}`}
-								data-testid="app-tab-other-entities"
+								data-testid="app-tab-create-entities"
 								onClick={() => setSelectedTab(APP_TABS.OTHER_ENTITIES)}
 								type="button"
 							>

@@ -18,7 +18,7 @@ vi.mock(
 );
 
 describe('App tabs', () => {
-	it('shows other entities by default and excludes workflow json from the selector', () => {
+	it('shows create entities by default and excludes workflow json from the selector', () => {
 		render(
 			<App
 				actionResourceURLs={{}}
@@ -27,7 +27,7 @@ describe('App tabs', () => {
 			/>
 		);
 
-		expect(screen.getByTestId('app-tab-other-entities')).not.toBeNull();
+		expect(screen.getByTestId('app-tab-create-entities')).not.toBeNull();
 		expect(screen.getByTestId('entity-selector')).not.toBeNull();
 		expect(screen.getByTestId('entity-selector-USERS')).not.toBeNull();
 		expect(screen.queryByTestId('entity-selector-WORKFLOW_JSON')).toBeNull();

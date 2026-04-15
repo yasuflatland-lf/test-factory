@@ -45,7 +45,7 @@ class WorkflowJsonWorkspaceSpec extends BaseLiferaySpec {
 		'[data-testid="entity-selector-WORKFLOW_JSON"]',
 	]
 	private static final List<String> OTHER_ENTITIES_ENTRY_SELECTORS = [
-		'[data-testid="app-tab-other-entities"]',
+		'[data-testid="app-tab-create-entities"]',
 		'[data-testid="other-entities-tab"]',
 		'[data-testid="workspace-tab-OTHER_ENTITIES"]',
 		'[data-testid="app-tab-OTHER_ENTITIES"]',
