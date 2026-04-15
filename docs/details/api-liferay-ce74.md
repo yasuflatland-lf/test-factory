@@ -131,3 +131,31 @@ The module name matches the `Bundle-SymbolicName` prefix (e.g. `com.liferay.blog
 ## 14. `UserLocalService.addUserWithWorkflow` — `prefixListTypeId` and `suffixListTypeId` positions (DXP: confirmed compatible — prefixListTypeId/suffixListTypeId at same positions, 0L is valid)
 
 On CE 7.4 GA132, the `addUserWithWorkflow` method accepts `prefixListTypeId` and `suffixListTypeId` as `long` parameters. Passing `0L` for both is valid and produces a user with no name prefix or suffix. The parameter positions have not changed in DXP 2026.Q1.3-LTS — callers built against CE 7.4 GA132 are binary-compatible with DXP when compiled against `release.dxp.api`.
+
+## 15. `GroupLocalService.addGroup` — DXP 2026.Q1.3 signature is 16 args (CE 7.4 is 15)
+
+**Why:** DXP 2026.Q1.3 added `String externalReferenceCode` as the first argument and inserted `String typeSettings` between the `type` and `manualMembership` parameters. CE 7.4 GA132 callers that omit these two arguments will fail to compile against `release.dxp.api`.
+
+**What:** DXP signature (16 args):
+
+```java
+addGroup(String externalReferenceCode, long userId, long parentGroupId,
+         String className, long classPK, int type, String typeSettings,
+         boolean manualMembership, int membershipRestriction,
+         String friendlyURL, boolean site, boolean inheritContent,
+         boolean active, ServiceContext serviceContext)
+```
+
+Pass `StringPool.BLANK` for both `externalReferenceCode` and `typeSettings` when no external reference code or custom type settings are needed. The DXP source set (`java-dxp/`) must use the 16-arg overload; the CE source set (`java-ce/`) continues to use the 15-arg form.
+
+## 16. `javax.servlet` and `javax.ws.rs` also migrated to Jakarta namespace in DXP 2026.Q1
+
+**Why:** The Jakarta EE namespace migration in DXP 2026.Q1 covers the full servlet and JAX-RS stacks, not only `javax.portlet`. Classes implementing `DataListProvider` (which receives `HttpServletRequest`), `WorkflowApplication`, and `WorkflowResource` all depend on `javax.servlet.*` or `javax.ws.rs.*` — both of which become `jakarta.servlet.*` and `jakarta.ws.rs.*` in DXP.
+
+**What:** Any class in `src/main/java/` that imports `javax.servlet.*` or `javax.ws.rs.*` must be moved to both `java-ce/` and `java-dxp/` source sets if it also requires a portlet-API import. If the class is portlet-agnostic but still uses `javax.servlet`, the namespace split still applies: `javax.servlet` for CE, `jakarta.servlet` for DXP. The dual source-set strategy (see `docs/ADR/adr-0007-ce-dxp-dual-profile.md`) covers all three namespace axes — portlet, servlet, and ws.rs.
+
+## 17. `LocaleUtil.fromLanguageId(String, boolean)` — pass `validate=false` to skip Language service
+
+**Why:** The single-arg overload `LocaleUtil.fromLanguageId(String)` delegates to a Language service lookup that requires the portal Language service to be registered. In host-JVM unit tests (e.g. Vitest/JUnit without a running portal), this lookup fails with a service-unavailability error.
+
+**What:** The 2-arg overload `LocaleUtil.fromLanguageId(id, false)` performs pure string parsing (splitting on `_`) without touching the Language service. Pass `validate=false` in any code path that must work in a unit-test environment or early in the OSGi lifecycle before the Language service is active.

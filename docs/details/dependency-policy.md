@@ -56,6 +56,10 @@ The Docker Hub tag for DXP must be verified separately from `releases.json`:
 `releases.json` provides artifact CDN URLs (`releases-cdn.liferay.com`), not Docker Hub tags.
 Verified tag for DXP 2026.Q1.3: `liferay/dxp:2026.q1.3` — check Docker Hub if pulls fail.
 
+### DXP activation key deployment
+
+Activation key deployment: use `withCopyToContainer` (not `deployJar()` / `execInContainer`) so the license file is present before `start()`. Liferay DXP validates the activation key at boot time — a key that arrives post-boot via hot-deploy is ignored. `deployJar()` is correct for OSGi bundles (post-boot hot-deploy) but wrong for license keys. See `docs/details/dxp-migration-notes.md` for the full rationale.
+
 ## Cross-references
 
 - The Vitest migration gotchas (Mock typing, RTL cleanup, vi.mock hoisting, React double-resolution, ESM setup) live in `docs/details/ui-vitest-gotchas.md`.
