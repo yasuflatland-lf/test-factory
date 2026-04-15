@@ -196,7 +196,6 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 			if (dir.isDirectory()) {
 				dir.listFiles()
 					?.findAll { it.name == 'portal-ext.properties' }
-					?.sort { it.name }
 					?.each { File f ->
 						try {
 							sb.append(f.getText('UTF-8')).append('\n')
