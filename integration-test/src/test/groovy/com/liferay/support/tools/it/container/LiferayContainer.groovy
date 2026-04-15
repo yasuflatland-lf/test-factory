@@ -155,7 +155,7 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 				'or LIFERAY_DXP_LICENSE_BASE64 (base64-encoded content) before running integration tests.')
 		}
 
-		if (licenseBytes == null || licenseBytes.length == 0) {
+		if (licenseBytes.length == 0) {
 			throw new IllegalStateException(
 				'DXP license resolved to an empty file. ' +
 				'Check that LIFERAY_DXP_LICENSE_FILE is a non-empty file or that ' +
