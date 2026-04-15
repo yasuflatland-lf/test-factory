@@ -44,7 +44,9 @@ Tell real runs from cached replays by the elapsed time on the `BUILD SUCCESSFUL 
 
 ## Coverage (JaCoCo)
 
-Host-JVM unit tests under `modules/liferay-dummy-factory/src/test/java` are measured by JaCoCo. The report is generated automatically after `test` via `finalizedBy`.
+### Host-JVM unit tests
+
+Unit tests under `modules/liferay-dummy-factory/src/test/java` are measured by JaCoCo. The report is generated automatically after `test` via `finalizedBy`.
 
 ```bash
 ./gradlew :modules:liferay-dummy-factory:test
@@ -55,4 +57,24 @@ Report locations:
 - HTML: `modules/liferay-dummy-factory/build/reports/jacoco/test/html/index.html`
 - XML:  `modules/liferay-dummy-factory/build/reports/jacoco/test/jacocoTestReport.xml`
 
-**Scope limitation**: only host-JVM unit tests (JUnit 5) are covered. Integration tests run against a containerized Liferay JVM (Testcontainers) and are **not** instrumented in this step. Coverage for the containerized JVM requires injecting the JaCoCo agent into Liferay's `CATALINA_OPTS` and is deferred to a later step.
+### Integration tests — Liferay container JVM
+
+Coverage is collected from the Liferay container JVM, not the integration test harness. The JaCoCo agent is injected into the container via `CATALINA_OPTS` in tcpserver mode on port 6300. At the end of each spec, `BaseLiferaySpec.cleanupSpec()` dumps a per-spec `.exec` file to `integration-test/build/jacoco/`. The `jacocoIntegrationReport` task merges all exec files and generates the combined report.
+
+To run integration tests and generate the report:
+
+```bash
+./gradlew :integration-test:integrationTest
+# jacocoIntegrationReport runs automatically as finalizedBy
+```
+
+To regenerate the report from existing exec files without re-running tests:
+
+```bash
+./gradlew :integration-test:jacocoIntegrationReport
+```
+
+Report locations:
+
+- HTML: `integration-test/build/reports/jacoco/integration/html/index.html`
+- XML:  `integration-test/build/reports/jacoco/integration/jacocoIntegrationReport.xml`
