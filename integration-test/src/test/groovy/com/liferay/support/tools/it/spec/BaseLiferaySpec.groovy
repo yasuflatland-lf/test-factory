@@ -311,8 +311,7 @@ abstract class BaseLiferaySpec extends Specification {
 			throw new IOException("Cannot create JaCoCo output directory: ${jacocoDir.absolutePath}")
 		}
 
-		ExecDumpClient client = new ExecDumpClient()
-		client.dump(liferay.host, liferay.jacocoPort).save(outputFile, false)
+		new ExecDumpClient().dump(liferay.host, liferay.jacocoPort).save(outputFile, false)
 
 		log.info('JaCoCo coverage dumped to {}', outputFile.absolutePath)
 	}

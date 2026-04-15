@@ -66,39 +66,32 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 
 	void copyJacocoAgentToContainer() {
 		URL agentUrl = _findJacocoAgentUrl()
-		if (agentUrl == null) {
+		if (!agentUrl) {
 			throw new IllegalStateException(
 				'jacocoagent.jar not found on test classpath. ' +
 				'Ensure org.jacoco.agent:0.8.14:runtime is declared as a testImplementation dependency.'
 			)
 		}
-		byte[] agentBytes
 		try {
-			agentBytes = agentUrl.bytes
+			withCopyToContainer(Transferable.of(agentUrl.bytes), '/tmp/jacocoagent.jar')
 		}
 		catch (IOException e) {
 			throw new IllegalStateException(
 				"Failed to read jacocoagent.jar from ${agentUrl}: ${e.message}", e)
 		}
-		withCopyToContainer(Transferable.of(agentBytes), '/tmp/jacocoagent.jar')
 	}
 
 	private static URL _findJacocoAgentUrl() {
 		String cp = System.getProperty('java.class.path', '')
-		String found = cp.split(File.pathSeparator).find { String entry ->
-			entry.contains('jacocoagent')
-		}
-		if (found != null) {
+		String found = cp.split(File.pathSeparator).find { it.contains('jacocoagent') }
+		if (found) {
 			return new File(found).toURI().toURL()
 		}
-		// Fallback: walk classloader hierarchy for URLClassLoader (Java 8 style)
 		ClassLoader cl = Thread.currentThread().contextClassLoader
 		while (cl != null) {
 			if (cl instanceof URLClassLoader) {
-				URL url = (cl as URLClassLoader).URLs.find { URL u ->
-					u.path?.contains('jacocoagent')
-				}
-				if (url != null) {
+				URL url = (cl as URLClassLoader).URLs.find { it.path?.contains('jacocoagent') }
+				if (url) {
 					return url
 				}
 			}
