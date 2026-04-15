@@ -52,6 +52,8 @@ tasks.register('integrationTest', Test) {
 	jvmArgs "-Xms${project.property('test.jvm.minHeap')}", "-Xmx${project.property('test.jvm.maxHeap')}"
 	systemProperty 'liferay.docker.image', project.property('liferay.docker.image')
 	environment 'PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD', '1'
+	environment 'LIFERAY_DXP_LICENSE_FILE', System.getenv('LIFERAY_DXP_LICENSE_FILE') ?: ''
+	environment 'LIFERAY_DXP_LICENSE_BASE64', System.getenv('LIFERAY_DXP_LICENSE_BASE64') ?: ''
 
 	testLogging {
 		events 'passed', 'skipped', 'failed', 'standardOut', 'standardError'

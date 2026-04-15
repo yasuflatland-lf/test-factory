@@ -33,7 +33,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Pull Liferay Docker image
-        run: docker pull liferay/portal:7.4.3.132-ga132 &
+        run: docker pull liferay/dxp:2026.q1.3-lts &
 
       - name: Install Playwright browsers
         run: npx playwright@1.59.0 install --with-deps chromium
@@ -42,6 +42,8 @@ jobs:
         run: wait
 
       - name: Run integration tests
+        env:
+          LIFERAY_DXP_LICENSE_BASE64: ${{ secrets.LIFERAY_DXP_LICENSE_BASE64 }}
         run: ./gradlew :integration-test:integrationTest --no-daemon --info
 
       - name: Upload test report
