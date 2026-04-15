@@ -5,6 +5,10 @@ on:
   push:
     branches: [feature/adopt_dxp]
 
+concurrency:
+  group: integration-test-dxp-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   integration-test-dxp:
     runs-on: ubuntu-latest
@@ -14,7 +18,13 @@ jobs:
       - name: Write DXP activation key
         env:
           LDF_DXP_ACTIVATION_KEY: ${{ secrets.LDF_DXP_ACTIVATION_KEY }}
-        run: printf '%s' "$LDF_DXP_ACTIVATION_KEY" > activation-keys/activation-key.xml
+        run: |
+          if [ -z "$LDF_DXP_ACTIVATION_KEY" ]; then
+            echo "ERROR: LDF_DXP_ACTIVATION_KEY secret is not set. DXP integration tests require a valid activation key." >&2
+            exit 1
+          fi
+          printf '%s' "$LDF_DXP_ACTIVATION_KEY" > activation-keys/activation-key.xml
+          echo "Activation key written ($(wc -c < activation-keys/activation-key.xml) bytes)."
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -35,3 +45,7 @@ jobs:
         run: |
           ./gradlew :modules:liferay-dummy-factory:clean :integration-test:clean
           ./gradlew :integration-test:integrationTest -Pbuild.target=dxp
+
+      - name: Remove activation key
+        if: always()
+        run: rm -f activation-keys/*.xml

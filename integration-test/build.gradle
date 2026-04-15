@@ -3,7 +3,11 @@ plugins {
 	id 'jacoco'
 }
 
-def isDxp = project.findProperty('build.target') == 'dxp'
+def buildTarget = (project.findProperty('build.target') ?: 'ce').trim().toLowerCase()
+if (buildTarget != 'ce' && buildTarget != 'dxp') {
+	throw new GradleException("Unrecognized build.target='${buildTarget}'. Valid values: 'ce', 'dxp'.")
+}
+def isDxp = buildTarget == 'dxp'
 
 java {
 	sourceCompatibility = JavaVersion.VERSION_17
@@ -52,9 +56,15 @@ tasks.register('integrationTest', Test) {
 	classpath = sourceSets.test.runtimeClasspath
 
 	jvmArgs "-Xms${project.property('test.jvm.minHeap')}", "-Xmx${project.property('test.jvm.maxHeap')}"
+	if (isDxp && !rootProject.findProperty('dxp.docker.image')) {
+		throw new GradleException(
+			"Property 'dxp.docker.image' is required when build.target=dxp. " +
+			"Add it to gradle.properties. See docs/ADR/adr-0007-ce-dxp-dual-profile.md.")
+	}
 	systemProperty 'liferay.docker.image',
-		isDxp ? rootProject.findProperty('dxp.docker.image') : rootProject.findProperty('liferay.docker.image')
-	systemProperty 'build.target', project.findProperty('build.target') ?: 'ce'
+		isDxp ? rootProject.property('dxp.docker.image') : rootProject.property('liferay.docker.image')
+	systemProperty 'build.target', buildTarget
+	systemProperty 'project.root.dir', rootProject.projectDir.absolutePath
 	environment 'PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD', '1'
 
 	testLogging {
@@ -82,7 +92,10 @@ tasks.register('jacocoIntegrationReport', JacocoReport) {
 
 	executionData fileTree(layout.buildDirectory.dir('jacoco')).include('*.exec')
 
-	sourceDirectories.from rootProject.file('modules/liferay-dummy-factory/src/main/java')
+	sourceDirectories.from files(
+		rootProject.file('modules/liferay-dummy-factory/src/main/java'),
+		rootProject.file('modules/liferay-dummy-factory/src/main/java-ce')
+	)
 	classDirectories.from rootProject.file('modules/liferay-dummy-factory/build/classes/java/main')
 
 	reports {
