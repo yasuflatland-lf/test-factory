@@ -24,26 +24,6 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 		this(System.getProperty('liferay.docker.image', 'liferay/dxp:2026.q1.3-lts'))
 	}
 
-	private static final String PORTAL_EXT_PROPERTIES = [
-		'setup.wizard.enabled=false',
-		'terms.of.use.required=false',
-		'users.reminder.query.enabled=false',
-		'passwords.default.policy.change.required=false',
-		// DXP 2026 Docker image disables JSONWS and Basic Auth by default via
-		// portal-liferay-online-config.properties — override for test environments
-		'jsonws.web.service.api.discoverable=true',
-		'json.web.service.enabled=true',
-		'json.servlet.hosts.allowed=',
-		'configuration.override.com.liferay.portal.security.configuration.BasicAuthHeaderSupportConfiguration_enabled=B"true"',
-		'auth.verifier.BasicAuthHeaderAuthVerifier.urls.includes=/api/*,/portal/api/*,/o/*,/xmlrpc/*',
-		'configuration.override.com.liferay.portal.security.auth.verifier.internal.basic.auth.header.configuration.BasicAuthHeaderAuthVerifierConfiguration~default_urlsIncludes="/api/*,/portal/api/*,/o/*,/xmlrpc*"',
-		'enterprise.product.notification.enabled=false',
-		'company.security.strangers=false',
-		'company.security.strangers.verify=false',
-		'company.security.update.password.required=false',
-		'admin.email.user.added.enabled=false',
-	].join('\n') + '\n'
-
 	LiferayContainer(String imageName) {
 		super(DockerImageName.parse(imageName))
 
@@ -62,18 +42,8 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 			'LIFERAY_DISABLE_TRIAL_LICENSE'                                              : 'true',
 			'LIFERAY_ENTERPRISE_PERIOD_PRODUCT_PERIOD_NOTIFICATION_PERIOD_ENABLED'       : 'false',
 		])
-		withCopyToContainer(
-			Transferable.of(PORTAL_EXT_PROPERTIES.bytes),
-			'/opt/liferay/tomcat/webapps/ROOT/WEB-INF/classes/portal-ext.properties'
-		)
-		// DXP 2026: portal-liferay-online-config.properties (baked into portal-impl.jar
-		// and also in WEB-INF/classes/) sets json.servlet.hosts.allowed=N/A which blocks
-		// ALL JSONWS access. Overwrite with an empty file before first startup so the
-		// portal.properties loading chain never sees the N/A value.
-		withCopyToContainer(
-			Transferable.of(''.bytes),
-			'/opt/liferay/tomcat/webapps/ROOT/WEB-INF/classes/portal-liferay-online-config.properties'
-		)
+		_copyPortalExtProperties()
+		_copyPortalOnlineConfig()
 		withReuse(false)
 	}
 
@@ -184,6 +154,54 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 			throw new IllegalStateException(
 				"Failed to copy DXP license into container: ${e.message}", e)
 		}
+	}
+
+	private void _copyPortalExtProperties() {
+		withCopyToContainer(
+			Transferable.of(_mergeConfigFiles().bytes),
+			'/mnt/liferay/files/portal-ext.properties'
+		)
+	}
+
+	private void _copyPortalOnlineConfig() {
+		// DXP 2026: portal-liferay-online-config.properties sets json.servlet.hosts.allowed=N/A
+		// which blocks all JSONWS. Copy an empty file via /mnt/liferay/files/ so the Docker
+		// entrypoint places it in Liferay Home before startup, overriding the default.
+		withCopyToContainer(
+			Transferable.of(''.bytes),
+			'/mnt/liferay/files/portal-liferay-online-config.properties'
+		)
+	}
+
+	private static String _mergeConfigFiles() {
+		String projectRoot = System.getProperty('project.root.dir')
+		if (!projectRoot) {
+			throw new IllegalStateException(
+				'System property "project.root.dir" is not set. ' +
+				'Add systemProperty("project.root.dir", rootProject.projectDir.absolutePath) ' +
+				'to the integrationTest task in integration-test/build.gradle.'
+			)
+		}
+
+		Properties merged = new Properties()
+
+		['common', 'docker'].each { String env ->
+			File dir = new File(projectRoot, "configs/${env}")
+			if (dir.isDirectory()) {
+				dir.listFiles()
+					.findAll { it.name.endsWith('.properties') }
+					.sort { it.name }
+					.each { File f ->
+						Properties p = new Properties()
+						f.withInputStream { p.load(it) }
+						merged.putAll(p)
+					}
+			}
+		}
+
+		StringBuilder sb = new StringBuilder()
+		merged.each { k, v -> sb.append("${k}=${v}\n") }
+		return sb.toString()
 	}
 
 	void deployJar(Path jarPath) {
