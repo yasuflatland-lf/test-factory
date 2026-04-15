@@ -46,7 +46,7 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 			'LIFERAY_TERMS_OF_USE_REQUIRED'                      : 'false',
 			'LIFERAY_USERS_REMINDER_QUERY_ENABLED'               : 'false',
 			'LIFERAY_PASSWORDS_DEFAULT_POLICY_CHANGE_REQUIRED'   : 'false',
-			'JAVA_OPTS_APPEND'                                    : "-javaagent:/tmp/jacocoagent.jar=output=tcpserver,port=${JACOCO_PORT},address=*",
+			'JAVA_OPTS_APPEND'                                    : "-javaagent:/tmp/jacocoagent.jar=output=tcpserver,port=${JACOCO_PORT},address=*".toString(),
 		])
 		withCopyToContainer(
 			Transferable.of(PORTAL_EXT_PROPERTIES.bytes),
@@ -83,14 +83,14 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 
 	private static URL _findJacocoAgentUrl() {
 		String cp = System.getProperty('java.class.path', '')
-		String found = cp.split(File.pathSeparator).find { it.contains('jacocoagent') }
+		String found = cp.split(File.pathSeparator).find { _isJacocoAgentJar(it) }
 		if (found) {
 			return new File(found).toURI().toURL()
 		}
 		ClassLoader cl = Thread.currentThread().contextClassLoader
 		while (cl != null) {
 			if (cl instanceof URLClassLoader) {
-				URL url = (cl as URLClassLoader).URLs.find { it.path?.contains('jacocoagent') }
+				URL url = (cl as URLClassLoader).URLs.find { _isJacocoAgentJar(it.toExternalForm()) }
 				if (url) {
 					return url
 				}
@@ -98,6 +98,11 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 			cl = cl.parent
 		}
 		return null
+	}
+
+	private static boolean _isJacocoAgentJar(String path) {
+		return path?.contains('jacocoagent') ||
+			(path?.contains('org.jacoco.agent') && path?.contains('runtime'))
 	}
 
 	void deployJar(Path jarPath) {
