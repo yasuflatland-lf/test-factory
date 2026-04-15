@@ -53,7 +53,7 @@ class SiteCreationSpec extends BaseLiferaySpec {
 		createdSiteIds.each { Long id ->
 			try {
 				jsonwsPost(
-					'/api/jsonws/group/delete-group',
+					'/portal/api/jsonws/group/delete-group',
 					['groupId': id])
 			}
 			catch (Exception e) {
@@ -92,7 +92,7 @@ class SiteCreationSpec extends BaseLiferaySpec {
 		then: 'every created group exists and is an open site'
 		groupIds.every { Long groupId ->
 			Map group = jsonwsGet(
-				"/api/jsonws/group/get-group/group-id/${groupId}") as Map
+				"/portal/api/jsonws/group/get-group/group-id/${groupId}") as Map
 			(group?.type as Integer) == TYPE_SITE_OPEN
 		}
 	}
@@ -123,7 +123,7 @@ class SiteCreationSpec extends BaseLiferaySpec {
 		then: 'every created group is a private site'
 		groupIds.every { Long groupId ->
 			Map group = jsonwsGet(
-				"/api/jsonws/group/get-group/group-id/${groupId}") as Map
+				"/portal/api/jsonws/group/get-group/group-id/${groupId}") as Map
 			(group?.type as Integer) == TYPE_SITE_PRIVATE
 		}
 	}
@@ -140,10 +140,10 @@ class SiteCreationSpec extends BaseLiferaySpec {
 
 		and: 'fetch prototype uuids via JSONWS'
 		Map publicProtoDetail = jsonwsGet(
-			"/api/jsonws/layoutsetprototype/get-layout-set-prototype" +
+			"/portal/api/jsonws/layoutsetprototype/get-layout-set-prototype" +
 			"/layout-set-prototype-id/${publicProtoId}") as Map
 		Map privateProtoDetail = jsonwsGet(
-			"/api/jsonws/layoutsetprototype/get-layout-set-prototype" +
+			"/portal/api/jsonws/layoutsetprototype/get-layout-set-prototype" +
 			"/layout-set-prototype-id/${privateProtoId}") as Map
 
 		String expectedPublicUuid = publicProtoDetail.uuid as String

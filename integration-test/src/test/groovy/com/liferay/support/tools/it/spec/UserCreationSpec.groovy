@@ -51,7 +51,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 		createdUserIds.each { id ->
 			try {
 				jsonwsPost(
-					'/api/jsonws/user/delete-user',
+					'/portal/api/jsonws/user/delete-user',
 					['userId': id])
 			}
 			catch (Exception e) {
@@ -84,7 +84,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 			String screenName = "${prefix}${i}"
 
 			Map user = jsonwsGet(
-				"/api/jsonws/user/get-user-by-screen-name" +
+				"/portal/api/jsonws/user/get-user-by-screen-name" +
 				"/company-id/${companyId}" +
 				"/screen-name/${URLEncoder.encode(screenName, 'UTF-8')}"
 			) as Map
@@ -120,7 +120,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 			String screenName = created.screenName as String
 
 			Map user = jsonwsGet(
-				"/api/jsonws/user/get-user-by-screen-name" +
+				"/portal/api/jsonws/user/get-user-by-screen-name" +
 				"/company-id/${companyId}" +
 				"/screen-name/${URLEncoder.encode(screenName, 'UTF-8')}"
 			) as Map
@@ -189,7 +189,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 
 		and: 'organization membership via JSONWS get-organization-users'
 		List orgUsers = jsonwsGet(
-			"/api/jsonws/user/get-organization-users" +
+			"/portal/api/jsonws/user/get-organization-users" +
 			"/organization-id/${orgId}"
 		) as List
 
@@ -198,7 +198,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 
 		when: 'role membership via JSONWS has-role-user'
 		Object hasRole = jsonwsGet(
-			"/api/jsonws/user/has-role-user" +
+			"/portal/api/jsonws/user/has-role-user" +
 			"/role-id/${roleId}" +
 			"/user-id/${userId}"
 		)
@@ -231,7 +231,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 
 		and: 'the user appears in the site group via JSONWS get-user-sites-groups'
 		List siteGroups = jsonwsGet(
-			"/api/jsonws/group/get-user-sites-groups" +
+			"/portal/api/jsonws/group/get-user-sites-groups" +
 			"/user-id/${userId}/start/-1/end/-1"
 		) as List
 
@@ -264,12 +264,12 @@ class UserCreationSpec extends BaseLiferaySpec {
 
 		and: 'query public and private layouts via JSONWS'
 		List publicLayouts = jsonwsGet(
-			"/api/jsonws/layout/get-layouts" +
+			"/portal/api/jsonws/layout/get-layouts" +
 			"/group-id/${userGroupId}/private-layout/false"
 		) as List
 
 		List privateLayouts = jsonwsGet(
-			"/api/jsonws/layout/get-layouts" +
+			"/portal/api/jsonws/layout/get-layouts" +
 			"/group-id/${userGroupId}/private-layout/true"
 		) as List
 

@@ -40,7 +40,7 @@ class PagesFunctionalSpec extends BaseLiferaySpec {
 		createdPlids.each { plid ->
 			try {
 				jsonwsPost(
-					'/api/jsonws/layout/delete-layout',
+					'/portal/api/jsonws/layout/delete-layout',
 					['plid': plid, 'serviceContext': '{}'])
 			}
 			catch (Exception e) {
@@ -59,7 +59,7 @@ class PagesFunctionalSpec extends BaseLiferaySpec {
 	def 'Discover Guest site groupId'() {
 		when:
 		def group = jsonwsGet(
-			"/api/jsonws/group/get-group/company-id/${companyId}" +
+			"/portal/api/jsonws/group/get-group/company-id/${companyId}" +
 			'/group-key/Guest') as Map
 
 		then:
@@ -119,7 +119,7 @@ class PagesFunctionalSpec extends BaseLiferaySpec {
 	def 'Created pages are visible via JSONWS LayoutService'() {
 		when:
 		def layouts = jsonwsGet(
-			"/api/jsonws/layout/get-layouts/group-id/${guestGroupId}" +
+			"/portal/api/jsonws/layout/get-layouts/group-id/${guestGroupId}" +
 			'/private-layout/false') as List
 
 		then:
@@ -142,13 +142,13 @@ class PagesFunctionalSpec extends BaseLiferaySpec {
 		when: 'delete each created layout'
 		createdPlids.each { plid ->
 			jsonwsPost(
-				'/api/jsonws/layout/delete-layout',
+				'/portal/api/jsonws/layout/delete-layout',
 				['plid': plid, 'serviceContext': '{}'])
 		}
 
 		and: 'list layouts again'
 		def layouts = jsonwsGet(
-			"/api/jsonws/layout/get-layouts/group-id/${guestGroupId}" +
+			"/portal/api/jsonws/layout/get-layouts/group-id/${guestGroupId}" +
 			'/private-layout/false') as List
 
 		then: 'none of the test pages remain'

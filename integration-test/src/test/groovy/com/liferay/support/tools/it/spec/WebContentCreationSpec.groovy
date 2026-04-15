@@ -81,7 +81,7 @@ class WebContentCreationSpec extends BaseLiferaySpec {
 
 		and:
 		int articleCount = jsonwsGet(
-			"/api/jsonws/journal.journalarticle/get-articles-count" +
+			"/portal/api/jsonws/journal.journalarticle/get-articles-count" +
 			"/group-id/${siteId}/folder-id/0") as int
 
 		articleCount == 3
@@ -129,10 +129,10 @@ class WebContentCreationSpec extends BaseLiferaySpec {
 
 		and: 'JSONWS confirms 5 articles in each site'
 		int countA = jsonwsGet(
-			"/api/jsonws/journal.journalarticle/get-articles-count" +
+			"/portal/api/jsonws/journal.journalarticle/get-articles-count" +
 			"/group-id/${siteAId}/folder-id/0") as int
 		int countB = jsonwsGet(
-			"/api/jsonws/journal.journalarticle/get-articles-count" +
+			"/portal/api/jsonws/journal.journalarticle/get-articles-count" +
 			"/group-id/${siteBId}/folder-id/0") as int
 
 		countA == 5
@@ -164,14 +164,14 @@ class WebContentCreationSpec extends BaseLiferaySpec {
 
 		and: 'JSONWS reports 2 articles in the site'
 		int articleCount = jsonwsGet(
-			"/api/jsonws/journal.journalarticle/get-articles-count" +
+			"/portal/api/jsonws/journal.journalarticle/get-articles-count" +
 			"/group-id/${siteId}/folder-id/0") as int
 
 		articleCount == 2
 
 		and: 'each article content carries at least 3 paragraph lines'
 		List articles = jsonwsGet(
-			"/api/jsonws/journal.journalarticle/get-articles" +
+			"/portal/api/jsonws/journal.journalarticle/get-articles" +
 			"/group-id/${siteId}/folder-id/0/locale/en_US") as List
 
 		articles.size() == 2
@@ -225,10 +225,10 @@ class WebContentCreationSpec extends BaseLiferaySpec {
 
 		and: 'JSONWS shows both sites have zero articles'
 		int countA = jsonwsGet(
-			"/api/jsonws/journal.journalarticle/get-articles-count" +
+			"/portal/api/jsonws/journal.journalarticle/get-articles-count" +
 			"/group-id/${siteAId}/folder-id/0") as int
 		int countB = jsonwsGet(
-			"/api/jsonws/journal.journalarticle/get-articles-count" +
+			"/portal/api/jsonws/journal.journalarticle/get-articles-count" +
 			"/group-id/${siteBId}/folder-id/0") as int
 
 		countA == 0

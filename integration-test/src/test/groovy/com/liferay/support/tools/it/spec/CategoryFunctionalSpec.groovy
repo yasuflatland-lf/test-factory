@@ -44,7 +44,7 @@ class CategoryFunctionalSpec extends BaseLiferaySpec {
 
 		// Discover Guest site groupId for the prereq vocabulary.
 		def group = jsonwsGet(
-			"/api/jsonws/group/get-group/company-id/${companyId}" +
+			"/portal/api/jsonws/group/get-group/company-id/${companyId}" +
 			'/group-key/Guest') as Map
 
 		guestGroupId = group.groupId as Long

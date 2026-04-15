@@ -216,7 +216,7 @@ abstract class BaseLiferaySpec extends Specification {
 	protected Long getCompanyId() {
 		if (cachedCompanyId == null) {
 			def company = jsonwsGet(
-				'/api/jsonws/company/get-company-by-virtual-host' +
+				'/portal/api/jsonws/company/get-company-by-virtual-host' +
 				'/virtual-host/localhost') as Map
 			cachedCompanyId = company.companyId as Long
 		}

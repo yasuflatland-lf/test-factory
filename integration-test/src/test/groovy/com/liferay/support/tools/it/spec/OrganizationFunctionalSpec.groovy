@@ -34,7 +34,7 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 		createdOrganizationIds.each { id ->
 			try {
 				jsonwsPost(
-					'/api/jsonws/organization/delete-organization',
+					'/portal/api/jsonws/organization/delete-organization',
 					['organizationId': id])
 			}
 			catch (Exception e) {
@@ -88,7 +88,7 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 	def 'Created organizations are visible via JSONWS OrganizationService'() {
 		when:
 		def orgs = jsonwsGet(
-			"/api/jsonws/organization/get-organizations/company-id/${companyId}" +
+			"/portal/api/jsonws/organization/get-organizations/company-id/${companyId}" +
 			'/parent-organization-id/0/start/-1/end/-1') as List
 
 		then:
@@ -136,7 +136,7 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 
 		and: 'organization count has not increased'
 		def orgs = jsonwsGet(
-			"/api/jsonws/organization/get-organizations/company-id/${companyId}" +
+			"/portal/api/jsonws/organization/get-organizations/company-id/${companyId}" +
 			'/parent-organization-id/0/start/-1/end/-1') as List
 		def matchingItems = orgs.findAll { org ->
 			(org.name as String).startsWith(BASE_ORG_NAME)
@@ -148,13 +148,13 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 		when:
 		createdOrganizationIds.each { id ->
 			jsonwsPost(
-				'/api/jsonws/organization/delete-organization',
+				'/portal/api/jsonws/organization/delete-organization',
 				['organizationId': id])
 		}
 
 		and: 'list organizations again'
 		def orgs = jsonwsGet(
-			"/api/jsonws/organization/get-organizations/company-id/${companyId}" +
+			"/portal/api/jsonws/organization/get-organizations/company-id/${companyId}" +
 			'/parent-organization-id/0/start/-1/end/-1') as List
 
 		then: 'none of the test organizations remain'

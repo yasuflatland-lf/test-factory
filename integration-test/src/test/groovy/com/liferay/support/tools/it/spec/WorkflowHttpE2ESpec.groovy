@@ -112,7 +112,7 @@ class WorkflowHttpE2ESpec extends BaseLiferaySpec {
 		if (createdGroupId) {
 			try {
 				jsonwsPost(
-					'/api/jsonws/group/delete-group',
+					'/portal/api/jsonws/group/delete-group',
 					['groupId': createdGroupId])
 			}
 			catch (Exception e) {
@@ -123,7 +123,7 @@ class WorkflowHttpE2ESpec extends BaseLiferaySpec {
 		if (createdUserId) {
 			try {
 				jsonwsPost(
-					'/api/jsonws/user/delete-user',
+					'/portal/api/jsonws/user/delete-user',
 					['userId': createdUserId])
 			}
 			catch (Exception e) {
@@ -133,7 +133,7 @@ class WorkflowHttpE2ESpec extends BaseLiferaySpec {
 
 		if (createdRoleId) {
 			try {
-				jsonwsPost('/api/jsonws/role/delete-role', ['roleId': createdRoleId])
+				jsonwsPost('/portal/api/jsonws/role/delete-role', ['roleId': createdRoleId])
 			}
 			catch (Exception e) {
 				log.warn('Failed to clean up role {}: {}', createdRoleId, e.message)
@@ -326,19 +326,19 @@ class WorkflowHttpE2ESpec extends BaseLiferaySpec {
 
 		and:
 		Map createdUser = jsonwsGet(
-			"/api/jsonws/user/get-user-by-id/user-id/${createdUserId}") as Map
+			"/portal/api/jsonws/user/get-user-by-id/user-id/${createdUserId}") as Map
 		createdUser.userId as Long == createdUserId
 		(createdUser.screenName as String) == "${USER_BASE_NAME.toLowerCase()}1"
 
 		and:
 		List siteGroups = jsonwsGet(
-			"/api/jsonws/group/get-user-sites-groups" +
+			"/portal/api/jsonws/group/get-user-sites-groups" +
 			"/user-id/${createdUserId}/start/-1/end/-1") as List
 		siteGroups.any { (it.groupId as Long) == createdGroupId }
 
 		and:
 		List siteUserGroupRoles = jsonwsGet(
-			"/api/jsonws/role/get-user-group-roles" +
+			"/portal/api/jsonws/role/get-user-group-roles" +
 			"/user-id/${createdUserId}/group-id/${createdGroupId}") as List
 		siteUserGroupRoles.any {
 			(it.roleId as Long) == createdRoleId
@@ -346,7 +346,7 @@ class WorkflowHttpE2ESpec extends BaseLiferaySpec {
 
 		and:
 		Map createdSite = jsonwsGet(
-			"/api/jsonws/group/get-group/group-id/${createdGroupId}") as Map
+			"/portal/api/jsonws/group/get-group/group-id/${createdGroupId}") as Map
 		createdSite.groupId as Long == createdGroupId
 
 		and:
@@ -375,7 +375,7 @@ class WorkflowHttpE2ESpec extends BaseLiferaySpec {
 
 		and:
 		List layouts = jsonwsGet(
-			"/api/jsonws/layout/get-layouts/group-id/${createdGroupId}" +
+			"/portal/api/jsonws/layout/get-layouts/group-id/${createdGroupId}" +
 			'/private-layout/false') as List
 		layouts.any { layout ->
 			(layout.plid as Long) == createdPlid &&
@@ -385,7 +385,7 @@ class WorkflowHttpE2ESpec extends BaseLiferaySpec {
 
 		and:
 		List documents = jsonwsGet(
-			"/api/jsonws/dlapp/get-file-entries/repository-id/${createdGroupId}" +
+			"/portal/api/jsonws/dlapp/get-file-entries/repository-id/${createdGroupId}" +
 			'/folder-id/0') as List
 		documents.any {
 			(it.fileEntryId as Long) == createdFileEntryId &&
@@ -394,13 +394,13 @@ class WorkflowHttpE2ESpec extends BaseLiferaySpec {
 
 		and:
 		int articleCount = jsonwsGet(
-			"/api/jsonws/journal.journalarticle/get-articles-count" +
+			"/portal/api/jsonws/journal.journalarticle/get-articles-count" +
 			"/group-id/${createdGroupId}/folder-id/0") as int
 		articleCount == 1
 
 		and:
 		List blogEntries = jsonwsGet(
-			'/api/jsonws/blogs.blogsentry/get-group-entries' +
+			'/portal/api/jsonws/blogs.blogsentry/get-group-entries' +
 			"?groupId=${createdGroupId}&status=0&max=100") as List
 		blogEntries.any {
 			(it.entryId as Long) == createdBlogEntryId &&

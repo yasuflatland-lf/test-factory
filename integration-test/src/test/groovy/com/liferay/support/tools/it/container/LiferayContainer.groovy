@@ -29,7 +29,14 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 		'terms.of.use.required=false',
 		'users.reminder.query.enabled=false',
 		'passwords.default.policy.change.required=false',
-		'auth.verifier.BasicAuthHeaderAuthVerifier.urls.includes=/api/*',
+		// DXP 2026: JSONWS moved to /portal/api/jsonws/; enable Basic Auth for test access
+		// DXP 2026 Docker image disables JSONWS and Basic Auth by default via
+		// portal-liferay-online-config.properties — override for test environments
+		'jsonws.web.service.api.discoverable=true',
+		'json.web.service.enabled=true',
+		'json.servlet.hosts.allowed=',
+		'configuration.override.com.liferay.portal.security.configuration.BasicAuthHeaderSupportConfiguration_enabled=B"true"',
+		'auth.verifier.BasicAuthHeaderAuthVerifier.urls.includes=/api/*,/portal/api/*,/o/*,/xmlrpc/*',
 		'enterprise.product.notification.enabled=false',
 		'company.security.strangers=false',
 		'company.security.strangers.verify=false',

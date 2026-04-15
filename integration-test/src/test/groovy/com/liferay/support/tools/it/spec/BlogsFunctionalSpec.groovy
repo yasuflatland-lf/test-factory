@@ -27,7 +27,7 @@ class BlogsFunctionalSpec extends BaseLiferaySpec {
 		ldf.login()
 
 		def group = jsonwsGet(
-			"/api/jsonws/group/get-group/company-id/${companyId}" +
+			"/portal/api/jsonws/group/get-group/company-id/${companyId}" +
 			'/group-key/Guest') as Map
 
 		guestGroupId = group.groupId as Long
@@ -67,7 +67,7 @@ class BlogsFunctionalSpec extends BaseLiferaySpec {
 	def 'created entries exist in Liferay via JSONWS'() {
 		when: 'query blog entries from Guest site via JSONWS'
 		def entries = jsonwsGet(
-			'/api/jsonws/blogs.blogsentry/get-group-entries' +
+			'/portal/api/jsonws/blogs.blogsentry/get-group-entries' +
 			"?groupId=${guestGroupId}&status=0&max=100") as List
 
 		then: 'response is not null'
