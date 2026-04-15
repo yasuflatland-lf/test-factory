@@ -58,6 +58,10 @@ tasks.register('integrationTest', Test) {
 		showStandardStreams = true
 	}
 
+	jacoco {
+		enabled = false
+	}
+
 	dependsOn ':modules:liferay-dummy-factory:jar'
 	dependsOn 'installPlaywrightBrowsers'
 	finalizedBy 'jacocoIntegrationReport'
