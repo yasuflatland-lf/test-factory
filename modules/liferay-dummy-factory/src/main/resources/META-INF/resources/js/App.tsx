@@ -48,7 +48,7 @@ function App({actionResourceURLs, dataResourceURL, progressResourceURL}: AppProp
 
 	return (
 		<div className="container-fluid container-fluid-max-xl">
-			<div className="mb-4">
+			<div className="mb-2">
 				<ul className="nav nav-tabs">
 					<li className="nav-item">
 						<button
