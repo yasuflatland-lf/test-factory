@@ -13,6 +13,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.StringJoiner;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -55,12 +56,12 @@ public class DDMLocalUtil {
 			List<Serializable> serializableValues = _getSerializableValues(value);
 
 			for (String languageId : languageIds) {
+				Locale locale = LocaleUtil.fromLanguageId(languageId, false);
+
 				if (serializableValues != null) {
-					Locale locale = LocaleUtil.fromLanguageId(languageId, false);
 					field.addValues(locale, serializableValues);
 				}
 				else {
-					Locale locale = LocaleUtil.fromLanguageId(languageId, false);
 					field.addValue(locale, value);
 				}
 			}
@@ -73,22 +74,14 @@ public class DDMLocalUtil {
 		Field fieldsDisplayField = fields.get(_FIELDS_DISPLAY_NAME);
 
 		if (fieldsDisplayField == null) {
-			StringBuilder fieldsDisplayFieldSB = new StringBuilder();
+			StringJoiner joiner = new StringJoiner(StringPool.COMMA);
 
 			for (String fieldName : fields.getNames()) {
-				fieldsDisplayFieldSB.append(fieldName);
-				fieldsDisplayFieldSB.append(_INSTANCE_SEPARATOR);
-				fieldsDisplayFieldSB.append(StringUtil.randomString());
-				fieldsDisplayFieldSB.append(StringPool.COMMA);
-			}
-
-			if (fieldsDisplayFieldSB.length() > 0) {
-				fieldsDisplayFieldSB.setLength(fieldsDisplayFieldSB.length() - 1);
+				joiner.add(fieldName + _INSTANCE_SEPARATOR + StringUtil.randomString());
 			}
 
 			fieldsDisplayField = new Field(
-				ddmStructureId, _FIELDS_DISPLAY_NAME,
-				fieldsDisplayFieldSB.toString());
+				ddmStructureId, _FIELDS_DISPLAY_NAME, joiner.toString());
 
 			fields.put(fieldsDisplayField);
 		}

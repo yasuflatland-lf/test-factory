@@ -85,7 +85,7 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 	}
 
 	/**
-	 * For DXP builds: copies the first *.xml found in activation-keys/ into
+	 * For DXP builds: copies the single *.xml found in activation-keys/ into
 	 * /opt/liferay/deploy/ so Liferay activates the license on startup.
 	 * No-op for CE builds.
 	 */
@@ -100,32 +100,28 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 				"System property 'project.root.dir' is not set. " +
 				"Ensure the integrationTest task passes it via systemProperty.")
 		}
-		File keysDir = new File(rootDir, "activation-keys")
 
-		if (!keysDir.exists() || !keysDir.isDirectory()) {
+		File keysDir = new File(rootDir, 'activation-keys')
+		if (!keysDir.isDirectory()) {
 			throw new IllegalStateException(
 				"Activation keys directory does not exist: ${keysDir.absolutePath}. " +
 				"Create it and place an *.xml activation key inside. " +
 				"See activation-keys/README.md for instructions.")
 		}
 
-		File[] xmlFiles = keysDir.listFiles { File f -> f.name.endsWith('.xml') }
-		if (xmlFiles == null) {
-			throw new IllegalStateException(
-				"Cannot read activation-keys directory (I/O error): ${keysDir.absolutePath}")
-		}
-		if (xmlFiles.length == 0) {
+		List<File> xmlFiles = keysDir.listFiles { File f -> f.name.endsWith('.xml') } as List
+		if (xmlFiles.size() == 0) {
 			throw new IllegalStateException(
 				"DXP build requires an activation key (*.xml) in ${keysDir.absolutePath}. " +
 				"See activation-keys/README.md for instructions.")
 		}
-		if (xmlFiles.length > 1) {
+		if (xmlFiles.size() > 1) {
 			throw new IllegalStateException(
 				"Multiple activation key files found in ${keysDir.absolutePath}: " +
 				"${xmlFiles*.name.join(', ')}. Keep only one *.xml file.")
 		}
-		File keyFile = xmlFiles[0]
 
+		File keyFile = xmlFiles[0]
 		if (keyFile.length() == 0) {
 			throw new IllegalStateException(
 				"Activation key file is empty: ${keyFile.absolutePath}. " +

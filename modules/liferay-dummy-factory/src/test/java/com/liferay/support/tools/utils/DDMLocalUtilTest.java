@@ -26,17 +26,17 @@ import org.junit.jupiter.api.Test;
  */
 class DDMLocalUtilTest {
 
+	private final DDMLocalUtil _util = new DDMLocalUtil();
+
 	@Test
 	void multipleFields_trailingCommaStripped() {
-		DDMLocalUtil util = new DDMLocalUtil();
-
 		Map<String, Serializable> fieldsMap = new LinkedHashMap<>();
 
 		fieldsMap.put("title", "Hello");
 		fieldsMap.put("body", "World");
 		fieldsMap.put("summary", "Short");
 
-		Fields fields = util.toFields(
+		Fields fields = _util.toFields(
 			0L, fieldsMap, new String[] {"en_US"}, Locale.US);
 
 		Field displayField = fields.get("_fieldsDisplay");
@@ -62,13 +62,11 @@ class DDMLocalUtilTest {
 
 	@Test
 	void singleField_noTrailingComma() {
-		DDMLocalUtil util = new DDMLocalUtil();
-
 		Map<String, Serializable> fieldsMap = new LinkedHashMap<>();
 
 		fieldsMap.put("content", "Only field");
 
-		Fields fields = util.toFields(
+		Fields fields = _util.toFields(
 			0L, fieldsMap, new String[] {"en_US"}, Locale.US);
 
 		Field displayField = fields.get("_fieldsDisplay");
@@ -88,8 +86,6 @@ class DDMLocalUtilTest {
 
 	@Test
 	void prePopulatedFieldsDisplay_generationSkipped() {
-		DDMLocalUtil util = new DDMLocalUtil();
-
 		String presetValue = "myField_INSTANCE_abcdefgh";
 
 		Map<String, Serializable> fieldsMap = new LinkedHashMap<>();
@@ -97,7 +93,7 @@ class DDMLocalUtilTest {
 		fieldsMap.put("myField", "someValue");
 		fieldsMap.put("_fieldsDisplay", presetValue);
 
-		Fields fields = util.toFields(
+		Fields fields = _util.toFields(
 			0L, fieldsMap, new String[] {"en_US"}, Locale.US);
 
 		Field displayField = fields.get("_fieldsDisplay");
@@ -114,12 +110,10 @@ class DDMLocalUtilTest {
 
 	@Test
 	void emptyMap_noException() {
-		DDMLocalUtil util = new DDMLocalUtil();
-
 		Map<String, Serializable> fieldsMap = new LinkedHashMap<>();
 
 		assertDoesNotThrow(
-			() -> util.toFields(
+			() -> _util.toFields(
 				0L, fieldsMap, new String[] {"en_US"}, Locale.US),
 			"toFields with an empty map must not throw");
 	}
