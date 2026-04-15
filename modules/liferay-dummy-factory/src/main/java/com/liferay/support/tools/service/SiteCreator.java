@@ -65,6 +65,7 @@ public class SiteCreator {
 				Group group = BatchTransaction.run(
 					() -> {
 						Group newGroup = _groupLocalService.addGroup(
+							null,
 							userId, parentGroupId, null, 0,
 							GroupConstants.DEFAULT_LIVE_GROUP_ID, nameMap,
 							descriptionMap, type, manualMembership,
