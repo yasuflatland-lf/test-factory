@@ -9,6 +9,8 @@ import com.microsoft.playwright.options.RequestOptions
 
 import groovy.json.JsonSlurper
 
+import org.jacoco.core.tools.ExecDumpClient
+
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -286,6 +288,25 @@ abstract class BaseLiferaySpec extends Specification {
 			"${LiferayContainer.DEFAULT_ADMIN_EMAIL}:${activePassword}"
 
 		return "Basic ${credentials.bytes.encodeBase64().toString()}"
+	}
+
+	def cleanupSpec() {
+		try {
+			dumpJacocoCoverage(this.class.simpleName)
+		}
+		catch (Exception e) {
+			log.warn('JaCoCo dump failed for {}: {}', this.class.simpleName, e.message)
+		}
+	}
+
+	protected void dumpJacocoCoverage(String specName) {
+		File outputFile = new File(System.getProperty('user.dir'), "build/jacoco/${specName}.exec")
+		outputFile.parentFile.mkdirs()
+
+		ExecDumpClient client = new ExecDumpClient()
+		client.dump(liferay.host, liferay.jacocoPort).save(outputFile, true)
+
+		log.info('JaCoCo coverage dumped to {}', outputFile.absolutePath)
 	}
 
 }
