@@ -9,6 +9,8 @@ import com.microsoft.playwright.options.RequestOptions
 
 import groovy.json.JsonSlurper
 
+import org.jacoco.core.tools.ExecDumpClient
+
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -286,6 +288,44 @@ abstract class BaseLiferaySpec extends Specification {
 			"${LiferayContainer.DEFAULT_ADMIN_EMAIL}:${activePassword}"
 
 		return "Basic ${credentials.bytes.encodeBase64().toString()}"
+	}
+
+	def cleanupSpec() {
+		try {
+			dumpJacocoCoverage(this.class.simpleName)
+		}
+		catch (Exception e) {
+			log.warn('JaCoCo dump failed for {}: {}', this.class.simpleName, e.message, e)
+		}
+	}
+
+	protected void dumpJacocoCoverage(String specName) {
+		if (!liferay.isRunning()) {
+			log.warn('Skipping JaCoCo dump for {} — container is not running', specName)
+			return
+		}
+
+		File outputFile = new File(System.getProperty('user.dir'), "build/jacoco/${specName}.exec")
+		File jacocoDir = outputFile.parentFile
+		if (!jacocoDir.mkdirs() && !jacocoDir.isDirectory()) {
+			throw new IOException("Cannot create JaCoCo output directory: ${jacocoDir.absolutePath}")
+		}
+
+		Exception lastEx = null
+		for (int i = 0; i < 3; i++) {
+			try {
+				new ExecDumpClient().dump(liferay.host, liferay.jacocoPort).save(outputFile, false)
+				log.info('JaCoCo coverage dumped to {} ({} bytes)', outputFile.absolutePath, outputFile.length())
+				return
+			}
+			catch (Exception e) {
+				lastEx = e
+				if (i < 2) {
+					TimeUnit.SECONDS.sleep(2)
+				}
+			}
+		}
+		throw lastEx
 	}
 
 }

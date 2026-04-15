@@ -1,5 +1,6 @@
 plugins {
 	id 'groovy'
+	id 'jacoco'
 }
 
 java {
@@ -9,6 +10,10 @@ java {
 
 repositories {
 	mavenCentral()
+}
+
+jacoco {
+	toolVersion = '0.8.14'
 }
 
 def spockVersion = project.property('test.spock.version')
@@ -29,6 +34,9 @@ dependencies {
 
 	testImplementation 'ch.qos.logback:logback-classic:1.4.14'
 	testImplementation 'commons-net:commons-net:3.10.0'
+
+	testImplementation 'org.jacoco:org.jacoco.core:0.8.14'
+	testImplementation 'org.jacoco:org.jacoco.agent:0.8.14:runtime'
 }
 
 test {
@@ -50,12 +58,37 @@ tasks.register('integrationTest', Test) {
 		showStandardStreams = true
 	}
 
+	jacoco {
+		enabled = false
+	}
+
 	dependsOn ':modules:liferay-dummy-factory:jar'
 	dependsOn 'installPlaywrightBrowsers'
+	finalizedBy 'jacocoIntegrationReport'
 }
 
 tasks.register('installPlaywrightBrowsers', JavaExec) {
 	classpath = sourceSets.test.runtimeClasspath
 	mainClass = 'com.microsoft.playwright.CLI'
 	args = ['install', 'chromium']
+}
+
+tasks.register('jacocoIntegrationReport', JacocoReport) {
+	dependsOn ':modules:liferay-dummy-factory:classes'
+
+	executionData fileTree(layout.buildDirectory.dir('jacoco')).include('*.exec')
+
+	sourceDirectories.from rootProject.file('modules/liferay-dummy-factory/src/main/java')
+	classDirectories.from rootProject.file('modules/liferay-dummy-factory/build/classes/java/main')
+
+	reports {
+		html.required = true
+		html.outputLocation = layout.buildDirectory.dir('reports/jacoco/integration/html')
+		xml.required = true
+		xml.outputLocation = layout.buildDirectory.file('reports/jacoco/integration/jacocoIntegrationReport.xml')
+	}
+
+	onlyIf {
+		!fileTree(layout.buildDirectory.dir('jacoco')).include('*.exec').isEmpty()
+	}
 }
