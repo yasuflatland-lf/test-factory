@@ -37,6 +37,26 @@ export LIFERAY_DXP_LICENSE_BASE64=$(base64 -w0 activation-key.xml)
 3. Bundle activation is verified via GoGo Shell: `lb | grep dummy.factory` must show `Active` or `ACTIVE`.
 4. The `ensureBundleActive()` method in `BaseLiferaySpec` polls GoGo Shell every 5 seconds for up to 5 minutes until the bundle is active. It is `synchronized` and runs only once per test suite.
 
+## Container configuration file handling
+
+### Config mount point: `/mnt/liferay/files/`
+
+The DXP 2026 Docker image entrypoint copies `/mnt/liferay/files/` to Liferay Home at container startup. Configuration files must be written to `/mnt/liferay/files/` — not to `/opt/liferay/tomcat/webapps/ROOT/WEB-INF/classes/`. Writing directly to the webapp classes directory bypasses the image's copy mechanism.
+
+`LiferayContainer` uses `copyFileToContainer(MountableFile, "/mnt/liferay/files/<filename>")` to place both `portal-ext.properties` and `portal-liferay-online-config.properties` before container start.
+
+### `project.root.dir` system property
+
+The `integrationTest` task sets `systemProperty 'project.root.dir', rootProject.projectDir.absolutePath` so that `LiferayContainer` can resolve config files under `configs/` at runtime. Without this, the container code has no reliable way to locate workspace config directories from inside the test JVM.
+
+### Raw file concatenation for property merging
+
+`LiferayContainer._mergeConfigFiles()` concatenates `configs/common/portal-ext.properties` and `configs/docker/portal-ext.properties` with raw string concatenation rather than `Properties.load()` + `Properties.store()`. `Properties.store()` escapes special characters (`B"true"` Liferay typed-config syntax, double-quoted URL patterns) which corrupts values that Liferay's OSGi configuration layer depends on. Raw concatenation preserves values verbatim.
+
+### `File.listFiles()` null safety
+
+`File.listFiles()` returns `null` on I/O errors (e.g. permission failure) even when a preceding `isDirectory()` check succeeds. Always apply safe-navigation (`?.`) or a null guard before iterating the result.
+
 ## Gradle Incremental Build Trap
 
 `:integration-test:integrationTest` does **not** declare `package.json` as an input. Changing a JavaScript dependency (e.g. bumping React, swapping Jest for Vitest) does not invalidate the `integrationTest` task, so Gradle marks it `UP-TO-DATE` and **replays the previous run's result** without executing anything. A regression introduced in the JS toolchain will appear as a green build.

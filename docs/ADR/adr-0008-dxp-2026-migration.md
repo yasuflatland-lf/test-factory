@@ -69,9 +69,20 @@ These env vars and portal-ext.properties entries are required for DXP 2026 but n
 | `company.security.update.password.required` | `false` | Prevents update-password wall at first login |
 | `admin.email.user.added.enabled` | `false` | Suppresses email notifications during bulk user creation |
 
+## DXP 2026 Docker Image: Baked-In Configuration Overrides
+
+### `portal-liferay-online-config.properties` blocks JSONWS
+
+The DXP 2026 Docker image bakes a `portal-liferay-online-config.properties` into `portal-impl.jar` / `WEB-INF/classes/` that sets `json.servlet.hosts.allowed=N/A`. This blocks all JSONWS access, which integration tests depend on for verification.
+
+The override is to place an empty (or stub) `portal-liferay-online-config.properties` at `/mnt/liferay/files/portal-liferay-online-config.properties` before container start. The image's entrypoint copies this file to Liferay Home, where it takes precedence over the baked-in one.
+
+This is a DXP 2026-specific trap with no CE 7.4 equivalent — CE does not ship this file.
+
 ## Consequences
 
 - CE 7.4 is no longer supported. The `-Pbuild.target=ce` Gradle flag is removed.
 - All `javax.portlet.*` and `javax.servlet.*` imports in portlet-related source files become `jakarta.*`.
 - Integration tests require a valid DXP license via environment variable before each run.
 - The `licenses/` directory at repo root is gitignored and must not be committed.
+- Integration tests must supply an overriding `portal-liferay-online-config.properties` to restore JSONWS access blocked by the baked-in image configuration.
