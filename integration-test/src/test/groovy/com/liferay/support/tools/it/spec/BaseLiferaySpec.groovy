@@ -34,7 +34,7 @@ abstract class BaseLiferaySpec extends Specification {
 	static boolean bundleVerified = false
 
 	@Shared
-	static String activePassword = NEW_PASSWORD
+	static String activePassword = LiferayContainer.DEFAULT_ADMIN_PASSWORD
 
 	@Shared
 	static Long cachedCompanyId = null
