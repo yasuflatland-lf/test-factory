@@ -54,7 +54,7 @@ Keep `liferay.workspace.product` and `liferay.docker.image` in sync — they mus
 
 The Docker Hub tag for DXP must be verified separately from `releases.json`:
 `releases.json` provides artifact CDN URLs (`releases-cdn.liferay.com`), not Docker Hub tags.
-Verified tag for DXP 2026.Q1.3: `liferay/dxp:2026.q1.3` — check Docker Hub if pulls fail.
+Verified tag for DXP 2026.Q1.3: `liferay/dxp:2026.q1.3-lts` — check Docker Hub if pulls fail.
 
 ### DXP activation key deployment
 

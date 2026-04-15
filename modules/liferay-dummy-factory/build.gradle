@@ -71,6 +71,12 @@ dependencies {
 		name: isCe ? "release.portal.api" : "release.dxp.api",
 		version: "default"
 	testImplementation group: "org.junit.jupiter", name: "junit-jupiter", version: "5.10.2"
+
+	// DXP API does not bundle log4j; provide it for the test JVM.
+	// CE API bundles its own log4j, so this is only needed for DXP builds.
+	if (!isCe) {
+		testRuntimeOnly group: "org.apache.logging.log4j", name: "log4j-core", version: "2.24.3"
+	}
 }
 
 // ----------------------------------------------------------------

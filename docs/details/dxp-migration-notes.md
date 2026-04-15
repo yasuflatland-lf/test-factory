@@ -39,6 +39,6 @@ catalogue for Liferay's artifact CDN (`releases-cdn.liferay.com`). The `url` fie
 entry is the CDN download link, not a Docker Hub image reference.
 
 **What:** The Docker Hub tag must be determined separately. For DXP 2026.Q1.3, the verified
-tag is `liferay/dxp:2026.q1.3`. Always verify Docker Hub directly if pulls fail — CDN URLs
+tag is `liferay/dxp:2026.q1.3-lts`. Always verify Docker Hub directly if pulls fail — CDN URLs
 and Docker Hub tags are independent identifiers for the same release. See the DXP vs CE
 table in `docs/details/dependency-policy.md` for the workspace product key mapping.

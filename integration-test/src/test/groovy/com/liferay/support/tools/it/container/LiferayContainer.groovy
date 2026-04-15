@@ -21,7 +21,7 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 	private static LiferayContainer INSTANCE
 
 	LiferayContainer() {
-		this(System.getProperty('liferay.docker.image', 'liferay/portal:7.4.3.132-ga132'))
+		this(System.getProperty('liferay.docker.image', 'liferay/dxp:2026.q1.3-lts'))
 	}
 
 	private static final String PORTAL_EXT_PROPERTIES = [
@@ -36,7 +36,7 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 		super(DockerImageName.parse(imageName))
 
 		withExposedPorts(HTTP_PORT, GOGO_PORT, JACOCO_PORT)
-		int startupMinutes = System.getProperty('build.target', 'ce').trim().toLowerCase() == 'dxp' ? 12 : 8
+		int startupMinutes = System.getProperty('build.target', 'dxp').trim().toLowerCase() == 'dxp' ? 12 : 8
 
 		waitingFor(
 			new LogMessageWaitStrategy()
@@ -90,7 +90,7 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 	 * No-op for CE builds.
 	 */
 	void deployActivationKeyIfPresent() {
-		if (System.getProperty('build.target', 'ce').trim().toLowerCase() != 'dxp') {
+		if (System.getProperty('build.target', 'dxp').trim().toLowerCase() != 'dxp') {
 			return
 		}
 
