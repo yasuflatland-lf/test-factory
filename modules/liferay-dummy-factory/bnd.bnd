@@ -7,6 +7,10 @@ Provide-Capability:\
 		resource.bundle.base.name="content.Language";\
 		servlet.context.name=liferay-dummy-factory
 Web-ContextPath: /liferay-dummy-factory
+Import-Package:\
+	!javax.servlet,\
+	!javax.servlet.http,\
+	*
 -dsannotations-options: inherit
 -fixupmessages.mrjar: "Classes found in the wrong directory"
 -includeresource:\

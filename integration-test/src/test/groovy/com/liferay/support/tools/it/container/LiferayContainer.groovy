@@ -163,7 +163,7 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 		}
 
 		try {
-			withCopyToContainer(Transferable.of(licenseBytes), '/opt/liferay/deploy/activation-key.xml')
+			withCopyToContainer(Transferable.of(licenseBytes), '/opt/liferay/osgi/modules/activation-key.xml')
 		}
 		catch (Exception e) {
 			throw new IllegalStateException(
