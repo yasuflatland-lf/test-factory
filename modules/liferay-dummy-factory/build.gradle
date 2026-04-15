@@ -1,10 +1,64 @@
 apply plugin: 'jacoco'
 
-def isDxp = project.findProperty('build.target') == 'dxp'
+// DXP is the default. CE build requires -Pbuild.target=ce
+def isCe = project.findProperty('build.target') == 'ce'
 
+// ----------------------------------------------------------------
+// CE source generation task (jakarta → javax transformation)
+// Copies all of java/ and applies string replacements.
+// Non-portlet files (no javax/jakarta imports) pass through unchanged.
+// ----------------------------------------------------------------
+task generateCeSources(type: Copy) {
+	from 'src/main/java'
+	into "${buildDir}/generated/ce"
+	exclude '**/service/SiteCreator.java'
+	filter { String line ->
+		line.replace('import jakarta.portlet.',      'import javax.portlet.')
+			.replace('import jakarta.servlet.',      'import javax.servlet.')
+			.replace('import jakarta.ws.rs.',        'import javax.ws.rs.')
+			.replace('"jakarta.portlet.',            '"javax.portlet.')
+			.replace('jakarta.portlet.version=4.0', 'javax.portlet.version=3.0')
+	}
+}
+
+// ----------------------------------------------------------------
+// Source sets
+// ----------------------------------------------------------------
+sourceSets {
+	main {
+		java {
+			srcDirs = isCe
+				? ["${buildDir}/generated/ce", 'src/main/java-ce-overrides']
+				: ['src/main/java']
+		}
+		resources {
+			srcDirs = ['src/main/resources']
+		}
+	}
+}
+
+// CE build: transform Language.properties jakarta → javax keys (in-place on processed output)
+processResources {
+	if (isCe) {
+		filesMatching('content/Language.properties') { details ->
+			filter { String line ->
+				line.replace('jakarta.portlet.title.', 'javax.portlet.title.')
+			}
+		}
+	}
+}
+
+// CE build: generate sources before compiling
+if (isCe) {
+	compileJava.dependsOn generateCeSources
+}
+
+// ----------------------------------------------------------------
+// Dependencies
+// ----------------------------------------------------------------
 dependencies {
 	compileOnly group: "com.liferay.portal",
-		name: isDxp ? "release.dxp.api" : "release.portal.api",
+		name: isCe ? "release.portal.api" : "release.dxp.api",
 		version: "default"
 
 	compileOnly group: "com.liferay", name: "com.liferay.journal.api"
@@ -13,28 +67,14 @@ dependencies {
 	compileInclude group: "net.datafaker", name: "datafaker", version: "2.5.4"
 
 	testImplementation group: "com.liferay.portal",
-		name: isDxp ? "release.dxp.api" : "release.portal.api",
+		name: isCe ? "release.portal.api" : "release.dxp.api",
 		version: "default"
 	testImplementation group: "org.junit.jupiter", name: "junit-jupiter", version: "5.10.2"
 }
 
-sourceSets {
-	main {
-		java {
-			srcDirs = [
-				'src/main/java',
-				isDxp ? 'src/main/java-dxp' : 'src/main/java-ce'
-			]
-		}
-		resources {
-			srcDirs = [
-				'src/main/resources',
-				isDxp ? 'src/main/resources-dxp' : 'src/main/resources-ce'
-			]
-		}
-	}
-}
-
+// ----------------------------------------------------------------
+// Unchanged sections
+// ----------------------------------------------------------------
 java {
 	sourceCompatibility = JavaVersion.VERSION_17
 	targetCompatibility = JavaVersion.VERSION_17

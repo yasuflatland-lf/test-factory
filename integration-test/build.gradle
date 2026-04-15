@@ -3,7 +3,7 @@ plugins {
 	id 'jacoco'
 }
 
-def buildTarget = (project.findProperty('build.target') ?: 'ce').trim().toLowerCase()
+def buildTarget = (project.findProperty('build.target') ?: 'dxp').trim().toLowerCase()
 if (buildTarget != 'ce' && buildTarget != 'dxp') {
 	throw new GradleException("Unrecognized build.target='${buildTarget}'. Valid values: 'ce', 'dxp'.")
 }
