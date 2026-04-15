@@ -21,7 +21,7 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 	private static LiferayContainer INSTANCE
 
 	LiferayContainer() {
-		this(System.getProperty('liferay.docker.image', 'liferay/portal:7.4.3.132-ga132'))
+		this(System.getProperty('liferay.docker.image', 'liferay/dxp:2026.q1.3-lts'))
 	}
 
 	private static final String PORTAL_EXT_PROPERTIES = [
@@ -30,6 +30,11 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 		'users.reminder.query.enabled=false',
 		'passwords.default.policy.change.required=false',
 		'auth.verifier.BasicAuthHeaderAuthVerifier.urls.includes=/api/*',
+		'enterprise.product.notification.enabled=false',
+		'company.security.strangers=false',
+		'company.security.strangers.verify=false',
+		'company.security.update.password.required=false',
+		'admin.email.user.added.enabled=false',
 	].join('\n') + '\n'
 
 	LiferayContainer(String imageName) {
@@ -42,11 +47,13 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 				.withStartupTimeout(Duration.ofMinutes(8))
 		)
 		withEnv([
-			'LIFERAY_SETUP_WIZARD_ENABLED'                       : 'false',
-			'LIFERAY_TERMS_OF_USE_REQUIRED'                      : 'false',
-			'LIFERAY_USERS_REMINDER_QUERY_ENABLED'               : 'false',
-			'LIFERAY_PASSWORDS_DEFAULT_POLICY_CHANGE_REQUIRED'   : 'false',
-			'LIFERAY_JVM_OPTS'                                    : "-javaagent:/tmp/jacocoagent.jar=output=tcpserver,port=${JACOCO_PORT},address=*".toString(),
+			'LIFERAY_SETUP_WIZARD_ENABLED'                                               : 'false',
+			'LIFERAY_TERMS_OF_USE_REQUIRED'                                              : 'false',
+			'LIFERAY_USERS_REMINDER_QUERY_ENABLED'                                       : 'false',
+			'LIFERAY_PASSWORDS_DEFAULT_POLICY_CHANGE_REQUIRED'                           : 'false',
+			'LIFERAY_JVM_OPTS'                                                            : "-javaagent:/tmp/jacocoagent.jar=output=tcpserver,port=${JACOCO_PORT},address=*".toString(),
+			'LIFERAY_DISABLE_TRIAL_LICENSE'                                              : 'true',
+			'LIFERAY_ENTERPRISE_PERIOD_PRODUCT_PERIOD_NOTIFICATION_PERIOD_ENABLED'       : 'false',
 		])
 		withCopyToContainer(
 			Transferable.of(PORTAL_EXT_PROPERTIES.bytes),
@@ -59,6 +66,7 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 		if (INSTANCE == null) {
 			INSTANCE = new LiferayContainer()
 			INSTANCE.copyJacocoAgentToContainer()
+			INSTANCE.copyLicenseToContainer()
 			INSTANCE.start()
 		}
 		return INSTANCE
@@ -103,6 +111,32 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 	private static boolean _isJacocoAgentJar(String path) {
 		return path?.contains('jacocoagent') ||
 			(path?.contains('org.jacoco.agent') && path?.contains('runtime'))
+	}
+
+	void copyLicenseToContainer() {
+		String licenseFilePath = System.getenv('LIFERAY_DXP_LICENSE_FILE')
+		String licenseBase64 = System.getenv('LIFERAY_DXP_LICENSE_BASE64')
+
+		byte[] licenseBytes
+
+		if (licenseFilePath) {
+			File f = new File(licenseFilePath)
+			if (!f.exists()) {
+				throw new IllegalStateException(
+					"LIFERAY_DXP_LICENSE_FILE points to a non-existent file: ${licenseFilePath}")
+			}
+			licenseBytes = f.bytes
+		}
+		else if (licenseBase64) {
+			licenseBytes = Base64.decoder.decode(licenseBase64)
+		}
+		else {
+			throw new IllegalStateException(
+				'DXP license not found. Set LIFERAY_DXP_LICENSE_FILE (path) ' +
+				'or LIFERAY_DXP_LICENSE_BASE64 (base64-encoded content) before running integration tests.')
+		}
+
+		withCopyToContainer(Transferable.of(licenseBytes), '/opt/liferay/deploy/activation-key.xml')
 	}
 
 	void deployJar(Path jarPath) {
