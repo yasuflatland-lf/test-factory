@@ -59,7 +59,7 @@ Pass `externalReferenceCode=null` and `parentCategoryId=0L` for top-level catego
 
 ## 3. `CompanyService` is blacklisted from JSON-WS
 
-`portal.properties` lists `com.liferay.portal.kernel.service.CompanyServiceUtil` in `json.service.invalid.class.names`. As a result, every path under `/api/jsonws/company/*` returns HTTP 404 regardless of method or parameter format. `CompanyService.deleteCompany(long)` is defined but cannot be invoked via JSON-WS.
+`portal.properties` lists `com.liferay.portal.kernel.service.CompanyServiceUtil` in `json.service.invalid.class.names`. As a result, every path under `/api/jsonws/company/*` returns HTTP **403** (not 404) regardless of method or parameter format — `JSONServiceAction.isValidRequest()` returns false for blacklisted class names, which the framework maps to 403 Forbidden. `CompanyService.deleteCompany(long)` is defined but cannot be invoked via JSON-WS. To obtain the `companyId` in tests, use `/api/jsonws/user/get-current-user` instead — `UserServiceUtil` is not blacklisted and its response includes a `companyId` field.
 
 For tests, there is no working remote delete path in CE 7.4 GA132. The workaround is to rely on `withReuse(false)` and skip cleanup (see `.claude/rules/testing.md`).
 

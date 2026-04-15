@@ -215,10 +215,10 @@ abstract class BaseLiferaySpec extends Specification {
 
 	protected Long getCompanyId() {
 		if (cachedCompanyId == null) {
-			def company = jsonwsGet(
-				'/api/jsonws/company/get-company-by-virtual-host' +
-				'/virtual-host/localhost') as Map
-			cachedCompanyId = company.companyId as Long
+			// CompanyServiceUtil is in json.service.invalid.class.names and returns 403.
+			// Use user/get-current-user (UserServiceUtil is not blacklisted) instead.
+			def user = jsonwsGet('/api/jsonws/user/get-current-user') as Map
+			cachedCompanyId = user.companyId as Long
 		}
 
 		return cachedCompanyId
