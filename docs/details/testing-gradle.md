@@ -59,7 +59,7 @@ Report locations:
 
 ### Integration tests — Liferay container JVM
 
-Coverage is collected from the Liferay container JVM, not the integration test harness. The JaCoCo agent is injected into the container via `CATALINA_OPTS` in tcpserver mode on port 6300. At the end of each spec, `BaseLiferaySpec.cleanupSpec()` dumps a per-spec `.exec` file to `integration-test/build/jacoco/`. The `jacocoIntegrationReport` task merges all exec files and generates the combined report.
+Coverage is collected from the Liferay container JVM, not the integration test harness. The JaCoCo agent is injected into the container via `LIFERAY_JVM_OPTS` (not `CATALINA_OPTS`) in tcpserver mode on port 6300. At the end of each spec, `BaseLiferaySpec.cleanupSpec()` dumps a per-spec `.exec` file to `integration-test/build/jacoco/`. The `jacocoIntegrationReport` task merges all exec files and generates the combined report.
 
 To run integration tests and generate the report:
 
@@ -78,3 +78,13 @@ Report locations:
 
 - HTML: `integration-test/build/reports/jacoco/integration/html/index.html`
 - XML:  `integration-test/build/reports/jacoco/integration/jacocoIntegrationReport.xml`
+
+### JaCoCo integration pitfalls
+
+**Gradle JaCoCo plugin instruments ALL Test tasks.** Applying `id 'jacoco'` to the integration-test project causes Gradle to auto-instrument every `Test` task, including `integrationTest`. This produces a spurious `integrationTest.exec` from the harness JVM rather than from the Liferay container. Fix: add `jacoco { enabled = false }` inside the `integrationTest` task block to disable harness-side instrumentation and keep coverage collection container-side only.
+
+**The `org.jacoco.agent:runtime` jar has a non-obvious classpath filename.** The Maven artifact `org.jacoco:org.jacoco.agent:0.8.14:runtime` is stored in the Gradle cache as `org.jacoco.agent-0.8.14-runtime.jar`. Searching for the string `jacocoagent` alone will miss it. The correct predicate is: the path contains `jacocoagent` OR (contains `org.jacoco.agent` AND contains `runtime`). See `LiferayContainer._isJacocoAgentJar`.
+
+**Spock `cleanupSpec()` inheritance in Spock 2.x.** A `cleanupSpec()` defined in an abstract base spec IS invoked even when the concrete subclass defines its own `cleanupSpec()`. Spock's `PlatformSpecRunner.doRunCleanupSpec` chains the hierarchy. `BaseLiferaySpec.cleanupSpec()` is therefore guaranteed to dump JaCoCo coverage at the end of every spec, regardless of whether the subclass also defines `cleanupSpec()`. No explicit `super.cleanupSpec()` call is needed in subclasses.
+
+**GString `ClassCastException` in `withEnv(Map)`.** Groovy double-quoted strings with interpolation (`"${expr}"`) produce `GStringImpl`, not `java.lang.String`. Testcontainers' `withEnv(Map<String, String>)` enforces `String` values at runtime. Any GString value in a `withEnv([ ... ])` map literal must be explicitly coerced: `"...${variable}...".toString()`.

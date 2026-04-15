@@ -112,7 +112,13 @@ The corresponding workspace-level decision is recorded in `docs/ADR/adr-0002-por
 
 The module name matches the `Bundle-SymbolicName` prefix (e.g. `com.liferay.blogs.service` → `blogs`). Omitting the prefix returns HTTP 404.
 
-## 12. `PanelCategoryKeys.CONTROL_PANEL_MARKETPLACE` is not registered in CE 7.4 GA132
+## 12. `LIFERAY_JVM_OPTS` is the correct env var for JVM option injection in CE 7.4 Docker images
+
+**Why:** The Liferay CE 7.4.3.x Docker image's `setenv.sh` appends `$LIFERAY_JVM_OPTS` to the JVM startup command. `CATALINA_OPTS` would replace Liferay's built-in JVM options rather than supplement them. `JAVA_OPTS_APPEND` is not recognized by this image.
+
+**What:** To inject JVM agents or flags into the container JVM (e.g. JaCoCo tcpserver mode), set `LIFERAY_JVM_OPTS` in `withEnv(...)` — not `CATALINA_OPTS` or `JAVA_OPTS_APPEND`. Always call `.toString()` on any GString value passed to `withEnv(Map)` — see the JaCoCo pitfalls section in `docs/details/testing-gradle.md`.
+
+## 13. `PanelCategoryKeys.CONTROL_PANEL_MARKETPLACE` is not registered in CE 7.4 GA132
 
 **Why:** The constant `PanelCategoryKeys.CONTROL_PANEL_MARKETPLACE` (`"control_panel.marketplace"`) is defined in the `application-list-api` JAR but no `PanelCategory` component implements it on CE 7.4 GA132. Portlets registered under this key are orphaned and invisible.
 
