@@ -16,6 +16,7 @@ task generateCeSources(type: Copy) {
 		line.replace('import jakarta.portlet.',      'import javax.portlet.')
 			.replace('import jakarta.servlet.',      'import javax.servlet.')
 			.replace('import jakarta.ws.rs.',        'import javax.ws.rs.')
+			.replace('(jakarta.portlet.',            '(javax.portlet.')
 			.replace('"jakarta.portlet.',            '"javax.portlet.')
 			.replace('jakarta.portlet.version=4.0', 'javax.portlet.version=3.0')
 	}

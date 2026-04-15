@@ -93,8 +93,8 @@ tasks.register('jacocoIntegrationReport', JacocoReport) {
 	executionData fileTree(layout.buildDirectory.dir('jacoco')).include('*.exec')
 
 	sourceDirectories.from files(
-		rootProject.file('modules/liferay-dummy-factory/src/main/java'),
-		rootProject.file('modules/liferay-dummy-factory/src/main/java-ce-overrides')
+		[rootProject.file('modules/liferay-dummy-factory/src/main/java')] +
+		(!isDxp ? [rootProject.file('modules/liferay-dummy-factory/src/main/java-ce-overrides')] : [])
 	)
 	classDirectories.from rootProject.file('modules/liferay-dummy-factory/build/classes/java/main')
 

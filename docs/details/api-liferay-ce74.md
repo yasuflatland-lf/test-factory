@@ -146,13 +146,13 @@ addGroup(String externalReferenceCode, long userId, long parentGroupId,
          boolean active, ServiceContext serviceContext)
 ```
 
-Pass `StringPool.BLANK` for both `externalReferenceCode` and `typeSettings` when no external reference code or custom type settings are needed. The DXP source set (`java-dxp/`) must use the 16-arg overload; the CE source set (`java-ce/`) continues to use the 15-arg form.
+Pass `StringPool.BLANK` for both `externalReferenceCode` and `typeSettings` when no external reference code or custom type settings are needed. The canonical source lives in `src/main/java/`; the `generateCeSources` task in `modules/liferay-dummy-factory/build.gradle` handles namespace transformation automatically for CE builds. Manual CE overrides (if any) live in `src/main/java-ce-overrides/`.
 
 ## 16. `javax.servlet` and `javax.ws.rs` also migrated to Jakarta namespace in DXP 2026.Q1
 
 **Why:** The Jakarta EE namespace migration in DXP 2026.Q1 covers the full servlet and JAX-RS stacks, not only `javax.portlet`. Classes implementing `DataListProvider` (which receives `HttpServletRequest`), `WorkflowApplication`, and `WorkflowResource` all depend on `javax.servlet.*` or `javax.ws.rs.*` — both of which become `jakarta.servlet.*` and `jakarta.ws.rs.*` in DXP.
 
-**What:** Any class in `src/main/java/` that imports `javax.servlet.*` or `javax.ws.rs.*` must be moved to both `java-ce/` and `java-dxp/` source sets if it also requires a portlet-API import. If the class is portlet-agnostic but still uses `javax.servlet`, the namespace split still applies: `javax.servlet` for CE, `jakarta.servlet` for DXP. The dual source-set strategy (see `docs/ADR/adr-0007-ce-dxp-dual-profile.md`) covers all three namespace axes — portlet, servlet, and ws.rs.
+**What:** All source files live in `src/main/java/` (the canonical DXP source). For CE builds, the `generateCeSources` task in `modules/liferay-dummy-factory/build.gradle` automatically transforms `jakarta.portlet`, `jakarta.servlet`, and `jakarta.ws.rs` imports to their `javax.*` equivalents via string replacement. If a file requires a CE-specific implementation that cannot be expressed via namespace substitution alone (e.g. a different method signature), place the CE override in `src/main/java-ce-overrides/`. The dual source-set strategy is documented in `docs/ADR/adr-0007-ce-dxp-dual-profile.md`.
 
 ## 17. `LocaleUtil.fromLanguageId(String, boolean)` — pass `validate=false` to skip Language service
 
