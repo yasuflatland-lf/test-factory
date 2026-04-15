@@ -158,7 +158,7 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 
 	private void _copyPortalExtProperties() {
 		withCopyToContainer(
-			Transferable.of(_mergeConfigFiles().bytes),
+			Transferable.of(_mergeConfigFiles().getBytes('UTF-8')),
 			'/mnt/liferay/files/portal-ext.properties'
 		)
 	}
@@ -195,11 +195,11 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 			File dir = new File(projectRoot, "configs/${env}")
 			if (dir.isDirectory()) {
 				dir.listFiles()
-					?.findAll { it.name.endsWith('.properties') && it.name != 'portal-liferay-online-config.properties' }
+					?.findAll { it.name == 'portal-ext.properties' }
 					?.sort { it.name }
 					?.each { File f ->
 						try {
-							sb.append(f.text).append('\n')
+							sb.append(f.getText('UTF-8')).append('\n')
 						}
 						catch (IOException e) {
 							throw new IllegalStateException(
@@ -207,6 +207,12 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 						}
 					}
 			}
+		}
+		if (sb.length() == 0) {
+			throw new IllegalStateException(
+				'No portal-ext.properties files found under configs/common or configs/docker. ' +
+				"Verify project root: '${projectRoot}'"
+			)
 		}
 		return sb.toString()
 	}
