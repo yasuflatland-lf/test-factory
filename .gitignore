@@ -15,3 +15,6 @@ liferay-theme.json
 .claude/plan/
 **/src/main/resources/META-INF/resources/__liferay__/
 coverage/
+
+# DXP license files — never commit these
+/licenses/
