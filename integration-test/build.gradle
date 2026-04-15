@@ -9,6 +9,9 @@ java {
 }
 
 repositories {
+	maven {
+		url 'https://repository-cdn.liferay.com/nexus/content/groups/public'
+	}
 	mavenCentral()
 }
 
@@ -48,6 +51,7 @@ tasks.register('integrationTest', Test) {
 	useJUnitPlatform()
 	testClassesDirs = sourceSets.test.output.classesDirs
 	classpath = sourceSets.test.runtimeClasspath
+	timeout = Duration.ofMinutes(15)
 
 	jvmArgs "-Xms${project.property('test.jvm.minHeap')}", "-Xmx${project.property('test.jvm.maxHeap')}"
 	systemProperty 'liferay.docker.image', project.property('liferay.docker.image')
