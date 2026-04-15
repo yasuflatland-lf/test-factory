@@ -56,11 +56,11 @@ public class DDMLocalUtil {
 
 			for (String languageId : languageIds) {
 				if (serializableValues != null) {
-					Locale locale = LocaleUtil.fromLanguageId(languageId);
+					Locale locale = LocaleUtil.fromLanguageId(languageId, false);
 					field.addValues(locale, serializableValues);
 				}
 				else {
-					Locale locale = LocaleUtil.fromLanguageId(languageId);
+					Locale locale = LocaleUtil.fromLanguageId(languageId, false);
 					field.addValue(locale, value);
 				}
 			}
