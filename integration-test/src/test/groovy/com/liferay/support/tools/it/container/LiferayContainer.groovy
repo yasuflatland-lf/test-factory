@@ -164,9 +164,11 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 	}
 
 	private void _copyPortalOnlineConfig() {
-		// DXP 2026: portal-liferay-online-config.properties sets json.servlet.hosts.allowed=N/A
-		// which blocks all JSONWS. Copy an empty file via /mnt/liferay/files/ so the Docker
-		// entrypoint places it in Liferay Home before startup, overriding the default.
+		// DXP 2026: portal-liferay-online-config.properties, baked into the Docker image
+		// (portal-impl.jar / WEB-INF/classes/), sets json.servlet.hosts.allowed=N/A, which
+		// blocks all JSONWS access. Place an empty file via /mnt/liferay/files/ so the Docker
+		// entrypoint writes it into Liferay Home before startup, shadowing the baked-in value
+		// through the portal.properties loading chain.
 		withCopyToContainer(
 			Transferable.of(''.bytes),
 			'/mnt/liferay/files/portal-liferay-online-config.properties'
@@ -183,24 +185,29 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 			)
 		}
 
-		Properties merged = new Properties()
-
+		// Concatenate raw file content rather than parsing through Properties, because
+		// Properties.store() would escape special characters (quotes, backslashes) and
+		// corrupt B"true" boolean values and double-quoted URL patterns in OSGi
+		// configuration override keys. Liferay's loader applies last-wins on duplicate
+		// keys, so docker entries naturally override common entries.
+		StringBuilder sb = new StringBuilder()
 		['common', 'docker'].each { String env ->
 			File dir = new File(projectRoot, "configs/${env}")
 			if (dir.isDirectory()) {
 				dir.listFiles()
-					.findAll { it.name.endsWith('.properties') }
-					.sort { it.name }
-					.each { File f ->
-						Properties p = new Properties()
-						f.withInputStream { p.load(it) }
-						merged.putAll(p)
+					?.findAll { it.name.endsWith('.properties') && it.name != 'portal-liferay-online-config.properties' }
+					?.sort { it.name }
+					?.each { File f ->
+						try {
+							sb.append(f.text).append('\n')
+						}
+						catch (IOException e) {
+							throw new IllegalStateException(
+								"Failed to read config file '${f.absolutePath}': ${e.message}", e)
+						}
 					}
 			}
 		}
-
-		StringBuilder sb = new StringBuilder()
-		merged.each { k, v -> sb.append("${k}=${v}\n") }
 		return sb.toString()
 	}
 
