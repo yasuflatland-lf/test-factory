@@ -29,7 +29,6 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 		'terms.of.use.required=false',
 		'users.reminder.query.enabled=false',
 		'passwords.default.policy.change.required=false',
-		// DXP 2026: JSONWS moved to /portal/api/jsonws/; enable Basic Auth for test access
 		// DXP 2026 Docker image disables JSONWS and Basic Auth by default via
 		// portal-liferay-online-config.properties — override for test environments
 		'jsonws.web.service.api.discoverable=true',
@@ -37,6 +36,7 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 		'json.servlet.hosts.allowed=',
 		'configuration.override.com.liferay.portal.security.configuration.BasicAuthHeaderSupportConfiguration_enabled=B"true"',
 		'auth.verifier.BasicAuthHeaderAuthVerifier.urls.includes=/api/*,/portal/api/*,/o/*,/xmlrpc/*',
+		'configuration.override.com.liferay.portal.security.auth.verifier.internal.basic.auth.header.configuration.BasicAuthHeaderAuthVerifierConfiguration~default_urlsIncludes="/api/*,/portal/api/*,/o/*,/xmlrpc*"',
 		'enterprise.product.notification.enabled=false',
 		'company.security.strangers=false',
 		'company.security.strangers.verify=false',
@@ -65,6 +65,14 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 		withCopyToContainer(
 			Transferable.of(PORTAL_EXT_PROPERTIES.bytes),
 			'/opt/liferay/tomcat/webapps/ROOT/WEB-INF/classes/portal-ext.properties'
+		)
+		// DXP 2026: portal-liferay-online-config.properties (baked into portal-impl.jar
+		// and also in WEB-INF/classes/) sets json.servlet.hosts.allowed=N/A which blocks
+		// ALL JSONWS access. Overwrite with an empty file before first startup so the
+		// portal.properties loading chain never sees the N/A value.
+		withCopyToContainer(
+			Transferable.of(''.bytes),
+			'/opt/liferay/tomcat/webapps/ROOT/WEB-INF/classes/portal-liferay-online-config.properties'
 		)
 		withReuse(false)
 	}

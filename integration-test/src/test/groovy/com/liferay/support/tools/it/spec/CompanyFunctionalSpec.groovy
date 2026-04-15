@@ -79,7 +79,7 @@ class CompanyFunctionalSpec extends BaseLiferaySpec {
 	def 'Created company is visible via JSON-WS'() {
 		when:
 		def company = jsonwsGet(
-			"/portal/api/jsonws/company/get-company-by-web-id" +
+			"/api/jsonws/company/get-company-by-web-id" +
 			"/web-id/${COMPANY_WEB_ID}") as Map
 
 		then:

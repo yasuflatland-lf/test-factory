@@ -46,7 +46,7 @@ class TransactionalBatchFailureSpec extends BaseLiferaySpec {
 		createdOrganizationIds.each { id ->
 			try {
 				jsonwsPost(
-					'/portal/api/jsonws/organization/delete-organization',
+					'/api/jsonws/organization/delete-organization',
 					['organizationId': id])
 			}
 			catch (Exception e) {
@@ -58,7 +58,7 @@ class TransactionalBatchFailureSpec extends BaseLiferaySpec {
 		if (preExistingOrgId) {
 			try {
 				jsonwsPost(
-					'/portal/api/jsonws/organization/delete-organization',
+					'/api/jsonws/organization/delete-organization',
 					['organizationId': preExistingOrgId])
 			}
 			catch (Exception e) {
@@ -129,7 +129,7 @@ class TransactionalBatchFailureSpec extends BaseLiferaySpec {
 	def 'Iteration 1 committed independently of iteration 2 rollback'() {
 		when: 'query organizations via JSONWS'
 		def orgs = jsonwsGet(
-			"/portal/api/jsonws/organization/get-organizations/company-id/${companyId}" +
+			"/api/jsonws/organization/get-organizations/company-id/${companyId}" +
 			'/parent-organization-id/0/start/-1/end/-1') as List
 
 		then:

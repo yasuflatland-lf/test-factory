@@ -34,12 +34,12 @@ class RoleFunctionalSpec extends BaseLiferaySpec {
 		(1..ROLE_COUNT).each { i ->
 			try {
 				def role = jsonwsGet(
-					"/portal/api/jsonws/role/get-role/company-id/${companyId}" +
+					"/api/jsonws/role/get-role/company-id/${companyId}" +
 					"/name/${URLEncoder.encode(BASE_ROLE_NAME + i, 'UTF-8')}") as Map
 
 				if (role?.roleId != null) {
 					jsonwsPost(
-						'/portal/api/jsonws/role/delete-role',
+						'/api/jsonws/role/delete-role',
 						['roleId': role.roleId as Long])
 				}
 			}
@@ -93,7 +93,7 @@ class RoleFunctionalSpec extends BaseLiferaySpec {
 		when: 'look up each expected role by name'
 		def roles = (1..ROLE_COUNT).collect { i ->
 			jsonwsGet(
-				"/portal/api/jsonws/role/get-role/company-id/${companyId}" +
+				"/api/jsonws/role/get-role/company-id/${companyId}" +
 				"/name/${URLEncoder.encode(BASE_ROLE_NAME + i, 'UTF-8')}") as Map
 		}
 
@@ -108,14 +108,14 @@ class RoleFunctionalSpec extends BaseLiferaySpec {
 	def 'Test roles are cleaned up via JSONWS RoleService'() {
 		when:
 		createdRoleIds.each { id ->
-			jsonwsPost('/portal/api/jsonws/role/delete-role', ['roleId': id])
+			jsonwsPost('/api/jsonws/role/delete-role', ['roleId': id])
 		}
 
 		and: 'look up each role again'
 		def stillPresent = (1..ROLE_COUNT).findAll { i ->
 			try {
 				def r = jsonwsGet(
-					"/portal/api/jsonws/role/get-role/company-id/${companyId}" +
+					"/api/jsonws/role/get-role/company-id/${companyId}" +
 					"/name/${URLEncoder.encode(BASE_ROLE_NAME + i, 'UTF-8')}") as Map
 
 				return r?.roleId != null

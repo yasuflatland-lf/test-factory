@@ -34,7 +34,7 @@ class SiteFunctionalSpec extends BaseLiferaySpec {
 		createdSiteIds.each { id ->
 			try {
 				jsonwsPost(
-					'/portal/api/jsonws/group/delete-group',
+					'/api/jsonws/group/delete-group',
 					['groupId': id])
 			}
 			catch (Exception e) {
@@ -91,7 +91,7 @@ class SiteFunctionalSpec extends BaseLiferaySpec {
 	def 'Created sites are visible via JSONWS GroupService'() {
 		when:
 		def groups = jsonwsGet(
-			"/portal/api/jsonws/group/get-groups/company-id/${companyId}" +
+			"/api/jsonws/group/get-groups/company-id/${companyId}" +
 			'/parent-group-id/0/site/true/start/-1/end/-1') as List
 
 		then:
@@ -115,13 +115,13 @@ class SiteFunctionalSpec extends BaseLiferaySpec {
 		when: 'delete each created site'
 		createdSiteIds.each { id ->
 			jsonwsPost(
-				'/portal/api/jsonws/group/delete-group',
+				'/api/jsonws/group/delete-group',
 				['groupId': id])
 		}
 
 		and: 'list groups again'
 		def groups = jsonwsGet(
-			"/portal/api/jsonws/group/get-groups/company-id/${companyId}" +
+			"/api/jsonws/group/get-groups/company-id/${companyId}" +
 			'/parent-group-id/0/site/true/start/-1/end/-1') as List
 
 		then: 'none of the test sites remain'

@@ -55,7 +55,7 @@ class WorkflowHttpE2ECompanySpec extends BaseLiferaySpec {
 		if (createdUserId) {
 			try {
 				jsonwsPost(
-					'/portal/api/jsonws/user/delete-user',
+					'/api/jsonws/user/delete-user',
 					['userId': createdUserId])
 			}
 			catch (Exception e) {
@@ -66,7 +66,7 @@ class WorkflowHttpE2ECompanySpec extends BaseLiferaySpec {
 		if (createdOrganizationId) {
 			try {
 				jsonwsPost(
-					'/portal/api/jsonws/organization/delete-organization',
+					'/api/jsonws/organization/delete-organization',
 					['organizationId': createdOrganizationId])
 			}
 			catch (Exception e) {
@@ -159,20 +159,20 @@ class WorkflowHttpE2ECompanySpec extends BaseLiferaySpec {
 
 		and:
 		Map createdCompany = jsonwsGet(
-			"/portal/api/jsonws/company/get-company-by-web-id" +
+			"/api/jsonws/company/get-company-by-web-id" +
 			"/web-id/${COMPANY_WEB_ID}") as Map
 		createdCompany.companyId as Long == companyId
 		(createdCompany.webId as String) == COMPANY_WEB_ID
 
 		and:
 		Map createdUser = jsonwsGet(
-			"/portal/api/jsonws/user/get-user-by-id/user-id/${createdUserId}") as Map
+			"/api/jsonws/user/get-user-by-id/user-id/${createdUserId}") as Map
 		createdUser.userId as Long == createdUserId
 		(createdUser.screenName as String) == "${COMPANY_USER_BASE_NAME.toLowerCase()}1"
 
 		and:
 		Map createdOrganization = jsonwsGet(
-			"/portal/api/jsonws/organization/get-organization" +
+			"/api/jsonws/organization/get-organization" +
 			"/organization-id/${createdOrganizationId}") as Map
 		createdOrganization.organizationId as Long == createdOrganizationId
 		(createdOrganization.name as String).startsWith(COMPANY_ORG_BASE_NAME)

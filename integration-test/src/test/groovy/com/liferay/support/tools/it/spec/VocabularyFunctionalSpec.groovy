@@ -40,7 +40,7 @@ class VocabularyFunctionalSpec extends BaseLiferaySpec {
 
 		// Discover Guest site groupId for vocabulary creation.
 		def group = jsonwsGet(
-			"/portal/api/jsonws/group/get-group/company-id/${companyId}" +
+			"/api/jsonws/group/get-group/company-id/${companyId}" +
 			'/group-key/Guest') as Map
 
 		guestGroupId = group.groupId as Long

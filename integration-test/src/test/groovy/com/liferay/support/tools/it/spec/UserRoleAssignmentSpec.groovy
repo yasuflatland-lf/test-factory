@@ -45,7 +45,7 @@ class UserRoleAssignmentSpec extends BaseLiferaySpec {
 		if (createdUserId) {
 			try {
 				jsonwsPost(
-					'/portal/api/jsonws/user/delete-user',
+					'/api/jsonws/user/delete-user',
 					['userId': createdUserId])
 			}
 			catch (Exception e) {
@@ -56,7 +56,7 @@ class UserRoleAssignmentSpec extends BaseLiferaySpec {
 		if (testOrgId) {
 			try {
 				jsonwsPost(
-					'/portal/api/jsonws/organization/delete-organization',
+					'/api/jsonws/organization/delete-organization',
 					['organizationId': testOrgId])
 			}
 			catch (Exception e) {
@@ -143,14 +143,14 @@ class UserRoleAssignmentSpec extends BaseLiferaySpec {
 
 		and: 'fetch the user by id via JSONWS (DB-backed)'
 		def user = jsonwsGet(
-			"/portal/api/jsonws/user/get-user-by-id/user-id/${createdUserId}") as Map
+			"/api/jsonws/user/get-user-by-id/user-id/${createdUserId}") as Map
 
 		then: 'screen name matches'
 		(user.screenName as String) == expectedScreenName
 
 		when: 'fetch user organizations via JSONWS'
 		def userOrgs = jsonwsGet(
-			"/portal/api/jsonws/organization/get-user-organizations/user-id/${createdUserId}") as List
+			"/api/jsonws/organization/get-user-organizations/user-id/${createdUserId}") as List
 
 		then: 'organization membership reflects testOrgId'
 		userOrgs.any { (it.organizationId as Long) == testOrgId }
@@ -162,7 +162,7 @@ class UserRoleAssignmentSpec extends BaseLiferaySpec {
 
 		when: 'query organization users via JSONWS (DB-backed, no index lag)'
 		def users = jsonwsGet(
-			"/portal/api/jsonws/user/get-organization-users/organization-id/${testOrgId}"
+			"/api/jsonws/user/get-organization-users/organization-id/${testOrgId}"
 		) as List
 
 		then: 'the created user appears in the organization member list'
