@@ -49,32 +49,34 @@ function App({actionResourceURLs, dataResourceURL, progressResourceURL}: AppProp
 	return (
 		<>
 			<nav className="navbar navbar-collapse-absolute navbar-expand-md navbar-underline navigation-bar navigation-bar-light">
-				<ul className="navbar-nav">
-					<li className="nav-item">
-						<button
-							className={`btn btn-unstyled nav-link ${
-								selectedTab === APP_TABS.WORKFLOW_JSON ? 'active' : ''
-							}`}
-							data-testid="app-tab-workflow-json"
-							onClick={() => setSelectedTab(APP_TABS.WORKFLOW_JSON)}
-							type="button"
-						>
-							<span>{Liferay.Language.get(ENTITY_LABELS[ENTITY_TYPES.WORKFLOW_JSON])}</span>
-						</button>
-					</li>
-					<li className="nav-item">
-						<button
-							className={`btn btn-unstyled nav-link ${
-								selectedTab === APP_TABS.OTHER_ENTITIES ? 'active' : ''
-							}`}
-							data-testid="app-tab-other-entities"
-							onClick={() => setSelectedTab(APP_TABS.OTHER_ENTITIES)}
-							type="button"
-						>
-							<span>{otherEntitiesLabel}</span>
-						</button>
-					</li>
-				</ul>
+				<div className="container-fluid container-fluid-max-xl">
+					<ul className="navbar-nav">
+						<li className="nav-item">
+							<button
+								className={`btn btn-unstyled nav-link ${
+									selectedTab === APP_TABS.WORKFLOW_JSON ? 'active' : ''
+								}`}
+								data-testid="app-tab-workflow-json"
+								onClick={() => setSelectedTab(APP_TABS.WORKFLOW_JSON)}
+								type="button"
+							>
+								<span>{Liferay.Language.get(ENTITY_LABELS[ENTITY_TYPES.WORKFLOW_JSON])}</span>
+							</button>
+						</li>
+						<li className="nav-item">
+							<button
+								className={`btn btn-unstyled nav-link ${
+									selectedTab === APP_TABS.OTHER_ENTITIES ? 'active' : ''
+								}`}
+								data-testid="app-tab-other-entities"
+								onClick={() => setSelectedTab(APP_TABS.OTHER_ENTITIES)}
+								type="button"
+							>
+								<span>{otherEntitiesLabel}</span>
+							</button>
+						</li>
+					</ul>
+				</div>
 			</nav>
 
 			<div className="container-fluid container-fluid-max-xl">
