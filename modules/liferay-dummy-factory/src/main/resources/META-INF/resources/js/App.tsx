@@ -39,18 +39,25 @@ function App({actionResourceURLs, dataResourceURL, progressResourceURL}: AppProp
 			) as HTMLButtonElement | null
 		)?.click();
 	};
-	const otherEntitiesLabel = (() => {
-		const key = 'other-entities';
-		const translated = Liferay.Language.get(key);
-
-		return translated === key ? 'Other Entities' : translated;
-	})();
+	const createEntitiesLabel = Liferay.Language.get('create-entities');
 
 	return (
 		<>
 			<nav className="navbar navbar-collapse-absolute navbar-expand-md navbar-underline navigation-bar navigation-bar-light">
 				<div className="container-fluid container-fluid-max-xl">
 					<ul className="navbar-nav">
+						<li className="nav-item">
+							<button
+								className={`btn btn-unstyled nav-link ${
+									selectedTab === APP_TABS.OTHER_ENTITIES ? 'active' : ''
+								}`}
+								data-testid="app-tab-other-entities"
+								onClick={() => setSelectedTab(APP_TABS.OTHER_ENTITIES)}
+								type="button"
+							>
+								<span>{createEntitiesLabel}</span>
+							</button>
+						</li>
 						<li className="nav-item">
 							<button
 								className={`btn btn-unstyled nav-link ${
@@ -61,18 +68,6 @@ function App({actionResourceURLs, dataResourceURL, progressResourceURL}: AppProp
 								type="button"
 							>
 								<span>{Liferay.Language.get(ENTITY_LABELS[ENTITY_TYPES.WORKFLOW_JSON])}</span>
-							</button>
-						</li>
-						<li className="nav-item">
-							<button
-								className={`btn btn-unstyled nav-link ${
-									selectedTab === APP_TABS.OTHER_ENTITIES ? 'active' : ''
-								}`}
-								data-testid="app-tab-other-entities"
-								onClick={() => setSelectedTab(APP_TABS.OTHER_ENTITIES)}
-								type="button"
-							>
-								<span>{otherEntitiesLabel}</span>
 							</button>
 						</li>
 					</ul>
