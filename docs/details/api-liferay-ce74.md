@@ -1,8 +1,6 @@
 > **Note**: This document describes CE 7.4 GA132 API constraints. The project has migrated to
 > DXP 2026.q1.3-lts (see `docs/ADR/adr-0008-dxp-2026-migration.md`). The constraints below
 > regarding `javax.portlet`, `release.portal.api`, and CE-specific API blacklists no longer apply.
-> The `GroupLocalService.addGroup()` signature in DXP 2026 takes `externalReferenceCode` as the
-> first parameter (17 params). All other APIs listed here are compatible with DXP 2026.
 
 # Liferay CE 7.4 GA132 — API notes
 

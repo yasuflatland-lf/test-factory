@@ -27,10 +27,10 @@ Migrate exclusively to Liferay DXP 2026.q1.3-lts:
 DXP 2026 adds `externalReferenceCode` as the first parameter:
 
 ```java
-// CE 7.4 (16 params)
+// CE 7.4 (15 params)
 _groupLocalService.addGroup(userId, parentGroupId, ...)
 
-// DXP 2026 (17 params)
+// DXP 2026 (16 params — externalReferenceCode prepended)
 _groupLocalService.addGroup(null, userId, parentGroupId, ...)
 ```
 
