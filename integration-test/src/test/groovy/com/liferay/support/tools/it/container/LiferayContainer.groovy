@@ -5,7 +5,6 @@ import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
 import org.testcontainers.images.builder.Transferable
 import org.testcontainers.utility.DockerImageName
 
-import java.net.URLClassLoader
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
@@ -47,7 +46,7 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 			'LIFERAY_TERMS_OF_USE_REQUIRED'                      : 'false',
 			'LIFERAY_USERS_REMINDER_QUERY_ENABLED'               : 'false',
 			'LIFERAY_PASSWORDS_DEFAULT_POLICY_CHANGE_REQUIRED'   : 'false',
-			'CATALINA_OPTS'                                       : "-javaagent:/tmp/jacocoagent.jar=output=tcpserver,port=${JACOCO_PORT},address=*",
+			'JAVA_OPTS_APPEND'                                    : "-javaagent:/tmp/jacocoagent.jar=output=tcpserver,port=${JACOCO_PORT},address=*",
 		])
 		withCopyToContainer(
 			Transferable.of(PORTAL_EXT_PROPERTIES.bytes),
@@ -70,10 +69,17 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 		if (agentUrl == null) {
 			throw new IllegalStateException(
 				'jacocoagent.jar not found on test classpath. ' +
-				'Ensure org.jacoco.agent is declared as a testRuntimeOnly dependency.'
+				'Ensure org.jacoco.agent:0.8.14:runtime is declared as a testImplementation dependency.'
 			)
 		}
-		byte[] agentBytes = agentUrl.bytes
+		byte[] agentBytes
+		try {
+			agentBytes = agentUrl.bytes
+		}
+		catch (IOException e) {
+			throw new IllegalStateException(
+				"Failed to read jacocoagent.jar from ${agentUrl}: ${e.message}", e)
+		}
 		withCopyToContainer(Transferable.of(agentBytes), '/tmp/jacocoagent.jar')
 	}
 

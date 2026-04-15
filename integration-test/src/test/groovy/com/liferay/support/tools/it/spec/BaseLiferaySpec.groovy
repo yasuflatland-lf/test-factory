@@ -295,16 +295,24 @@ abstract class BaseLiferaySpec extends Specification {
 			dumpJacocoCoverage(this.class.simpleName)
 		}
 		catch (Exception e) {
-			log.warn('JaCoCo dump failed for {}: {}', this.class.simpleName, e.message)
+			log.warn('JaCoCo dump failed for {}: {}', this.class.simpleName, e.message, e)
 		}
 	}
 
 	protected void dumpJacocoCoverage(String specName) {
+		if (!liferay.isRunning()) {
+			log.warn('Skipping JaCoCo dump for {} — container is not running', specName)
+			return
+		}
+
 		File outputFile = new File(System.getProperty('user.dir'), "build/jacoco/${specName}.exec")
-		outputFile.parentFile.mkdirs()
+		File jacocoDir = outputFile.parentFile
+		if (!jacocoDir.mkdirs() && !jacocoDir.isDirectory()) {
+			throw new IOException("Cannot create JaCoCo output directory: ${jacocoDir.absolutePath}")
+		}
 
 		ExecDumpClient client = new ExecDumpClient()
-		client.dump(liferay.host, liferay.jacocoPort).save(outputFile, true)
+		client.dump(liferay.host, liferay.jacocoPort).save(outputFile, false)
 
 		log.info('JaCoCo coverage dumped to {}', outputFile.absolutePath)
 	}
