@@ -46,7 +46,7 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 			'LIFERAY_TERMS_OF_USE_REQUIRED'                      : 'false',
 			'LIFERAY_USERS_REMINDER_QUERY_ENABLED'               : 'false',
 			'LIFERAY_PASSWORDS_DEFAULT_POLICY_CHANGE_REQUIRED'   : 'false',
-			'JAVA_OPTS_APPEND'                                    : "-javaagent:/tmp/jacocoagent.jar=output=tcpserver,port=${JACOCO_PORT},address=*".toString(),
+			'LIFERAY_JVM_OPTS'                                    : "-javaagent:/tmp/jacocoagent.jar=output=tcpserver,port=${JACOCO_PORT},address=*".toString(),
 		])
 		withCopyToContainer(
 			Transferable.of(PORTAL_EXT_PROPERTIES.bytes),
