@@ -6,6 +6,38 @@
 
 L3 detail. Non-obvious API facts that have cost real time. This file is the single source of truth for CE 7.4 API constraints. Read on demand from `.claude/rules/writing-code.md` or `.claude/rules/debugging.md`.
 
+## DXP 2026 API notes (discovered during migration)
+
+These facts apply to DXP 2026.q1.3-lts and are **not** applicable to CE 7.4 GA132.
+
+### release.dxp.api bundles journal and DDM
+
+`com.liferay.journal.api` and `com.liferay.dynamic.data.mapping.api` are included inside `release.dxp.api-2026.q1.3.jar`. Do not declare them as separate `compileOnly` dependencies — they will fail to resolve because the workspace BOM does not enumerate them separately for the DXP 2026 product release. Remove them from `build.gradle` when targeting DXP 2026.
+
+### GroupLocalService.addGroup() — 16-param DXP 2026 signature
+
+CE 7.4 has 15 params. DXP 2026 adds `String externalReferenceCode` as the first parameter (making 16 total):
+
+```java
+// DXP 2026 (16 params)
+_groupLocalService.addGroup(
+    null,                            // externalReferenceCode (new)
+    userId, parentGroupId, className, classPK, liveGroupId,
+    nameMap, descriptionMap, type, typeSettings,
+    manualMembership, membershipRestriction, friendlyURL,
+    site, inheritContent, active, serviceContext);
+```
+
+Note: `typeSettings` (String, 10th position) exists in DXP 2026 but was absent from the CE 7.4 convenience overload most callers used. Pass `StringPool.BLANK` if unused.
+
+### JAX-RS namespace: jakarta.ws.rs (not javax.ws.rs)
+
+DXP 2026 ships Jakarta REST 3.x via Apache CXF. The JAX-RS whiteboard (`osgi.jaxrs.*`) only discovers `jakarta.ws.rs.core.Application` subclasses. Classes annotated with `javax.ws.rs.*` will not be registered and their endpoints will 404 silently. Migrate all JAX-RS imports to `jakarta.ws.rs.*`.
+
+### Portlet taglib URI: portlet_3_0
+
+JSP files that include the portlet taglib must use `http://xmlns.jcp.org/portlet_3_0` (Portlet 3.0) instead of `http://java.sun.com/portlet_2_0` (Portlet 2.0). Both URIs resolve in DXP 2026 via the compatibility shim, but `portlet_3_0` is the canonical URI for modules declaring `jakarta.portlet.version=3.0`.
+
 ## 1. `MBThreadLocalService.getThreads(groupId, categoryId, status, start, end)` — `categoryId` is an exact-match filter
 
 The `categoryId` parameter is an **exact-match filter**, NOT a "no filter" sentinel. Passing `categoryId=0L` returns ONLY threads whose parent `categoryId` is exactly 0 (root-level threads under no category), NOT all threads in the group.
