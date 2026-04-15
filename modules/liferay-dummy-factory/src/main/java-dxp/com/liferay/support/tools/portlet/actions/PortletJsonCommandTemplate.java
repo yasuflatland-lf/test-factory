@@ -12,7 +12,7 @@ import com.liferay.support.tools.utils.ProgressManager;
 import jakarta.portlet.ResourceRequest;
 import jakarta.portlet.ResourceResponse;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 class PortletJsonCommandTemplate {
 
