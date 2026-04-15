@@ -357,65 +357,80 @@ function WorkflowJsonEditor({
 						{Liferay.Language.get('workflow-json-samples')}
 					</p>
 
-					<nav
-						className="menubar menubar-transparent menubar-vertical-expand-md"
-						data-testid="workflow-json-sample-nav"
+					<label
+						className="workflow-json-label"
+						htmlFor="workflow-json-sample-select"
 					>
-						<ul className="nav nav-nested">
-							{_workflowJsonSamples.map((sample) => (
-								<li className="nav-item" key={sample.id}>
-									<button
-										className={`btn btn-unstyled nav-link ${
-											selectedSampleId === sample.id ? 'active' : ''
-										}`}
-										data-testid={`workflow-json-sample-${sample.id}`}
-										onClick={() => setSelectedSampleId(sample.id)}
-										type="button"
-									>
-										{Liferay.Language.get(sample.titleKey)}
-									</button>
-								</li>
-							))}
-						</ul>
-					</nav>
+						Sample workflow
+					</label>
+
+					<select
+						className="form-control"
+						data-testid="workflow-json-sample-select"
+						id="workflow-json-sample-select"
+						onChange={(event) => setSelectedSampleId(event.target.value)}
+						value={selectedSample?.id ?? ''}
+					>
+						{_workflowJsonSamples.map((sample) => (
+							<option key={sample.id} value={sample.id}>
+								{Liferay.Language.get(sample.titleKey)}
+							</option>
+						))}
+					</select>
 
 					{selectedSample && (
-						<p className="workflow-json-sample-description">
-							{Liferay.Language.get(selectedSample.descriptionKey)}
-						</p>
+						<div className="workflow-json-sample-meta">
+							<p>{Liferay.Language.get(selectedSample.descriptionKey)}</p>
+
+							<ul className="workflow-json-sample-operations">
+								{selectedSample.operations.map((operation) => (
+									<li key={operation}>{operation}</li>
+								))}
+							</ul>
+						</div>
 					)}
 
 					<div className="workflow-json-action-group">
 						<button
-							className="btn btn-outline-primary"
+							className="workflow-json-icon-btn btn btn-unstyled"
 							data-testid="workflow-json-validate"
 							disabled={!canValidate || isBusy}
 							onClick={() => _handleWorkflowAction('validate', planResourceURL)}
+							title={Liferay.Language.get('validate-json')}
 							type="button"
 						>
-							{Liferay.Language.get('validate-json')}
+							<svg aria-hidden="true" fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 16 16" width="16">
+								<path d="M3 8l3.5 3.5L13 5"/>
+							</svg>
 						</button>
 
 						<button
-							className="btn btn-secondary"
+							className="workflow-json-icon-btn btn btn-unstyled"
 							data-testid="workflow-json-plan"
 							disabled={!canValidate || isBusy}
 							onClick={() => _handleWorkflowAction('plan', planResourceURL)}
+							title={Liferay.Language.get('plan-json')}
 							type="button"
 						>
-							{Liferay.Language.get('plan-json')}
+							<svg aria-hidden="true" fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 16 16" width="16">
+								<path d="M8 2a4 4 0 00-2 7.46V11h4V9.46A4 4 0 008 2z"/>
+								<path d="M6 11h4M6.5 13h3"/>
+							</svg>
 						</button>
 
 						<button
-							className="btn btn-primary"
+							className="workflow-json-icon-btn btn btn-unstyled"
 							data-testid="workflow-json-execute"
 							disabled={!canExecute || isBusy}
 							onClick={() =>
 								_handleWorkflowAction('execute', executeResourceURL)
 							}
+							title={Liferay.Language.get('execute-json')}
 							type="button"
 						>
-							{Liferay.Language.get('execute-json')}
+							<svg aria-hidden="true" fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 16 16" width="16">
+								<path d="M5 3l8 5-8 5V3z"/>
+							</svg>
 						</button>
 					</div>
 				</aside>
@@ -426,33 +441,44 @@ function WorkflowJsonEditor({
 						data-testid="workflow-json-toolbar"
 					>
 						<button
-							className="btn btn-primary"
+							className="workflow-json-icon-btn btn btn-unstyled"
 							data-testid="workflow-json-load-sample"
 							disabled={!selectedSample || isBusy}
 							onClick={_handleLoadSample}
+							title={Liferay.Language.get('load-sample')}
 							type="button"
 						>
-							{Liferay.Language.get('load-sample')}
+							<svg aria-hidden="true" fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 16 16" width="16">
+								<path d="M8 2v9M5 8l3 3 3-3M2 13h12"/>
+							</svg>
 						</button>
 
 						<button
-							className="btn btn-secondary"
+							className="workflow-json-icon-btn btn btn-unstyled"
 							data-testid="workflow-json-copy-json"
 							disabled={isBusy}
 							onClick={_handleCopyJson}
+							title={Liferay.Language.get('copy-json')}
 							type="button"
 						>
-							{Liferay.Language.get('copy-json')}
+							<svg aria-hidden="true" fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 16 16" width="16">
+								<rect height="8" rx="1" width="8" x="5" y="5"/>
+								<path d="M11 5V4a1 1 0 00-1-1H4a1 1 0 00-1 1v6a1 1 0 001 1h1"/>
+							</svg>
 						</button>
 
 						<button
-							className="btn btn-outline-secondary"
+							className="workflow-json-icon-btn btn btn-unstyled"
 							data-testid="workflow-json-download-schema"
 							disabled={!canDownloadSchema || isBusy}
 							onClick={_handleSchemaDownload}
+							title={Liferay.Language.get('download-schema')}
 							type="button"
 						>
-							{Liferay.Language.get('download-schema')}
+							<svg aria-hidden="true" fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 16 16" width="16">
+								<path d="M9 2H4a1 1 0 00-1 1v10a1 1 0 001 1h8a1 1 0 001-1V6L9 2z"/>
+								<path d="M9 2v4h4"/>
+							</svg>
 						</button>
 					</div>
 
@@ -520,9 +546,7 @@ function WorkflowJsonEditor({
 									}
 									type="button"
 								>
-									{resultDetailsVisible
-										? Liferay.Language.get('hide-details')
-										: Liferay.Language.get('show-details')}
+									{resultDetailsVisible ? 'Hide details' : 'Show details'}
 								</button>
 							</div>
 
