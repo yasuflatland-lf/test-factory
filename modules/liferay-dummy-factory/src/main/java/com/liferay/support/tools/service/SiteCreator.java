@@ -68,7 +68,7 @@ public class SiteCreator {
 							null,
 							userId, parentGroupId, null, 0,
 							GroupConstants.DEFAULT_LIVE_GROUP_ID, nameMap,
-							descriptionMap, type, manualMembership,
+							descriptionMap, type, StringPool.BLANK, manualMembership,
 							GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION,
 							StringPool.BLANK, true, inheritContent, active,
 							serviceContext);
