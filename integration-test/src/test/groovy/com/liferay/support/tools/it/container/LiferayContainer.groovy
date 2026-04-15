@@ -64,10 +64,11 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 
 	static synchronized LiferayContainer getInstance() {
 		if (INSTANCE == null) {
-			INSTANCE = new LiferayContainer()
-			INSTANCE.copyJacocoAgentToContainer()
-			INSTANCE.copyLicenseToContainer()
-			INSTANCE.start()
+			LiferayContainer container = new LiferayContainer()
+			container.copyJacocoAgentToContainer()
+			container.copyLicenseToContainer()
+			container.start()
+			INSTANCE = container
 		}
 		return INSTANCE
 	}
@@ -125,10 +126,28 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 				throw new IllegalStateException(
 					"LIFERAY_DXP_LICENSE_FILE points to a non-existent file: ${licenseFilePath}")
 			}
-			licenseBytes = f.bytes
+			if (!f.canRead()) {
+				throw new IllegalStateException(
+					"LIFERAY_DXP_LICENSE_FILE exists but is not readable: ${licenseFilePath} (check file permissions)")
+			}
+			try {
+				licenseBytes = f.bytes
+			}
+			catch (IOException e) {
+				throw new IllegalStateException(
+					"Failed to read license file at ${licenseFilePath}: ${e.message}", e)
+			}
 		}
 		else if (licenseBase64) {
-			licenseBytes = Base64.decoder.decode(licenseBase64)
+			try {
+				licenseBytes = Base64.decoder.decode(licenseBase64.trim())
+			}
+			catch (IllegalArgumentException e) {
+				throw new IllegalStateException(
+					"LIFERAY_DXP_LICENSE_BASE64 contains invalid base64 content: ${e.message}. " +
+					'Ensure the value is standard base64 (not URL-safe or MIME-split) with no embedded newlines. ' +
+					'Re-encode with: base64 -w0 activation-key.xml', e)
+			}
 		}
 		else {
 			throw new IllegalStateException(
@@ -136,7 +155,20 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 				'or LIFERAY_DXP_LICENSE_BASE64 (base64-encoded content) before running integration tests.')
 		}
 
-		withCopyToContainer(Transferable.of(licenseBytes), '/opt/liferay/deploy/activation-key.xml')
+		if (licenseBytes == null || licenseBytes.length == 0) {
+			throw new IllegalStateException(
+				'DXP license resolved to an empty file. ' +
+				'Check that LIFERAY_DXP_LICENSE_FILE is a non-empty file or that ' +
+				'LIFERAY_DXP_LICENSE_BASE64 encodes actual license content.')
+		}
+
+		try {
+			withCopyToContainer(Transferable.of(licenseBytes), '/opt/liferay/deploy/activation-key.xml')
+		}
+		catch (Exception e) {
+			throw new IllegalStateException(
+				"Failed to copy DXP license into container: ${e.message}", e)
+		}
 	}
 
 	void deployJar(Path jarPath) {
