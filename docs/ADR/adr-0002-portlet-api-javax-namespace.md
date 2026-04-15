@@ -92,3 +92,19 @@ Debugging steps when the PortletTracker is unresponsive:
   - `PortletTracker.java` — `addingService()` (L119-213), `_addingPortlet()` (L363-473)
 - `PortletImpl.java` — `setReady(true)` registers `com.liferay.portal.kernel.model.Portlet` as an OSGi service (L3725-3758)
 - ADR-0001: Integration Test Architecture
+
+## DXP 2026.Q1 Revision
+
+Liferay DXP 2026.Q1.3-LTS has fully migrated to the Jakarta EE namespace. The PortletTracker
+in DXP tracks `jakarta.portlet.Portlet` services (Portlet API 4.0). The original prohibition
+on `jakarta.portlet` in this ADR applies only to CE 7.4 builds.
+
+For DXP builds (`-Pbuild.target=dxp`):
+- All `javax.portlet.*` imports become `jakarta.portlet.*`
+- All `"javax.portlet.name=..."` component property strings become `"jakarta.portlet.name=..."`
+- `javax.portlet.version=3.0` becomes `jakarta.portlet.version=4.0`
+- The `Language.properties` portlet title key prefix changes from `javax` to `jakarta`
+
+The dual source-set strategy (see ADR-0007) maintains both CE and DXP variants without
+code duplication in business logic. See `.claude/rules/writing-code.md` for the portlet
+adapter file list.

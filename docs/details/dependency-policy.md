@@ -31,6 +31,31 @@ Node engine mismatches surface only during the `yarn install` fetch phase, not a
 
 A version skew does not fail the build but silently corrupts types such as `ReactNode`, producing downstream type errors in unrelated files.
 
+## Liferay Workspace product version (`liferay.workspace.product`)
+
+The `liferay.workspace.product` property in `gradle.properties` selects the Liferay release bundle (CE or DXP) and drives the Gradle Workspace plugin's dependency resolution.
+
+To look up valid values, fetch the official release catalogue:
+
+```
+https://releases.liferay.com/releases.json
+```
+
+Each entry has a `targetPlatformVersion`, `releaseKey` (e.g. `portal-7.4-ga132`), and artifact coordinates. Set `liferay.workspace.product` to the `releaseKey` of the release you want to target.
+
+Keep `liferay.workspace.product` and `liferay.docker.image` in sync — they must point to the same GA release so that integration tests run against the same Liferay build that the Workspace resolves dependencies from.
+
+### DXP vs CE dependency artifact names
+
+| Target | Workspace product key | BOM artifact name |
+|--------|-----------------------|-------------------|
+| CE 7.4 GA132 | `portal-7.4-ga132` | `release.portal.api` |
+| DXP 2026.Q1.3-LTS | `dxp-2026.q1.3-lts` | `release.dxp.api` |
+
+The Docker Hub tag for DXP must be verified separately from `releases.json`:
+`releases.json` provides artifact CDN URLs (`releases-cdn.liferay.com`), not Docker Hub tags.
+Verified tag for DXP 2026.Q1.3: `liferay/dxp:2026.q1.3` — check Docker Hub if pulls fail.
+
 ## Cross-references
 
 - The Vitest migration gotchas (Mock typing, RTL cleanup, vi.mock hoisting, React double-resolution, ESM setup) live in `docs/details/ui-vitest-gotchas.md`.

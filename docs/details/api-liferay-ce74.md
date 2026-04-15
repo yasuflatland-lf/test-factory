@@ -2,6 +2,10 @@
 
 L3 detail. Non-obvious API facts that have cost real time. This file is the single source of truth for CE 7.4 API constraints. Read on demand from `.claude/rules/writing-code.md` or `.claude/rules/debugging.md`.
 
+> **DXP 2026.Q1 Compatibility Notes**  
+> Each constraint below is annotated with its DXP 2026.Q1.3-LTS status where verified.  
+> Verified against Liferay Portal master branch (post-Jakarta migration, April 2026).
+
 ## 1. `MBThreadLocalService.getThreads(groupId, categoryId, status, start, end)` — `categoryId` is an exact-match filter
 
 The `categoryId` parameter is an **exact-match filter**, NOT a "no filter" sentinel. Passing `categoryId=0L` returns ONLY threads whose parent `categoryId` is exactly 0 (root-level threads under no category), NOT all threads in the group.
@@ -23,13 +27,13 @@ Pass `externalReferenceCode=null` and `parentCategoryId=0L` for top-level catego
 
 ## 3. `CompanyService` is blacklisted from JSON-WS
 
-`portal.properties` lists `com.liferay.portal.kernel.service.CompanyServiceUtil` in `json.service.invalid.class.names`. As a result, every path under `/api/jsonws/company/*` returns HTTP 404 regardless of method or parameter format. `CompanyService.deleteCompany(long)` is defined but cannot be invoked via JSON-WS.
+`portal.properties` lists `com.liferay.portal.kernel.service.CompanyServiceUtil` in `json.service.invalid.class.names` (DXP: unchanged — still blacklisted). As a result, every path under `/api/jsonws/company/*` returns HTTP 404 regardless of method or parameter format. `CompanyService.deleteCompany(long)` is defined but cannot be invoked via JSON-WS.
 
 For tests, there is no working remote delete path in CE 7.4 GA132. The workaround is to rely on `withReuse(false)` and skip cleanup (see `.claude/rules/testing.md`).
 
 ## 4. `CompanyLocalService.addCompany` only exposes the 13-arg overload
 
-Signature:
+Signature (DXP: confirmed compatible — same 13-arg signature with Long companyId first):
 
 ```java
 addCompany(Long companyId, String webId, String virtualHostname, String mx,
@@ -77,7 +81,7 @@ Always use this for **external-generated** names. For **user-supplied** names (e
 
 The helper `com.liferay.support.tools.portlet.actions.ResourceCommandUtil.setErrorResponse` writes the failure message to the JSON field named `error`. New resource commands should use this helper rather than hand-rolling a JSON error response so the frontend `parseResponse` in `js/utils/api.ts` sees a single consistent field name. Do NOT invent alternate field names like `errorMessage`, `message`, `reason`, or `detail` — the frontend does not read them.
 
-## 8. Throw input-validation exceptions OUTSIDE `TransactionInvokerUtil.invoke(...)`
+## 8. Throw input-validation exceptions OUTSIDE `TransactionInvokerUtil.invoke(...)` (DXP: confirmed compatible — unchanged signature)
 
 When a Creator validates caller input (e.g. a regex check on `baseName` before looping), throw the validation exception **before** entering any `TransactionInvokerUtil.invoke(...)` call. No transaction has started, so no rollback is needed and no partial commit is possible. The `throws Throwable` signature on the Creator combined with the resource command's `catch (Throwable)` routes the exception directly to `ResourceCommandUtil.setErrorResponse` → `{success: false, error: "..."}`. No additional plumbing is required.
 
@@ -123,3 +127,7 @@ The module name matches the `Bundle-SymbolicName` prefix (e.g. `com.liferay.blog
 **Why:** The constant `PanelCategoryKeys.CONTROL_PANEL_MARKETPLACE` (`"control_panel.marketplace"`) is defined in the `application-list-api` JAR but no `PanelCategory` component implements it on CE 7.4 GA132. Portlets registered under this key are orphaned and invisible.
 
 **What:** The "MARKETPLACE" section visible in the Control Panel UI is rendered under `PanelCategoryKeys.CONTROL_PANEL_APPS` (`"control_panel.apps"`). Existing Marketplace items (Purchased order=100, Store order=200, License Manager order=300) all use `CONTROL_PANEL_APPS`. Use this key with `panel.app.order` lower than 100 to appear first.
+
+## 14. `UserLocalService.addUserWithWorkflow` — `prefixListTypeId` and `suffixListTypeId` positions (DXP: confirmed compatible — prefixListTypeId/suffixListTypeId at same positions, 0L is valid)
+
+On CE 7.4 GA132, the `addUserWithWorkflow` method accepts `prefixListTypeId` and `suffixListTypeId` as `long` parameters. Passing `0L` for both is valid and produces a user with no name prefix or suffix. The parameter positions have not changed in DXP 2026.Q1.3-LTS — callers built against CE 7.4 GA132 are binary-compatible with DXP when compiled against `release.dxp.api`.

@@ -36,10 +36,12 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 		super(DockerImageName.parse(imageName))
 
 		withExposedPorts(HTTP_PORT, GOGO_PORT, JACOCO_PORT)
+		int startupMinutes = System.getProperty('build.target') == 'dxp' ? 12 : 8
+
 		waitingFor(
 			new LogMessageWaitStrategy()
 				.withRegEx('.*org\\.apache\\.catalina\\.startup\\.Catalina\\.start Server startup in.*')
-				.withStartupTimeout(Duration.ofMinutes(8))
+				.withStartupTimeout(Duration.ofMinutes(startupMinutes))
 		)
 		withEnv([
 			'LIFERAY_SETUP_WIZARD_ENABLED'                       : 'false',
@@ -59,6 +61,7 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 		if (INSTANCE == null) {
 			INSTANCE = new LiferayContainer()
 			INSTANCE.copyJacocoAgentToContainer()
+			INSTANCE.deployActivationKeyIfPresent()
 			INSTANCE.start()
 		}
 		return INSTANCE
@@ -79,6 +82,33 @@ class LiferayContainer extends GenericContainer<LiferayContainer> {
 			throw new IllegalStateException(
 				"Failed to read jacocoagent.jar from ${agentUrl}: ${e.message}", e)
 		}
+	}
+
+	/**
+	 * For DXP builds: copies the first *.xml found in activation-keys/ into
+	 * /opt/liferay/deploy/ so Liferay activates the license on startup.
+	 * No-op for CE builds.
+	 */
+	void deployActivationKeyIfPresent() {
+		if (System.getProperty('build.target') != 'dxp') {
+			return
+		}
+
+		File keysDir = new File(System.getProperty('user.dir'), "../activation-keys")
+			.canonicalFile
+
+		File keyFile = keysDir.listFiles()?.find { it.name.endsWith('.xml') }
+
+		if (!keyFile) {
+			throw new IllegalStateException(
+				"DXP build requires an activation key in ${keysDir.absolutePath}. " +
+				"See activation-keys/README.md for instructions.")
+		}
+
+		withCopyToContainer(
+			Transferable.of(keyFile.bytes),
+			"${DEPLOY_DIR}${keyFile.name}"
+		)
 	}
 
 	private static URL _findJacocoAgentUrl() {

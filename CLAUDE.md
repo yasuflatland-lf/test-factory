@@ -32,4 +32,6 @@ Liferay Portal CE Workspace: MVCPortlet + React portlet + Spock integration test
 ./gradlew :modules:liferay-dummy-factory:jar           # Build the bundle JAR
 ./gradlew :modules:liferay-dummy-factory:test          # Host-JVM unit tests + JaCoCo
 ./gradlew :integration-test:integrationTest             # Spock + Testcontainers (Docker)
+./gradlew :modules:liferay-dummy-factory:jar -Pbuild.target=dxp    # DXP bundle JAR
+./gradlew :integration-test:integrationTest -Pbuild.target=dxp     # DXP integration tests (requires activation-keys/*.xml)
 ```

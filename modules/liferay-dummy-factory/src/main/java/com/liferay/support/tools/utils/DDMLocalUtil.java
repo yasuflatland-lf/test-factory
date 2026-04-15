@@ -5,7 +5,6 @@ import com.liferay.dynamic.data.mapping.storage.Fields;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
@@ -74,7 +73,7 @@ public class DDMLocalUtil {
 		Field fieldsDisplayField = fields.get(_FIELDS_DISPLAY_NAME);
 
 		if (fieldsDisplayField == null) {
-			StringBundler fieldsDisplayFieldSB = new StringBundler(fieldsMap.size() * 4 - 1);
+			StringBuilder fieldsDisplayFieldSB = new StringBuilder();
 
 			for (String fieldName : fields.getNames()) {
 				fieldsDisplayFieldSB.append(fieldName);
@@ -83,8 +82,8 @@ public class DDMLocalUtil {
 				fieldsDisplayFieldSB.append(StringPool.COMMA);
 			}
 
-			if (fieldsDisplayFieldSB.index() > 0) {
-				fieldsDisplayFieldSB.setIndex(fieldsDisplayFieldSB.index() - 1);
+			if (fieldsDisplayFieldSB.length() > 0) {
+				fieldsDisplayFieldSB.setLength(fieldsDisplayFieldSB.length() - 1);
 			}
 
 			fieldsDisplayField = new Field(

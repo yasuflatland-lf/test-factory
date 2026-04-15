@@ -3,6 +3,8 @@ plugins {
 	id 'jacoco'
 }
 
+def isDxp = project.findProperty('build.target') == 'dxp'
+
 java {
 	sourceCompatibility = JavaVersion.VERSION_17
 	targetCompatibility = JavaVersion.VERSION_17
@@ -50,7 +52,9 @@ tasks.register('integrationTest', Test) {
 	classpath = sourceSets.test.runtimeClasspath
 
 	jvmArgs "-Xms${project.property('test.jvm.minHeap')}", "-Xmx${project.property('test.jvm.maxHeap')}"
-	systemProperty 'liferay.docker.image', project.property('liferay.docker.image')
+	systemProperty 'liferay.docker.image',
+		isDxp ? rootProject.findProperty('dxp.docker.image') : rootProject.findProperty('liferay.docker.image')
+	systemProperty 'build.target', project.findProperty('build.target') ?: 'ce'
 	environment 'PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD', '1'
 
 	testLogging {
