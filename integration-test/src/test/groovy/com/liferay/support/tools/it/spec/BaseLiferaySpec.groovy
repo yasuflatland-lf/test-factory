@@ -210,44 +210,35 @@ abstract class BaseLiferaySpec extends Specification {
 			Map<String, String> formTokens = _fetchUpdatePasswordForm(ticket)
 
 			_postUpdatePassword(ticket, formTokens, NEW_PASSWORD)
-
-			// DXP 2026 AuthVerifierPipeline caches failed-auth results. Hammering
-			// `_checkBasicAuth(NEW_PASSWORD)` while the cache holds the stale
-			// `passwordReset=true` state keeps it from refreshing. Strategy:
-			// sleep to let the failed-auth cache entry expire (observed ~5
-			// minutes on cold containers), then check with exponential-ish
-			// backoff so we do not keep refreshing a stale cache entry.
-			boolean ok = false
-			int totalSec = 0
-			int[] sleepStages = [15, 30, 45, 60, 60, 60, 60, 60, 60, 60] as int[]
-
-			for (int s : sleepStages) {
-				TimeUnit.SECONDS.sleep(s)
-				totalSec += s
-
-				if (_checkBasicAuth(NEW_PASSWORD)) {
-					ok = true
-					log.info(
-						'Admin bootstrap: password change propagated after {}s', totalSec)
-					break
-				}
-
-				log.info(
-					'Admin bootstrap: still 403 at {}s, continuing', totalSec)
-			}
-
-			if (!ok) {
-				throw new IllegalStateException(
-					"Admin bootstrap: update_password flow completed but JSONWS still returns 403 after ${totalSec}s")
-			}
-
-			activePassword = NEW_PASSWORD
-			adminBootstrapped = true
-			log.info('Admin bootstrap: password reset cleared, switched to NEW_PASSWORD')
 		}
 		finally {
+			// Drop session cookies so the post-update Basic Auth probe is not
+			// treated as the still-passwordReset session.
 			CookieHandler.setDefault(previous)
 		}
+
+		// Post-update probe WITHOUT the form-login cookies. A fresh session
+		// forces DXP to evaluate Basic Auth against the updated DB state
+		// rather than reuse the cached passwordReset=true session.
+		boolean ok = false
+		for (int attempt = 0; attempt < 30; attempt++) {
+			if (_checkBasicAuth(NEW_PASSWORD)) {
+				ok = true
+				log.info(
+					'Admin bootstrap: password change propagated after {}s', attempt)
+				break
+			}
+			TimeUnit.SECONDS.sleep(1)
+		}
+
+		if (!ok) {
+			throw new IllegalStateException(
+				'Admin bootstrap: update_password flow completed but Basic Auth still returns 403 after 30s (without session cookies)')
+		}
+
+		activePassword = NEW_PASSWORD
+		adminBootstrapped = true
+		log.info('Admin bootstrap: password reset cleared, switched to NEW_PASSWORD')
 	}
 
 	// DXP 2026 redirects every page to /c/portal/license_activation until its
