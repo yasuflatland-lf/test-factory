@@ -12,15 +12,22 @@ liferay-dummy-factory/
   integration-test/                 # Spock + Testcontainers (repo root, NOT under modules/)
 ```
 
-Detailed CE 7.4 API constraints: `docs/details/api-liferay-ce74.md`. Workspace frontend traps: `docs/details/workspace-frontend-traps.md`. Read on demand.
+Detailed DXP 2026 API constraints: `docs/details/api-liferay-dxp2026.md`. Workspace frontend traps: `docs/details/workspace-frontend-traps.md`. Read on demand.
 
 ## Portlet Module
 
 - **Single-JAR design** — MVCPortlet, MVCResourceCommand, and React frontend ship together in one bundle (`liferay.dummy.factory`).
-- **MVCPortlet + PanelApp** — Registered in Control Panel > Configuration. Uses `javax.portlet` namespace (Portlet API 3.0). `jakarta.portlet` is forbidden on CE 7.4 GA132 (see `docs/ADR/adr-0002-portlet-api-javax-namespace.md`).
+- **MVCPortlet + PanelApp** — Registered in Control Panel > Configuration. Uses `jakarta.portlet` namespace (Portlet API 4.0). DXP 2026 requires `jakarta.portlet.*` imports (see `docs/ADR/adr-0008-dxp-2026-migration.md`).
 - **MVCResourceCommands** — Per-entity resource commands handle creation: `/ldf/blog`, `/ldf/company`, `/ldf/org`, `/ldf/user`, `/ldf/role`, `/ldf/site`, `/ldf/page`, `/ldf/wcm`, `/ldf/doc` (+ `/ldf/doc/upload`), `/ldf/vocabulary`, `/ldf/category`, `/ldf/mb-category`, `/ldf/mb-thread`, `/ldf/mb-reply`. `/ldf/data` (`DataListResourceCommand`) serves dropdown data; `/ldf/progress` (`ProgressResourceCommand`) reports batch progress.
 - **Value Objects** — `BatchSpec` (Java record) encapsulates `count + baseName` with constructor validation. `RoleType` and `SiteMembershipType` are type-safe enums mapping frontend strings to Liferay constants. Resource commands construct value objects from JSON before passing to Creators.
 - **DataListProvider SPI** — Dropdown sources are `DataListProvider` implementations discovered via OSGi `@Reference(cardinality=MULTIPLE, policy=DYNAMIC)`. Add a new type by creating `@Component(service=DataListProvider.class)` under `service/datalist/` — no changes to `DataListResourceCommand` needed.
+- **`bnd.bnd` must exclude `javax.servlet`**: DXP 2026 does not export `javax.servlet` or
+  `javax.servlet.http` from the OSGi runtime. Always include this line in
+  `modules/liferay-dummy-factory/bnd.bnd`:
+  ```
+  Import-Package: !javax.servlet,!javax.servlet.http,*
+  ```
+  Without it, the bundle will show as UNSATISFIED at activation time.
 
 ## Java Conventions
 
@@ -28,10 +35,18 @@ Detailed CE 7.4 API constraints: `docs/details/api-liferay-ce74.md`. Workspace f
 - Prefer `@Reference` injection over `*Util` static classes (`TransactionInvoker` over `TransactionInvokerUtil`, `RoleLocalService` over `RoleLocalServiceUtil`) for testability.
 - Private fields/methods get an underscore prefix: `_privateField`, `_doSomething(...)`.
 - `@Component` annotations use array-style `property = { ... }` with one quoted string per line. The `service` attribute lives on its own line after the closing brace.
-- Use `javax.portlet` imports. `jakarta.portlet` does not work on CE 7.4 GA132.
+- Use `jakarta.portlet` imports. DXP 2026 requires `jakarta.portlet.*` imports and
+	`jakarta.portlet.version=4.0` in `@Component` property arrays. Do NOT use `javax.portlet.*`.
+	JSP taglib URI stays `http://xmlns.jcp.org/portlet_3_0` — the JCP namespace is what
+	DXP 2026 advertises via `Provide-Capability`. Switching to `jakarta.tags.portlet` in JSPs
+	causes bundle resolution failure. See `docs/ADR/adr-0008-dxp-2026-migration.md`.
 - Import order: `com.liferay.*` → third-party → `javax.*`/`java.*` → `org.*`. Blank line between groups.
 - Multi-line method parameters use Liferay's continuation indent: second line +2 tabs, `throws` clause +1 tab.
 - `init.jsp` must include both `<liferay-theme:defineObjects />` and `<portlet:defineObjects />`.
+- **`init.jsp` taglib URI must stay JCP**: Use `http://xmlns.jcp.org/portlet_3_0` as the
+  portlet taglib URI in all JSPs. DXP 2026's `Provide-Capability` only advertises this URI.
+  Switching to `jakarta.tags.portlet` causes bundle resolution failure. A comment in
+  `init.jsp` marks this as intentional — do not change it.
 
 ## Creator pattern (`TransactionInvokerUtil` + `throws Throwable`)
 
@@ -44,6 +59,26 @@ Every `*Creator` under `service/` wraps each per-entity call in `TransactionInvo
 **Why**: a mid-loop failure must not roll back already-created entities; each per-entity transaction commits independently.
 
 Reference: `VocabularyCreator.java`, `OrganizationCreator.java`.
+
+## DXP 2026 API call shapes
+
+### `GroupLocalService.addGroup` — 18-argument signature
+
+DXP 2026 adds `externalReferenceCode` as the first argument and `typeSettings`
+before `serviceContext`. Pass `null` for both new parameters when no custom value is needed:
+
+```java
+_groupLocalService.addGroup(
+	null,                // externalReferenceCode (auto-generated)
+	userId, parentGroupId, className, classPK,
+	liveGroupId, nameMap, descriptionMap, type,
+	manualMembership, membershipRestriction, friendlyURL,
+	site, inheritContent, active,
+	null,                // typeSettings (defaults)
+	serviceContext);
+```
+
+Full API constraints: `docs/details/api-liferay-dxp2026.md`.
 
 ### Early validation outside the transaction boundary
 

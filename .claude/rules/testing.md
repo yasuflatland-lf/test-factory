@@ -13,25 +13,30 @@ L2 layer for test design, execution strategy, and verification. Read this when w
 
 ## Container setup
 
-- Docker image: `liferay/portal:7.4.3.132-ga132` (CE GA132).
-- Singleton pattern: `LiferayContainer.getInstance()` starts one container per test run and shares it across all specs. Never create a second container instance inside a single run.
-- Startup timeout: **8 minutes** (log-based wait strategy matching Catalina startup message).
-- Exposed ports: **8080** (HTTP) and **11311** (GoGo Shell). Access via `liferay.httpPort` / `liferay.gogoPort` (mapped ports).
-- Environment variables disable the setup wizard, terms-of-use prompt, and reminder queries so tests run unattended.
-- **Container reuse is disabled** (`withReuse(false)`). Every Gradle run starts a fresh container so state from a previous run (created users, roles, sites, password changes) cannot leak across runs and mask regressions. Do not flip this to `true` for local speedups — state drift will cause false passes.
+- Docker image: `liferay/dxp:2026.q1.3-lts`.
+- Singleton pattern: `LiferayContainer.getInstance()` provides configuration constants shared across all specs. Container lifecycle is managed by workspace Gradle tasks, not by `LiferayContainer`.
+- Startup timeout: **8 minutes** (`awaitLiferayReady` Gradle task polls `http://localhost:8080/c/portal/login`).
+- Fixed ports: **8080** (HTTP), **11311** (GoGo Shell), **8000** (JPDA). Access via system properties `liferay.http.port` / `liferay.gogo.port` set by `integrationTest` task.
+- Configuration: `configs/common/portal-ext.properties` baked into the image disables the setup wizard, terms-of-use prompt, reminder queries, and password change requirement.
+- **Container is stopped but not removed after each run** (`stopDockerContainer`). The next `startDockerContainer` builds a fresh image from the baked configuration, ensuring no state leaks. For a hard reset, run `./gradlew removeDockerContainer`. Do not skip this and rely on volume state — state drift will cause false passes.
+- **License required**: set `LIFERAY_DXP_LICENSE_FILE` (local) or `LIFERAY_DXP_LICENSE_BASE64` (CI) before running tests. Missing license causes a `GradleException` before the container starts.
 
 ## Verification strategy: prefer JSONWS
 
 - **Prefer Liferay JSONWS (`/api/jsonws/...`) over Playwright/UI navigation for verifying test outcomes.** JSONWS calls are faster, deterministic, and do not depend on Control Panel rendering or portlet UI state.
 - Use Playwright when the assertion is about DOM/rendering, client-side validation, or navigation flows. For database-state assertions ("did the entity actually get created / updated / deleted?"), query JSONWS.
 - Authenticate JSONWS calls with Basic Auth using the default admin credentials (`test@liferay.com` / `test`).
+
+**JSONWS base path in DXP 2026 is `/portal/api/jsonws/`** (not `/api/jsonws/`). The old path
+returns 404. `BaseLiferaySpec.jsonwsGet/Post` centralizes this; individual specs pass only the
+path suffix (e.g. `'user/get-current-user'`). Never hard-code the full base path in a spec.
 - See `BaseLiferaySpec` for `jsonwsGet` / `jsonwsPost` helpers and any `*FunctionalSpec` under `integration-test/.../spec/` for usage.
 
 ### JSON-WS exposure: only remote `*Service`, minus blacklist
 
 - Liferay exposes remote `*Service` classes via `/api/jsonws/`, NOT `*LocalService`. If a method only exists on `*LocalService`, it cannot be called from a test.
 - Some remote services are blacklisted via `portal.properties` `json.service.invalid.class.names`. `CompanyServiceUtil` is one such entry — every JSON-WS path under `/api/jsonws/company/*` returns HTTP 404 regardless of method or parameter format.
-- Before writing cleanup or verification code for a new entity type, check both: (a) is there a remote `*Service` class with the method I need, and (b) is that class blacklisted? Catalogue of CE 7.4 GA132 API constraints: `docs/details/api-liferay-ce74.md`.
+- Before writing cleanup or verification code for a new entity type, check both: (a) is there a remote `*Service` class with the method I need, and (b) is that class blacklisted? Catalogue of DXP 2026 API constraints: `docs/details/api-liferay-dxp2026.md`.
 
 ## Deploy verification
 
