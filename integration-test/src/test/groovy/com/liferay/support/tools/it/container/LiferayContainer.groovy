@@ -21,9 +21,9 @@ class LiferayContainer {
 	static final String DEFAULT_ADMIN_EMAIL = 'test@liferay.com'
 	static final String DEFAULT_ADMIN_PASSWORD = 'test'
 
-	private static LiferayContainer INSTANCE
+	private static final Logger _log = LoggerFactory.getLogger(LiferayContainer)
 
-	private static final Logger log = LoggerFactory.getLogger(LiferayContainer)
+	private static LiferayContainer INSTANCE
 
 	final String host
 	final int httpPort
@@ -32,21 +32,21 @@ class LiferayContainer {
 	final String containerName
 
 	private LiferayContainer() {
-		this.host = System.getProperty('liferay.host', 'localhost')
-		this.httpPort = Integer.parseInt(
-			System.getProperty('liferay.http.port', String.valueOf(HTTP_PORT)))
-		this.gogoPort = Integer.parseInt(
-			System.getProperty('liferay.gogo.port', String.valueOf(GOGO_PORT)))
-		this.jacocoPort = Integer.parseInt(
-			System.getProperty('liferay.jacoco.port', String.valueOf(JACOCO_PORT)))
-		this.containerName = System.getProperty(
+		host = System.getProperty('liferay.host', 'localhost')
+		httpPort = Integer.parseInt(
+			System.getProperty('liferay.http.port', "${HTTP_PORT}"))
+		gogoPort = Integer.parseInt(
+			System.getProperty('liferay.gogo.port', "${GOGO_PORT}"))
+		jacocoPort = Integer.parseInt(
+			System.getProperty('liferay.jacoco.port', "${JACOCO_PORT}"))
+		containerName = System.getProperty(
 			'liferay.container.name', 'test-factory-liferay')
 	}
 
 	static synchronized LiferayContainer getInstance() {
 		if (INSTANCE == null) {
 			INSTANCE = new LiferayContainer()
-			log.info(
+			_log.info(
 				'LiferayContainer pinned to {}:{} (gogo={}, jacoco={}, container={})',
 				INSTANCE.host, INSTANCE.httpPort, INSTANCE.gogoPort,
 				INSTANCE.jacocoPort, INSTANCE.containerName)
@@ -59,7 +59,6 @@ class LiferayContainer {
 	}
 
 	/**
-	 * Copy the given module JAR into the running DXP container's hot-deploy directory.
 	 * Uses {@code docker cp}, which requires the container to be running and the current
 	 * user to have permission to talk to the Docker daemon.
 	 */
@@ -74,8 +73,7 @@ class LiferayContainer {
 		Process process = pb.start()
 		String output = process.inputStream.text
 
-		boolean finished = process.waitFor(60, TimeUnit.SECONDS)
-		if (!finished) {
+		if (!process.waitFor(60, TimeUnit.SECONDS)) {
 			process.destroyForcibly()
 			throw new IllegalStateException(
 				"docker cp timed out after 60s for ${jarPath} -> ${target}: ${output}")
@@ -87,13 +85,12 @@ class LiferayContainer {
 				"docker cp failed (exit ${exit}) for ${jarPath} -> ${target}: ${output}")
 		}
 
-		log.info('Deployed {} into {}', fileName, target)
+		_log.info('Deployed {} into {}', fileName, target)
 	}
 
 	/**
-	 * Fast readiness probe used by specs. Checks that the container exposes the
-	 * HTTP port and that Liferay responds. Returns false on any I/O error so callers
-	 * can warn-and-skip (e.g. JaCoCo dump) instead of aborting tests.
+	 * Returns false on any I/O error so callers can warn-and-skip (e.g. JaCoCo dump)
+	 * instead of aborting tests.
 	 */
 	boolean isRunning() {
 		try {
@@ -102,15 +99,13 @@ class LiferayContainer {
 			try {
 				conn.connectTimeout = 3_000
 				conn.readTimeout = 3_000
-				conn.requestMethod = 'GET'
-				int code = conn.responseCode
-				return code > 0
+				return conn.responseCode > 0
 			}
 			finally {
 				conn.disconnect()
 			}
 		}
-		catch (Exception e) {
+		catch (IOException ignored) {
 			return false
 		}
 	}
