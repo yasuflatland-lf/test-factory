@@ -17,8 +17,13 @@ import spock.lang.Specification
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+import java.net.CookieHandler
+import java.net.CookieManager
+import java.net.CookiePolicy
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 
 abstract class BaseLiferaySpec extends Specification {
 
@@ -61,7 +66,12 @@ abstract class BaseLiferaySpec extends Specification {
 	private static final int BUNDLE_ACTIVATION_MAX_ATTEMPTS = 60
 	private static final int BUNDLE_ACTIVATION_INTERVAL_SECONDS = 5
 
+	@Shared
+	static boolean adminBootstrapped = false
+
 	static synchronized void ensureBundleActive() {
+		bootstrapAdminCredentials()
+
 		if (bundleVerified) {
 			return
 		}
@@ -153,6 +163,278 @@ abstract class BaseLiferaySpec extends Specification {
 		catch (Exception e) {
 			log.warn('GoGo diagnostic command "{}" failed: {}', command, e.message)
 			return null
+		}
+	}
+
+	// DXP 2026 ships test@liferay.com with PASSWORDRESET=1 baked into the HSQL
+	// database. Every JSONWS/Headless call returns HTTP 403 until the reset is
+	// cleared. We clear it once per container lifetime via the update_password
+	// ticket flow, then switch basic-auth credentials to NEW_PASSWORD.
+	static synchronized void bootstrapAdminCredentials() {
+		if (adminBootstrapped) {
+			return
+		}
+
+		if (_checkBasicAuth(LiferayContainer.DEFAULT_ADMIN_PASSWORD)) {
+			activePassword = LiferayContainer.DEFAULT_ADMIN_PASSWORD
+			adminBootstrapped = true
+			log.info('Admin bootstrap: JSONWS reachable with default password, no reset needed')
+			return
+		}
+
+		if (_checkBasicAuth(NEW_PASSWORD)) {
+			activePassword = NEW_PASSWORD
+			adminBootstrapped = true
+			log.info('Admin bootstrap: JSONWS reachable with NEW_PASSWORD (reset already cleared)')
+			return
+		}
+
+		CookieManager cookieManager = new CookieManager(null, CookiePolicy.ACCEPT_ALL)
+		CookieHandler previous = CookieHandler.getDefault()
+		CookieHandler.setDefault(cookieManager)
+
+		try {
+			String pAuth = _fetchLoginPageAuth()
+
+			if (pAuth == null) {
+				throw new IllegalStateException(
+					'Admin bootstrap: could not extract p_auth from /sign-in page')
+			}
+
+			_postLogin(pAuth)
+
+			Map<String, String> ticket = _fetchUpdatePasswordTicket()
+			Map<String, String> formTokens = _fetchUpdatePasswordForm(ticket)
+
+			_postUpdatePassword(ticket, formTokens, NEW_PASSWORD)
+
+			// DXP commits the password change asynchronously; the UPDATE on
+			// USER_ and the cache invalidation can race the immediate probe.
+			// Retry a few times before failing.
+			boolean ok = false
+			for (int attempt = 0; attempt < 10; attempt++) {
+				if (_checkBasicAuth(NEW_PASSWORD)) {
+					ok = true
+					break
+				}
+				TimeUnit.SECONDS.sleep(1)
+			}
+
+			if (!ok) {
+				throw new IllegalStateException(
+					'Admin bootstrap: update_password flow completed but JSONWS still returns 403 after 10 retries')
+			}
+
+			activePassword = NEW_PASSWORD
+			adminBootstrapped = true
+			log.info('Admin bootstrap: password reset cleared, switched to NEW_PASSWORD')
+		}
+		finally {
+			CookieHandler.setDefault(previous)
+		}
+	}
+
+	private static boolean _checkBasicAuth(String password) {
+		HttpURLConnection conn = null
+
+		try {
+			conn = new URL(
+				"${liferay.baseUrl}/api/jsonws/user/get-current-user"
+			).openConnection() as HttpURLConnection
+			conn.requestMethod = 'GET'
+			conn.connectTimeout = 10_000
+			conn.readTimeout = 15_000
+
+			String credentials =
+				"${LiferayContainer.DEFAULT_ADMIN_EMAIL}:${password}"
+
+			conn.setRequestProperty(
+				'Authorization', "Basic ${credentials.bytes.encodeBase64()}")
+			conn.setRequestProperty('Accept', 'application/json')
+
+			return conn.responseCode == 200
+		}
+		catch (IOException e) {
+			log.warn('Admin bootstrap: basic-auth probe failed: {}', e.message)
+			return false
+		}
+		finally {
+			conn?.disconnect()
+		}
+	}
+
+	private static String _fetchLoginPageAuth() {
+		String body = _httpGet("${liferay.baseUrl}/sign-in")
+
+		Matcher matcher = Pattern.compile(/p_auth=([A-Za-z0-9]+)/).matcher(body)
+
+		return matcher.find() ? matcher.group(1) : null
+	}
+
+	private static void _postLogin(String pAuth) {
+		String body =
+			'login=' + URLEncoder.encode(LiferayContainer.DEFAULT_ADMIN_EMAIL, 'UTF-8') +
+			'&password=' + URLEncoder.encode(LiferayContainer.DEFAULT_ADMIN_PASSWORD, 'UTF-8')
+
+		int status = _httpPost(
+			"${liferay.baseUrl}/c/portal/login?p_auth=${pAuth}",
+			'application/x-www-form-urlencoded', body, false)
+
+		if (status != 302 && status != 200) {
+			throw new IllegalStateException(
+				"Admin bootstrap: login POST returned HTTP ${status}")
+		}
+	}
+
+	private static Map<String, String> _fetchUpdatePasswordTicket() {
+		String body = _httpGet("${liferay.baseUrl}/c")
+
+		String ticketId = _extractHiddenField(body, 'ticketId')
+		String ticketKey = _extractHiddenField(body, 'ticketKey')
+
+		if (!ticketId || !ticketKey) {
+			throw new IllegalStateException(
+				"Admin bootstrap: ticketId/ticketKey not found after login (body length=${body.length()})")
+		}
+
+		return [ticketId: ticketId, ticketKey: ticketKey]
+	}
+
+	private static Map<String, String> _fetchUpdatePasswordForm(Map<String, String> ticket) {
+		String body =
+			'p_l_id=0' +
+			'&ticketId=' + URLEncoder.encode(ticket.ticketId, 'UTF-8') +
+			'&ticketKey=' + URLEncoder.encode(ticket.ticketKey, 'UTF-8')
+
+		String html = _httpPostRead(
+			"${liferay.baseUrl}/c/portal/update_password",
+			'application/x-www-form-urlencoded', body)
+
+		Map<String, String> tokens = [:]
+		['formDate', 'p_l_id', 'p_auth'].each { name ->
+			String value = _extractHiddenField(html, name)
+			if (value) {
+				tokens[name] = value
+			}
+		}
+
+		if (!tokens.p_auth) {
+			throw new IllegalStateException(
+				'Admin bootstrap: p_auth not found in update_password form')
+		}
+
+		return tokens
+	}
+
+	private static void _postUpdatePassword(
+			Map<String, String> ticket, Map<String, String> formTokens,
+			String newPassword) {
+
+		String body = [
+			'formDate=' + URLEncoder.encode(formTokens.formDate ?: '', 'UTF-8'),
+			'p_l_id=' + URLEncoder.encode(formTokens.p_l_id ?: '0', 'UTF-8'),
+			'p_auth=' + URLEncoder.encode(formTokens.p_auth, 'UTF-8'),
+			'doAsUserId=',
+			'cmd=update',
+			'referer=' + URLEncoder.encode('/c', 'UTF-8'),
+			'ticketId=' + URLEncoder.encode(ticket.ticketId, 'UTF-8'),
+			'ticketKey=' + URLEncoder.encode(ticket.ticketKey, 'UTF-8'),
+			'password1=' + URLEncoder.encode(newPassword, 'UTF-8'),
+			'password2=' + URLEncoder.encode(newPassword, 'UTF-8')
+		].join('&')
+
+		int status = _httpPost(
+			"${liferay.baseUrl}/c/portal/update_password",
+			'application/x-www-form-urlencoded', body, false)
+
+		if (status != 302 && status != 200) {
+			throw new IllegalStateException(
+				"Admin bootstrap: update_password POST returned HTTP ${status}")
+		}
+	}
+
+	private static String _extractHiddenField(String html, String name) {
+		Pattern pattern = Pattern.compile(
+			/name\s*=\s*"\Q${name}\E"[^>]*value\s*=\s*"([^"]*)"|value\s*=\s*"([^"]*)"[^>]*name\s*=\s*"\Q${name}\E"/)
+
+		Matcher matcher = pattern.matcher(html)
+
+		if (!matcher.find()) {
+			return null
+		}
+
+		return matcher.group(1) ?: matcher.group(2)
+	}
+
+	private static String _httpGet(String url) {
+		HttpURLConnection conn = null
+
+		try {
+			conn = new URL(url).openConnection() as HttpURLConnection
+			conn.requestMethod = 'GET'
+			conn.connectTimeout = 10_000
+			conn.readTimeout = 30_000
+			conn.instanceFollowRedirects = true
+
+			int status = conn.responseCode
+
+			return (status < 400 ? conn.inputStream : conn.errorStream)?.text ?: ''
+		}
+		finally {
+			conn?.disconnect()
+		}
+	}
+
+	private static int _httpPost(
+			String url, String contentType, String body, boolean followRedirects) {
+
+		HttpURLConnection conn = null
+
+		try {
+			conn = new URL(url).openConnection() as HttpURLConnection
+			conn.requestMethod = 'POST'
+			conn.connectTimeout = 10_000
+			conn.readTimeout = 30_000
+			conn.instanceFollowRedirects = followRedirects
+			conn.setRequestProperty('Content-Type', contentType)
+			conn.doOutput = true
+			conn.outputStream.withWriter('UTF-8') { writer ->
+				writer.write(body)
+			}
+
+			int status = conn.responseCode
+
+			// Drain the body so cookies are recorded before disconnect.
+			(status < 400 ? conn.inputStream : conn.errorStream)?.text
+
+			return status
+		}
+		finally {
+			conn?.disconnect()
+		}
+	}
+
+	private static String _httpPostRead(String url, String contentType, String body) {
+		HttpURLConnection conn = null
+
+		try {
+			conn = new URL(url).openConnection() as HttpURLConnection
+			conn.requestMethod = 'POST'
+			conn.connectTimeout = 10_000
+			conn.readTimeout = 30_000
+			conn.instanceFollowRedirects = true
+			conn.setRequestProperty('Content-Type', contentType)
+			conn.doOutput = true
+			conn.outputStream.withWriter('UTF-8') { writer ->
+				writer.write(body)
+			}
+
+			int status = conn.responseCode
+
+			return (status < 400 ? conn.inputStream : conn.errorStream)?.text ?: ''
+		}
+		finally {
+			conn?.disconnect()
 		}
 	}
 
