@@ -38,7 +38,7 @@ Integration tests require a DXP license at `configs/local/deploy/activation-key.
 
 The workspace plugin generates a Dockerfile that sets `ENV LIFERAY_WORKSPACE_ENVIRONMENT=local`. Its image entrypoint (`100_liferay_image_setup.sh`) copies `/home/liferay/configs/common/` and `/home/liferay/configs/local/` into `$LIFERAY_HOME` before Liferay starts. **`configs/docker/` is never copied.**
 
-All DXP 2026 portal-ext overrides (`setup.wizard.enabled=false`, `passwords.default.policy.change.required=false`, the `configuration.override.*` BasicAuth wiring, etc.) live in `configs/local/portal-ext.properties`. Cross-environment defaults live in `configs/common/portal-ext.properties`.
+All DXP 2026 portal-ext overrides that the integration tests depend on (`setup.wizard.enabled=false`, `passwords.default.policy.change.required=false`, the `configuration.override.*` BasicAuth wiring, `json.servlet.hosts.allowed=`, etc.) live in `configs/common/portal-ext.properties` so every environment inherits the same working baseline. Environment-only knobs (JDBC, etc.) go under `configs/<env>/portal-ext.properties`. The empty `configs/common/portal-liferay-online-config.properties` is required — it shadows the DXP-baked `json.servlet.hosts.allowed=N/A` that otherwise blocks JSONWS (commit `6021828`; see `docs/details/dxp-2026-gotchas.md`).
 
 ### Admin password bootstrap
 
@@ -49,7 +49,7 @@ The DXP 2026 Docker image ships HSQL with `USER_.PASSWORDRESET=1` baked into the
 3. Polls `GET /api/jsonws/user/get-current-user` for up to 30 s. Because the form-login cookies are cleared before the Basic Auth probe, DXP re-evaluates against the updated DB state immediately. The 30-second poll is a safety margin.
 4. Switches `activePassword` to `NEW_PASSWORD=Test12345`.
 
-All subsequent specs inherit the bootstrapped password via `BaseLiferaySpec.basicAuthHeader()`. The ADR at `docs/ADR/adr-0008-dxp-2026-migration.md` has the full rationale.
+All subsequent specs inherit the bootstrapped password via `BaseLiferaySpec.basicAuthHeader()`. The ADR at `docs/ADR/adr-0008-dxp-2026-migration.md` has the architectural rationale; the HTTP-client and auth-cache traps (gzip `Accept-Encoding`, 3-minute auth-verifier refresh, cookie-clear before Basic Auth probe, license-activation redirect detection, `p_auth` fallback extraction) live in `docs/details/dxp-2026-gotchas.md`.
 
 ## Gradle Incremental Build Trap
 
