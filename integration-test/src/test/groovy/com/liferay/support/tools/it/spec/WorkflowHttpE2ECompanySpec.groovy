@@ -164,6 +164,7 @@ class WorkflowHttpE2ECompanySpec extends BaseLiferaySpec {
 			"/o/headless-portal-instances/v1.0/portal-instances/${COMPANY_WEB_ID}") as Map<String, Object>
 		createdCompany != null
 		(createdCompany.portalInstanceId as String) == COMPANY_WEB_ID
+		(createdCompany.companyId as Long) == (companyItem.companyId as Long)
 
 		and:
 		Map createdUser = jsonwsGet(
