@@ -158,14 +158,12 @@ class WorkflowHttpE2ECompanySpec extends BaseLiferaySpec {
 		(organizationItem.name as String).startsWith(COMPANY_ORG_BASE_NAME)
 
 		and: 'verify company persisted via headless portal-instances API'
-		// CompanyService is blacklisted from JSONWS; use the headless portal-instances endpoint instead.
-		List<Map<String, Object>> portalInstances = (headlessGet(
-			'/o/headless-portal-instances/v1.0/portal-instances').items as List<Map<String, Object>>) ?: []
-		Map<String, Object> createdCompany = portalInstances.find {
-			(it.webId as String) == COMPANY_WEB_ID
-		} as Map<String, Object>
+		// CompanyService is blacklisted from JSONWS; use the headless portal-instances
+		// path-based getter. The API exposes the webId as `portalInstanceId`.
+		Map<String, Object> createdCompany = headlessGet(
+			"/o/headless-portal-instances/v1.0/portal-instances/${COMPANY_WEB_ID}") as Map<String, Object>
 		createdCompany != null
-		(createdCompany.webId as String) == COMPANY_WEB_ID
+		(createdCompany.portalInstanceId as String) == COMPANY_WEB_ID
 
 		and:
 		Map createdUser = jsonwsGet(

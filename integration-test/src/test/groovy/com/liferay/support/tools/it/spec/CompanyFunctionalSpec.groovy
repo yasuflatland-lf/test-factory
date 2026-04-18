@@ -78,20 +78,18 @@ class CompanyFunctionalSpec extends BaseLiferaySpec {
 
 	def 'Created company is visible via headless portal-instances API'() {
 		// CompanyService is blacklisted from JSONWS (json.service.invalid.class.names);
-		// use the headless portal-instances endpoint instead.
+		// use the headless portal-instances path-based endpoint. The API
+		// exposes the webId as `portalInstanceId` (not `webId`).
 		when:
-		List<Map<String, Object>> portalInstances = (headlessGet(
-			'/o/headless-portal-instances/v1.0/portal-instances').items as List<Map<String, Object>>) ?: []
-		Map<String, Object> company = portalInstances.find {
-			(it.webId as String) == COMPANY_WEB_ID
-		} as Map<String, Object>
+		Map<String, Object> company = headlessGet(
+			"/o/headless-portal-instances/v1.0/portal-instances/${COMPANY_WEB_ID}") as Map<String, Object>
 
 		then:
 		company != null
-		(company.webId as String) == COMPANY_WEB_ID
+		(company.portalInstanceId as String) == COMPANY_WEB_ID
 
 		when:
-		createdCompanyId = company.id as Long
+		createdCompanyId = company.companyId as Long
 
 		then:
 		createdCompanyId != null
