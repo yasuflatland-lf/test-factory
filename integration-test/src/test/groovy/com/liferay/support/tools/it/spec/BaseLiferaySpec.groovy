@@ -208,13 +208,15 @@ abstract class BaseLiferaySpec extends Specification {
 
 			_postUpdatePassword(ticket, formTokens, NEW_PASSWORD)
 
-			// DXP commits the password change asynchronously; the UPDATE on
-			// USER_ and the cache invalidation can race the immediate probe.
-			// Retry a few times before failing.
+			// DXP commits the password change asynchronously; observed
+			// propagation delay on first-run cold containers is up to ~20s
+			// (cache invalidation + auth pipeline refresh). Poll up to 60s.
 			boolean ok = false
-			for (int attempt = 0; attempt < 10; attempt++) {
+			for (int attempt = 0; attempt < 60; attempt++) {
 				if (_checkBasicAuth(NEW_PASSWORD)) {
 					ok = true
+					log.info(
+						'Admin bootstrap: password change propagated after {}s', attempt)
 					break
 				}
 				TimeUnit.SECONDS.sleep(1)
@@ -222,7 +224,7 @@ abstract class BaseLiferaySpec extends Specification {
 
 			if (!ok) {
 				throw new IllegalStateException(
-					'Admin bootstrap: update_password flow completed but JSONWS still returns 403 after 10 retries')
+					'Admin bootstrap: update_password flow completed but JSONWS still returns 403 after 60s')
 			}
 
 			activePassword = NEW_PASSWORD
