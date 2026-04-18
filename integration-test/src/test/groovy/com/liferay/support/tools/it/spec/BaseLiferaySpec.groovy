@@ -499,35 +499,6 @@ abstract class BaseLiferaySpec extends Specification {
 		return new String(out.toByteArray(), 'UTF-8')
 	}
 
-	private static int _httpPost(
-			String url, String contentType, String body, boolean followRedirects) {
-
-		HttpURLConnection conn = null
-
-		try {
-			conn = new URL(url).openConnection() as HttpURLConnection
-			conn.requestMethod = 'POST'
-			conn.connectTimeout = 10_000
-			conn.readTimeout = 30_000
-			conn.instanceFollowRedirects = followRedirects
-			conn.setRequestProperty('Content-Type', contentType)
-			conn.doOutput = true
-			conn.outputStream.withWriter('UTF-8') { writer ->
-				writer.write(body)
-			}
-
-			int status = conn.responseCode
-
-			// Drain the body so cookies are recorded before disconnect.
-			(status < 400 ? conn.inputStream : conn.errorStream)?.text
-
-			return status
-		}
-		finally {
-			conn?.disconnect()
-		}
-	}
-
 	private static String _httpPostRead(String url, String contentType, String body) {
 		HttpURLConnection conn = null
 
