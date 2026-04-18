@@ -157,12 +157,11 @@ class WorkflowHttpE2ECompanySpec extends BaseLiferaySpec {
 		(createdOrganizationId as Long) > 0
 		(organizationItem.name as String).startsWith(COMPANY_ORG_BASE_NAME)
 
-		and:
-		Map createdCompany = jsonwsGet(
-			"/api/jsonws/company/get-company-by-web-id" +
-			"/web-id/${COMPANY_WEB_ID}") as Map
-		createdCompany.companyId as Long == companyId
-		(createdCompany.webId as String) == COMPANY_WEB_ID
+		// TODO(G7): CompanyService is blacklisted from JSON-WS in DXP 2026
+		// (json.service.invalid.class.names). /jsonws/company/* returns 404.
+		// Cannot verify createdCompany via JSON-WS. companyId and webId are
+		// already verified from the workflow step result above (companyItem).
+		// Replace with Headless Admin User API when G7 confirms availability.
 
 		and:
 		Map createdUser = jsonwsGet(
