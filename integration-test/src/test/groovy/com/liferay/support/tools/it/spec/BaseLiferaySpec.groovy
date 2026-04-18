@@ -442,7 +442,7 @@ abstract class BaseLiferaySpec extends Specification {
 	// error. Throws IllegalStateException with a trimmed snippet on detection.
 	private static void _assertNoAlertDanger(String html, String step) {
 		Matcher m = Pattern.compile(
-			/class\s*=\s*"[^"]*alert[^"]*alert-danger[^"]*"[^>]*>([\s\S]{0,400}?)</).matcher(html ?: '')
+			/class\s*=\s*"[^"]*alert-danger[^"]*"[^>]*>([\s\S]{0,400}?)</).matcher(html ?: '')
 
 		if (m.find()) {
 			String msg = m.group(1).replaceAll('<[^>]+>', ' ').replaceAll('\\s+', ' ').trim()
@@ -577,6 +577,11 @@ abstract class BaseLiferaySpec extends Specification {
 				loggedInPassword = pwd
 				break
 			}
+		}
+
+		if (loggedInPassword == null) {
+			throw new IllegalStateException(
+				"loginAsAdmin: no password in ${passwords} succeeded — check bootstrap state")
 		}
 
 		page.navigate("${liferay.baseUrl}/")
