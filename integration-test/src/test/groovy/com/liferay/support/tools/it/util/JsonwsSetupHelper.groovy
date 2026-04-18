@@ -45,7 +45,7 @@ class JsonwsSetupHelper {
 
 	Map createRole(String name, int type = ROLE_TYPE_REGULAR) {
 		Map response = _post(
-			'/portal/api/jsonws/role/add-role',
+			'/api/jsonws/role/add-role',
 			[
 				'externalReferenceCode': '',
 				'className': 'com.liferay.portal.kernel.model.Role',
@@ -58,7 +58,7 @@ class JsonwsSetupHelper {
 			]) as Map
 
 		_tracked << new Tracked(
-			'role', '/portal/api/jsonws/role/delete-role', 'roleId',
+			'role', '/api/jsonws/role/delete-role', 'roleId',
 			response.roleId as Long)
 
 		return response
@@ -80,7 +80,7 @@ class JsonwsSetupHelper {
 		response.organizationId = organizationId
 
 		_tracked << new Tracked(
-			'organization', '/portal/api/jsonws/organization/delete-organization',
+			'organization', '/api/jsonws/organization/delete-organization',
 			'organizationId', organizationId)
 
 		return response
@@ -103,7 +103,7 @@ class JsonwsSetupHelper {
 		int type = _siteTypeToConstant(membershipType)
 
 		Map response = _post(
-			'/portal/api/jsonws/group/add-group',
+			'/api/jsonws/group/add-group',
 			[
 				'externalReferenceCode': '',
 				'parentGroupId': '0',
@@ -122,7 +122,7 @@ class JsonwsSetupHelper {
 			]) as Map
 
 		_tracked << new Tracked(
-			'group', '/portal/api/jsonws/group/delete-group', 'groupId',
+			'group', '/api/jsonws/group/delete-group', 'groupId',
 			response.groupId as Long)
 
 		return response
@@ -130,7 +130,7 @@ class JsonwsSetupHelper {
 
 	Map createLayoutSetPrototype(String name, boolean privateLayout = false) {
 		Map response = _post(
-			'/portal/api/jsonws/layoutsetprototype/add-layout-set-prototype',
+			'/api/jsonws/layoutsetprototype/add-layout-set-prototype',
 			[
 				'nameMap': _localizedJson(name),
 				'descriptionMap': _localizedJson(''),
@@ -141,7 +141,7 @@ class JsonwsSetupHelper {
 
 		_tracked << new Tracked(
 			'layoutSetPrototype',
-			'/portal/api/jsonws/layoutsetprototype/delete-layout-set-prototype',
+			'/api/jsonws/layoutsetprototype/delete-layout-set-prototype',
 			'layoutSetPrototypeId',
 			response.layoutSetPrototypeId as Long)
 
@@ -150,7 +150,7 @@ class JsonwsSetupHelper {
 
 	Map createDdmStructure(long groupId, String name, String definitionJson) {
 		Map response = _post(
-			'/portal/api/jsonws/ddm.ddmstructure/add-structure',
+			'/api/jsonws/ddm.ddmstructure/add-structure',
 			[
 				'groupId': groupId,
 				'parentStructureId': '0',
@@ -165,7 +165,7 @@ class JsonwsSetupHelper {
 			]) as Map
 
 		_tracked << new Tracked(
-			'ddmStructure', '/portal/api/jsonws/ddm.ddmstructure/delete-structure',
+			'ddmStructure', '/api/jsonws/ddm.ddmstructure/delete-structure',
 			'structureId',
 			response.structureId as Long)
 
@@ -176,7 +176,7 @@ class JsonwsSetupHelper {
 		long groupId, long structureId, String name, String script) {
 
 		Map response = _post(
-			'/portal/api/jsonws/ddm.ddmtemplate/add-template',
+			'/api/jsonws/ddm.ddmtemplate/add-template',
 			[
 				'groupId': groupId,
 				'classNameId': _classNameIdFor(
@@ -195,7 +195,7 @@ class JsonwsSetupHelper {
 			]) as Map
 
 		_tracked << new Tracked(
-			'ddmTemplate', '/portal/api/jsonws/ddm.ddmtemplate/delete-template',
+			'ddmTemplate', '/api/jsonws/ddm.ddmtemplate/delete-template',
 			'templateId',
 			response.templateId as Long)
 
@@ -204,7 +204,7 @@ class JsonwsSetupHelper {
 
 	Map createJournalArticle(long groupId, String title, String content) {
 		Map response = _post(
-			'/portal/api/jsonws/journal/journalarticle/add-article',
+			'/api/jsonws/journal/journalarticle/add-article',
 			[
 				'groupId': groupId,
 				'folderId': '0',
@@ -221,7 +221,7 @@ class JsonwsSetupHelper {
 
 		_tracked << new Tracked(
 			'journalArticle',
-			'/portal/api/jsonws/journal/journalarticle/delete-article',
+			'/api/jsonws/journal/journalarticle/delete-article',
 			'articleId', response.articleId as String,
 			['groupId': groupId, 'articleId': response.articleId as String])
 
@@ -282,7 +282,7 @@ class JsonwsSetupHelper {
 
 	private String _classNameIdFor(String className) {
 		def response = _get(
-			"/portal/api/jsonws/classname/fetch-class-name/value/" +
+			"/api/jsonws/classname/fetch-class-name/value/" +
 				URLEncoder.encode(className, 'UTF-8')) as Map
 
 		if ((response == null) || (response.classNameId == null)) {

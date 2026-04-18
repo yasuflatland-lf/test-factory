@@ -24,7 +24,7 @@ abstract class BaseLiferaySpec extends Specification {
 
 	protected static final String PORTLET_ID = 'com_liferay_support_tools_portlet_LiferayDummyFactoryPortlet'
 
-	protected static final String JSONWS_BASE = '/portal/api/jsonws/'
+	protected static final String JSONWS_BASE = '/api/jsonws/'
 
 	private static final Logger log = LoggerFactory.getLogger(BaseLiferaySpec)
 
