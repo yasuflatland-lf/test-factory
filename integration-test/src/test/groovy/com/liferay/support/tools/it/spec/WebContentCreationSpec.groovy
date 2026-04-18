@@ -191,7 +191,7 @@ class WebContentCreationSpec extends BaseLiferaySpec {
 
 	def 'reports per-site failure when structure id is missing'() {
 		// DDMStructureService#addStructure does not accept a raw definition
-		// JSON via JSONWS form-encoded POST on CE 7.4 GA132 (it expects a
+		// JSON via JSONWS form-encoded POST on DXP 2026 (it expects a
 		// serialized DDMForm Java object), so we cannot cheaply build a
 		// site-scoped structure for this test. Instead, we pass a
 		// deliberately nonexistent ddmStructureId; the WebContentCreator

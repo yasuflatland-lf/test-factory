@@ -12,12 +12,12 @@ liferay-dummy-factory/
   integration-test/                 # Spock + Testcontainers (repo root, NOT under modules/)
 ```
 
-Detailed CE 7.4 API constraints: `docs/details/api-liferay-ce74.md`. Workspace frontend traps: `docs/details/workspace-frontend-traps.md`. Read on demand.
+Detailed DXP 2026 API constraints: `docs/details/api-liferay-dxp2026.md`. Workspace frontend traps: `docs/details/workspace-frontend-traps.md`. Read on demand.
 
 ## Portlet Module
 
 - **Single-JAR design** — MVCPortlet, MVCResourceCommand, and React frontend ship together in one bundle (`liferay.dummy.factory`).
-- **MVCPortlet + PanelApp** — Registered in Control Panel > Configuration. Uses `javax.portlet` namespace (Portlet API 3.0). `jakarta.portlet` is forbidden on CE 7.4 GA132 (see `docs/ADR/adr-0002-portlet-api-javax-namespace.md`).
+- **MVCPortlet + PanelApp** — Registered in Control Panel > Configuration. Uses `jakarta.portlet` namespace (Portlet API 3.1/4.0). `jakarta.portlet` is required on DXP 2026 (see `docs/ADR/adr-0002-portlet-api-javax-namespace.md` and `adr-0008-dxp-2026-migration.md`).
 - **MVCResourceCommands** — Per-entity resource commands handle creation: `/ldf/blog`, `/ldf/company`, `/ldf/org`, `/ldf/user`, `/ldf/role`, `/ldf/site`, `/ldf/page`, `/ldf/wcm`, `/ldf/doc` (+ `/ldf/doc/upload`), `/ldf/vocabulary`, `/ldf/category`, `/ldf/mb-category`, `/ldf/mb-thread`, `/ldf/mb-reply`. `/ldf/data` (`DataListResourceCommand`) serves dropdown data; `/ldf/progress` (`ProgressResourceCommand`) reports batch progress.
 - **Value Objects** — `BatchSpec` (Java record) encapsulates `count + baseName` with constructor validation. `RoleType` and `SiteMembershipType` are type-safe enums mapping frontend strings to Liferay constants. Resource commands construct value objects from JSON before passing to Creators.
 - **DataListProvider SPI** — Dropdown sources are `DataListProvider` implementations discovered via OSGi `@Reference(cardinality=MULTIPLE, policy=DYNAMIC)`. Add a new type by creating `@Component(service=DataListProvider.class)` under `service/datalist/` — no changes to `DataListResourceCommand` needed.
@@ -28,8 +28,8 @@ Detailed CE 7.4 API constraints: `docs/details/api-liferay-ce74.md`. Workspace f
 - Prefer `@Reference` injection over `*Util` static classes (`TransactionInvoker` over `TransactionInvokerUtil`, `RoleLocalService` over `RoleLocalServiceUtil`) for testability.
 - Private fields/methods get an underscore prefix: `_privateField`, `_doSomething(...)`.
 - `@Component` annotations use array-style `property = { ... }` with one quoted string per line. The `service` attribute lives on its own line after the closing brace.
-- Use `javax.portlet` imports. `jakarta.portlet` does not work on CE 7.4 GA132.
-- Import order: `com.liferay.*` → third-party → `javax.*`/`java.*` → `org.*`. Blank line between groups.
+- Use `jakarta.portlet` imports. `javax.portlet` does not work on DXP 2026.
+- Import order: `com.liferay.*` → third-party → `jakarta.*`/`java.*` → `org.*`. Blank line between groups.
 - Multi-line method parameters use Liferay's continuation indent: second line +2 tabs, `throws` clause +1 tab.
 - `init.jsp` must include both `<liferay-theme:defineObjects />` and `<portlet:defineObjects />`.
 

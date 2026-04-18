@@ -89,4 +89,4 @@ Container-JVM coverage collection is not wired in the DXP-native workspace-plugi
 
 `release.dxp.api` does not provide `log4j-core` as a transitive runtime dependency for host-JVM tests. `com.liferay.portal.kernel.log.LogFactoryUtil` (used by `ProgressCallback` and other utility classes) initialises log4j2 statically — any test that loads one of these classes will fail with `NoClassDefFoundError: org/apache/logging/log4j/LogManager` unless log4j-core is explicitly on the test classpath.
 
-Fix: declare `testImplementation 'org.apache.logging.log4j:log4j-core:2.24.3'` in `modules/liferay-dummy-factory/build.gradle`. This was not required with `release.portal.api` (CE), which pulled log4j transitively via a different mechanism.
+Fix: declare `testImplementation 'org.apache.logging.log4j:log4j-core:2.24.3'` in `modules/liferay-dummy-factory/build.gradle`. `release.dxp.api` does not pull log4j transitively — the unit-test classpath needs it declared explicitly.

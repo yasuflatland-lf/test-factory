@@ -22,7 +22,7 @@ docker exec liferay bash -c "(echo 'lb dummy.factory'; sleep 2) | telnet localho
 
 Look for `UNSATISFIED REFERENCE` entries. For example, if the PortletTracker isn't picking up your portlet, the corresponding PanelApp `@Reference` will stay unsatisfied.
 
-The PortletTracker / `jakarta.portlet` compatibility trap is documented in `docs/details/api-liferay-ce74.md` (and `docs/ADR/adr-0002-portlet-api-javax-namespace.md` records the original decision).
+The PortletTracker / `jakarta.portlet` wiring trap is documented in `docs/ADR/adr-0008-dxp-2026-migration.md` (and `docs/ADR/adr-0002-portlet-api-javax-namespace.md` records the original CE 7.4 era decision, now superseded).
 
 ### Check `Import-Package` with `headers <bundle-id>`
 
@@ -40,7 +40,7 @@ curl -u test@liferay.com:test \
 ### JSONWS limits
 
 - Liferay exposes remote `*Service` classes via `/api/jsonws/`, NOT `*LocalService`. If a method only exists on `*LocalService`, it cannot be called from a test or curl.
-- Some remote services are blacklisted via `portal.properties` `json.service.invalid.class.names`. `CompanyServiceUtil` is one such entry — every path under `/api/jsonws/company/*` returns HTTP 404.
+- Some remote services are blacklisted via `portal.properties` `json.service.invalid.class.names`. `CompanyServiceUtil` is one such entry — every path under `/api/jsonws/company/*` returns HTTP 403.
 
 Before writing cleanup or verification code for a new entity type, check both: (a) does a remote `*Service` class with the method I need exist, and (b) is it blacklisted?
 
@@ -79,6 +79,6 @@ Silent skips and silently disabled type checking are easy to introduce. Mock typ
 - `docker logs -f liferay` for the container log (5–8 minute startup included).
 - Test logging includes `passed`, `skipped`, `failed`, `standardOut`, `standardError`.
 
-## Known CE 7.4 API traps
+## Known DXP 2026 API traps
 
-CE 7.4 GA132 has several non-obvious API constraints (`MBThreadLocalService.getThreads` categoryId being exact-match, `CompanyService` blacklist, the 13-arg `CompanyLocalService.addCompany`, `DefaultScreenNameValidator` character set, `MBCategoryLocalService.addCategory` overload, `ResourceCommandUtil.setErrorResponse` field naming, validation outside `TransactionInvokerUtil`, etc.). Full catalog in `docs/details/api-liferay-ce74.md`.
+DXP 2026 has several non-obvious API constraints (`MBThreadLocalService.getThreads` categoryId being exact-match, `CompanyService` blacklist, the 16-arg `GroupLocalService.addGroup`, `DefaultScreenNameValidator` character set, `MBCategoryLocalService.addCategory` overload, `ResourceCommandUtil.setErrorResponse` field naming, validation outside `TransactionInvokerUtil`, etc.). Full catalog in `docs/details/api-liferay-dxp2026.md`.

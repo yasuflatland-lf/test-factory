@@ -20,12 +20,12 @@ Dummy Factory generates dummy data for debugging use. Please don't use this for 
 * Company
 
 ## Required environment
+
 * Java 21 or above
-* Liferay 7.4 GA1 (Master / Develop branch)
-* Liferay 7.3 GA1 (Master / Develop branch)
-* Liferay 7.2 (Please see 7.2.x branch)
-* Liferay 7.1 (Please see 7.1.x branch)
-* Liferay 7.0 (Please see 7.0.x branch)
+* Liferay DXP 2026.q1.3-lts (this branch)
+* A valid DXP activation key at `configs/local/deploy/activation-key.xml`
+
+Older CE / DXP versions are maintained on legacy branches (`7.3.x`, `7.2.x`, `7.1.x`, `7.0.x`) and are not covered by this README.
 
 > For development rules and contracts, start with [`CLAUDE.md`](CLAUDE.md) and the task-based files under [`.claude/rules/`](.claude/rules/). Concrete details live under [`docs/details/`](docs/details/), and architectural decisions in [`docs/ADR/`](docs/ADR/).
 
@@ -34,106 +34,92 @@ Dummy Factory generates dummy data for debugging use. Please don't use this for 
 
 | Layer | Technology |
 |-------|------------|
-| Portal | Liferay Portal 7.4.3.132-ga132 |
+| Portal | Liferay DXP 2026.q1.3-lts (`liferay/dxp:2026.q1.3-lts`) |
+| Portlet API | `jakarta.portlet` 4.0 |
 | Backend | MVCPortlet + MVCResourceCommand (layered) |
 | Frontend | React + Clay CSS |
-| Build | Gradle 8.5 + Liferay Workspace Plugin 10.1.9 |
-| Testing | Spock 2.4 / Groovy 5.0 / Testcontainers 2.0.4 / Playwright 1.59.0 |
+| Build | Gradle 8.5 + Liferay Workspace Plugin 16.0.5 |
+| Testing | Spock 2.4 / Groovy 5.0 / Workspace-native Docker flow / Playwright 1.59.0 |
 | Java | JDK 21 |
 
 ## Usage
-| Version | Link                                                                                                                                                       | 
-|---------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------| 
-| 7.4     | [https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/master/latest](https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/master/latest) |
-| 7.3     | [https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.3.x/latest](https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.3.x/latest)   | 
-| 7.2     | [https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.2.x/latest](https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.2.x/latest)   | 
-| 7.1     | [https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.1.x/latest](https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.1.x/latest)   | 
-| 7.0     | [https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.0.x/latest](https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.0.x/latest)   | 
 
-1. Download jar file according to the version above and place it int `${liferay-home}/deploy ` 
-1. Start Liferay bundle and login as an administrator.
-1. After the jar is properly installed, navigate to `Control Panel -> System Settings -> Platform -> Thrid party` and enable JQuery.
-1. Reboot the bundle.
-1. Navigate to `Control Panel`, under `Marketplace`, `Dummy Factory` will be found.
-1. Now you are ready to create dummy data! Enjoy!
+| Version | Link                                                                                                                                                       |
+|---------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| DXP 2026.q1.3-lts | [https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/master/latest](https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/master/latest) |
+| 7.3 (legacy) | [https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.3.x/latest](https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.3.x/latest)   |
+| 7.2 (legacy) | [https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.2.x/latest](https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.2.x/latest)   |
+| 7.1 (legacy) | [https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.1.x/latest](https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.1.x/latest)   |
+| 7.0 (legacy) | [https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.0.x/latest](https://github.com/yasuflatland-lf/liferay-dummy-factory/tree/7.0.x/latest)   |
 
-## Quick Start (Docker)
+1. Download the jar from the `latest/` directory of the appropriate branch and place it into `${liferay-home}/deploy`.
+1. Start the Liferay bundle and login as an administrator.
+1. Once the jar is active, navigate to `Control Panel` → `Apps` → **Dummy Factory**.
+1. Create dummy data. Enjoy.
 
-Steps to start Liferay with Docker and deploy the portlet.
+## Quick Start (Workspace-native Docker flow)
 
-### 1. Start the Liferay Container
+The integration-test harness and the recommended local workflow both rely on the Liferay workspace plugin's Docker tasks. You do NOT need to invoke `docker run` by hand — the workspace plugin builds the image, copies the activation key from `configs/local/deploy/`, and starts / stops the container.
+
+### 1. Place the DXP activation key
 
 ```bash
-# Foreground mode (view logs directly, Ctrl+C to stop)
-docker run -it -m 8g -p 8080:8080 -p 11311:11311 \
-  -e LIFERAY_SETUP_PERIOD_WIZARD_PERIOD_ENABLED=false \
-  -e LIFERAY_TERMS_PERIOD_OF_PERIOD_USE_PERIOD_REQUIRED=false \
-  -e LIFERAY_USERS_PERIOD_REMINDER_PERIOD_QUERIES_PERIOD_ENABLED=false \
-  -e LIFERAY_PASSWORDS_PERIOD_DEFAULT_PERIOD_POLICY_PERIOD_CHANGE_PERIOD_REQUIRED=false \
-  liferay/portal:7.4.3.132-ga132
-
-# Background mode (with a named container)
-docker run -d --name liferay -m 8g -p 8080:8080 -p 11311:11311 \
-  -e LIFERAY_SETUP_PERIOD_WIZARD_PERIOD_ENABLED=false \
-  -e LIFERAY_TERMS_PERIOD_OF_PERIOD_USE_PERIOD_REQUIRED=false \
-  -e LIFERAY_USERS_PERIOD_REMINDER_PERIOD_QUERIES_PERIOD_ENABLED=false \
-  -e LIFERAY_PASSWORDS_PERIOD_DEFAULT_PERIOD_POLICY_PERIOD_CHANGE_PERIOD_REQUIRED=false \
-  liferay/portal:7.4.3.132-ga132
+cp /path/to/activation-key.xml configs/local/deploy/activation-key.xml
 ```
 
-| Option | Description |
-|-----------|------|
-| `-m 8g` | Memory limit 8GB |
-| `-p 8080:8080` | HTTP port |
-| `-p 11311:11311` | GoGo Shell port (for checking bundle status) |
-| Environment variables | Disable setup wizard, terms of use, reminder queries, and forced password change |
+The file is `.gitignore`-d. CI stores it as a base64-encoded secret and decodes it into the same path before invoking Gradle.
 
-Startup takes approximately 5-8 minutes. If running in background mode, check with:
+### 2. Build the bundle JAR
 
 ```bash
-docker logs -f liferay   # When the "Server startup" message appears, startup is complete. Ctrl+C to exit.
-```
-
-To restart an existing container:
-
-```bash
-docker start liferay && docker logs -f liferay
-```
-
-### 2. Build and Deploy the Portlet
-
-```bash
-# Build the module JAR
 ./gradlew :modules:liferay-dummy-factory:jar
-
-# Deploy the JAR to the container
-docker cp modules/liferay-dummy-factory/build/libs/liferay.dummy.factory-1.0.0.jar liferay:/opt/liferay/deploy/
-
-# Verify deployment (if STARTED appears, deployment is successful)
-docker logs -f liferay 2>&1 | grep -i "dummy.factory"
 ```
 
-### 3. Verify Operation
+The artifact lands at `modules/liferay-dummy-factory/build/libs/liferay.dummy.factory-1.0.0.jar`.
 
-Navigate to http://localhost:8080 and log in as admin (`test@liferay.com` / `test`).
-**Liferay Dummy Factory** will appear under Control Panel > Configuration.
+### 3. Start the DXP container and deploy
+
+```bash
+./gradlew createDockerContainer startDockerContainer
+./gradlew dockerDeploy
+```
+
+`dockerDeploy` runs the full task graph (`createDockerfile` → `buildDockerImage` → `createDockerContainer` → `startDockerContainer`) and copies the generated JAR into the running container's `/opt/liferay/deploy/` directory via `docker cp`.
+
+| Port | Purpose |
+|------|---------|
+| 8080 | HTTP |
+| 11311 | GoGo Shell (telnet for bundle status) |
+
+Startup takes approximately 5–8 minutes on first run. Watch the log:
+
+```bash
+docker logs -f test-factory-liferay
+```
+
+### 4. Verify
+
+Navigate to `http://localhost:8080` and log in as `test@liferay.com` / `test`. **Dummy Factory** appears under Control Panel → Apps.
 
 Check bundle status via GoGo Shell:
 
 ```bash
-docker exec liferay bash -c "(echo 'lb dummy.factory'; sleep 2) | telnet localhost 11311"
+docker exec test-factory-liferay bash -c "(echo 'lb dummy.factory'; sleep 2) | telnet localhost 11311"
 ```
 
-## Build
+`Active` / `ACTIVE` means the bundle is deployed.
+
+### 5. Stop / remove the container
 
 ```bash
-# Module build
-./gradlew :modules:liferay-dummy-factory:build
+./gradlew stopDockerContainer
 ```
+
+The workspace plugin configures `autoRemove`, so the container is removed on stop.
 
 ## Testing
 
-Requires Docker to be running.
+Requires Docker to be running and the activation key in place.
 
 ```bash
 # Run all integration tests
@@ -143,12 +129,15 @@ Requires Docker to be running.
 ./gradlew :integration-test:integrationTest --tests "com.liferay.support.tools.it.spec.DeploymentSpec"
 ```
 
-Tests automatically start a Liferay container via Testcontainers and verify:
+The `:integration-test:integrationTest` task depends on `createDockerContainer` → `startDockerContainer` → `awaitLiferayReady` and finalizes with `stopDockerContainer`. No separate Testcontainers runtime is involved; the workspace plugin owns the container lifecycle end-to-end.
 
-- **DeploymentSpec** -- Bundle deployment and activation (via GoGo Shell)
-- **PortletRenderSpec** -- Login and portlet rendering through the browser (Playwright)
-- **OrganizationFunctionalSpec** -- Organization batch creation via portlet UI with REST API verification (Playwright)
+Spec catalog:
+
+- **DeploymentSpec** — bundle deployment and activation (via GoGo Shell)
+- **PortletRenderSpec** — login and portlet rendering through the browser (Playwright)
+- **OrganizationFunctionalSpec** — organization batch creation via portlet UI with REST API verification (Playwright)
+- Additional `*Spec.groovy` under `integration-test/src/test/groovy/` per entity type.
 
 ## CI
 
-GitHub Actions (`.github/workflows/integration-test.yml`) runs automatically on push / PR to `master`.
+GitHub Actions (`.github/workflows/integration-test.yml`) runs automatically on push / PR to `master`. The workflow decodes `LIFERAY_DXP_LICENSE_BASE64` into `configs/local/deploy/activation-key.xml` before invoking Gradle.

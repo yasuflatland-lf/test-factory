@@ -13,7 +13,7 @@ L2 layer for test design, execution strategy, and verification. Read this when w
 
 ## Container setup
 
-- Docker image: `liferay/portal:7.4.3.132-ga132` (CE GA132).
+- Docker image: `liferay/dxp:2026.q1.3-lts` (DXP 2026).
 - Singleton pattern: `LiferayContainer.getInstance()` starts one container per test run and shares it across all specs. Never create a second container instance inside a single run.
 - Startup timeout: **8 minutes** (log-based wait strategy matching Catalina startup message).
 - Exposed ports: **8080** (HTTP) and **11311** (GoGo Shell). Access via `liferay.httpPort` / `liferay.gogoPort` (mapped ports).
@@ -30,8 +30,8 @@ L2 layer for test design, execution strategy, and verification. Read this when w
 ### JSON-WS exposure: only remote `*Service`, minus blacklist
 
 - Liferay exposes remote `*Service` classes via `/api/jsonws/`, NOT `*LocalService`. If a method only exists on `*LocalService`, it cannot be called from a test.
-- Some remote services are blacklisted via `portal.properties` `json.service.invalid.class.names`. `CompanyServiceUtil` is one such entry — every JSON-WS path under `/api/jsonws/company/*` returns HTTP 404 regardless of method or parameter format.
-- Before writing cleanup or verification code for a new entity type, check both: (a) is there a remote `*Service` class with the method I need, and (b) is that class blacklisted? Catalogue of CE 7.4 GA132 API constraints: `docs/details/api-liferay-ce74.md`.
+- Some remote services are blacklisted via `portal.properties` `json.service.invalid.class.names`. `CompanyServiceUtil` is one such entry — every JSON-WS path under `/api/jsonws/company/*` returns HTTP 403 regardless of method or parameter format.
+- Before writing cleanup or verification code for a new entity type, check both: (a) is there a remote `*Service` class with the method I need, and (b) is that class blacklisted? Catalogue of DXP 2026 API constraints: `docs/details/api-liferay-dxp2026.md`.
 
 ## Deploy verification
 
@@ -174,3 +174,4 @@ Tell real runs from cached replays by the elapsed time on the `BUILD SUCCESSFUL 
 3. Call `ensureBundleActive()` in `setupSpec()` (or in the first test) to guarantee the bundle is deployed and active before your tests run.
 4. Use `@Stepwise` if your tests must execute in declaration order (e.g., login then interact).
 5. For browser tests, instantiate `PlaywrightLifecycle` as a `@Shared` field in `setupSpec()` and close it in `cleanupSpec()`.
+)`.

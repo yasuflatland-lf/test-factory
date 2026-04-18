@@ -1,38 +1,36 @@
-# ADR-0001: Integration Test Architecture for Liferay Portal CE
+# ADR-0001: Integration Test Architecture
+
+> **Partially superseded by ADR-0008** — This ADR originally specified a Testcontainers-driven harness on Liferay Portal CE 7.4 GA132. The project has since migrated to Liferay DXP 2026.q1.3-lts with the Liferay workspace plugin's Docker tasks owning the container lifecycle (see `adr-0008-dxp-2026-migration.md`). The decisions below are preserved for historical context. The parts still in force today are explicitly called out in the "Current status" section at the bottom.
 
 ## Status
 
-Accepted
+Accepted (2026-04-09). Partially superseded by ADR-0008 (2026-04-15).
 
-## Date
+## Context (historical)
 
-2026-04-09
+The liferay-dummy-factory project needed end-to-end integration tests for the portlet (MVCPortlet + React) against a running Liferay instance.
 
-## Context
-
-The liferay-dummy-factory project needs to build E2E integration tests using Testcontainers for the portlet (MVCPortlet + React).
-
-### Constraints
+### Constraints at the time
 
 - **Target**: Liferay Portal CE 7.4 GA132 (Community Edition, not DXP)
 - **Runtime environment**: WSL2 + Docker Desktop 29.x
 - **Build**: Gradle 8.5 + Liferay Workspace Plugin
 - **Test scope**: OSGi bundle deployment verification, bundle state validation via GoGo Shell, and browser E2E tests via Playwright
 
-## Decision
+## Decisions (historical)
 
-### 1. Test Framework Configuration
+### 1. Test framework configuration
 
 | Component | Choice | Rationale |
 |-----------|--------|-----------|
 | Test framework | Spock 2.4 + Groovy 5.0.4 | Groovy's concise syntax, test ordering via `@Stepwise`, Power Assert |
-| Container management | Testcontainers 2.0.4 | Docker Engine 29.x support (bundles docker-java 3.7.1). Version 1.21.x ships a shaded docker-java supporting up to API v1.44, which is incompatible with Docker 29.x's minimum API v1.40 |
-| Browser tests | Playwright Java 1.59.0 (Chromium only) | Same technology stack as the official Liferay tests. Installing only Chromium reduces download time |
+| Container management | Testcontainers 2.0.4 | Docker Engine 29.x support (bundles docker-java 3.7.1) |
+| Browser tests | Playwright Java 1.59.0 (Chromium only) | Same technology stack as the official Liferay tests |
 | GoGo Shell communication | Apache Commons Net (Telnet) | Used to connect to the Liferay OSGi console |
 
-### 2. Login Method: API POST (with CSRF Token)
+### 2. Login method: API POST with CSRF token
 
-**Decision**: Adopt the same approach as the official Liferay Playwright tests (`performLoginViaApi`).
+Adopted the same approach as the official Liferay Playwright tests (`performLoginViaApi`):
 
 ```
 1. page.navigate("/") to establish a session
@@ -42,101 +40,95 @@ The liferay-dummy-factory project needs to build E2E integration tests using Tes
 ```
 
 **Rejected alternatives**:
-- **Form-based login**: After login, redirecting to `/web/guest` causes the session to not carry over. Conditional handling for the password change page is complex.
-- **Basic authentication**: Disabled by default in Liferay CE.
+- **Form-based login**: the redirect to `/web/guest` did not carry the session, and the password-change page needed conditional handling
+- **Basic authentication**: disabled by default in the DXP/CE image at the time
 
-### 3. Password Policy Handling
+### 3. Password policy handling
 
-**Decision**: `LIFERAY_PASSWORDS_DEFAULT_POLICY_CHANGE_REQUIRED=false` env var + fallback password trial + interactive handler.
+`LIFERAY_PASSWORDS_DEFAULT_POLICY_CHANGE_REQUIRED=false` env var to patch the pre-built DB at container startup, plus a fallback password trial and an interactive handler. `portal-ext.properties` was used for the non-password settings that do take effect from properties (setup wizard, terms-of-use, reminder queries).
 
-- Set `LIFERAY_PASSWORDS_DEFAULT_POLICY_CHANGE_REQUIRED=false` so the pre-built DB is patched at container startup and the default admin password is accepted as-is.
-- `portal-ext.properties` is still placed in `/opt/liferay/tomcat/webapps/ROOT/WEB-INF/classes/` for the non-password settings that do take effect from properties (setup wizard, terms-of-use, reminder queries).
-- The test side still tries both `test` and `Test12345` in sequence to tolerate both fresh containers and any future image change that re-enables the policy. If the password change page still appears, it is handled automatically.
+### 4. JAR deployment via /tmp + chown
 
-**Rejected alternatives**:
-- **DB update via GoGo Shell**: Direct SQL execution is not possible from the OSGi console.
-- **Groovy script execution**: `groovy:exec` in GoGo Shell is not available in the CE Docker image.
+`copyFileToContainer` creates files owned by root, but Liferay's AutoDeployScanner runs as the liferay user (uid=1000). Workaround: place the file in `/tmp`, then `docker exec` to `cp` + `chown liferay:liferay` into `/opt/liferay/deploy/`.
 
-### 4. JAR Deployment Method: Copy via /tmp + chown
+### 5. GoGo Shell bundle verification: full output + Java-side filtering
 
-**Decision**: Place the file in `/tmp` using `copyFileToContainer`, then use `execInContainer` to `cp` + `chown liferay:liferay` and move it to `/opt/liferay/deploy/`.
+`lb` outputs ~1394 lines. GoGo Shell is an OSGi console and does not support Unix pipes — `lb | grep dummy.factory` simply returns `false`. The harness retrieves the full output and filters for `Liferay Dummy Factory` on the Java/Groovy side.
 
-**Rationale**: `copyFileToContainer` creates files owned by root, but Liferay's AutoDeployScanner runs as the liferay user (uid=1000). Copying directly to `/deploy/` causes an `Unable to write` error.
+### 6. Verification strategy: JSONWS first, Playwright only for UI
 
-### 5. GoGo Shell Bundle Verification: Full Output Retrieval + Java-Side Filtering
+Post-condition assertions (did the entity actually get created / updated / deleted?) go through Liferay JSONWS (`/api/jsonws/...`) with Basic Auth. Playwright is reserved for behavior that is genuinely UI-specific (rendering, client-side validation, navigation flows).
 
-**Decision**: Retrieve the full output of the `lb` command (approximately 1394 lines) and filter for lines containing `Liferay Dummy Factory` on the Java/Groovy side.
+JSONWS is faster and deterministic, and does not depend on Control Panel rendering or portlet UI state. The Elasticsearch-backed headless REST endpoints (`/o/headless-admin-user/...`) also have observable indexing lag that makes post-create reads non-deterministic; JSONWS goes directly through the service layer and avoids both issues.
 
-**Rationale**: GoGo Shell is an OSGi console and does not support Unix shell pipes (`|`) or the `grep` command. Running `lb | grep dummy.factory` simply causes the `grep` command to return `false`.
+**This decision is still in force on DXP 2026.**
 
-### 6. Verification Strategy: JSONWS First, Playwright Only for UI
+### 7. Creator services declare `throws Throwable`
 
-**Decision**: Post-condition assertions (did the entity actually get created / updated / deleted?) go through Liferay JSONWS (`/api/jsonws/...`) with Basic Auth. Playwright is reserved for behavior that is genuinely UI-specific (rendering, client-side validation, navigation flows).
+The public `create(...)` method on every `*Creator` service in `com.liferay.support.tools.service` declares `throws Throwable`, and the `*ResourceCommand` callers use `catch (Throwable t)`. This preserves the distinction between `PortalException` subtypes and avoids re-wrapping the original throwable.
 
-**Rationale**: JSONWS is faster and deterministic, and it does not depend on Control Panel rendering or portlet UI state. Relying on Playwright for data assertions couples the test outcome to transient UI layout, and the Elasticsearch-backed headless REST endpoints (`/o/headless-admin-user/...`) have observable indexing lag that makes post-create reads non-deterministic; JSONWS goes directly through the service layer and avoids both issues.
+The trade-off — `catch (Throwable)` also catches `Error` subtypes — is accepted: the JVM error state surfaces as a failed action rather than silently killing the worker thread, and the portlet container continues serving other requests.
 
-### 7. Creator Services Declare `throws Throwable`
+**This decision is still in force on DXP 2026.**
 
-**Decision**: The public `create(...)` method on every `*Creator` service in `com.liferay.support.tools.service` declares `throws Throwable`, and the `*ResourceCommand` callers use `catch (Throwable t)`.
-
-**Rationale**: `TransactionInvokerUtil.invoke(TransactionConfig, Callable)` is declared `throws Throwable` — its `Callable`-shaped lambda lets the transaction machinery surface both checked exceptions and `Error`s. Adding a `catch (Throwable) { throw new Exception(t); }` bridge inside each Creator would let the public signature return to `throws Exception`, but it would also (a) flatten the distinction between `PortalException` subtypes that the ResourceCommand can decide to render as user errors, and (b) re-wrap the original throwable, obscuring the root cause in logs.
-
-**Trade-off accepted**: `catch (Throwable)` at the ResourceCommand layer will also catch `Error` subtypes (`OutOfMemoryError`, `StackOverflowError`, `LinkageError`). In the portlet request path this is acceptable: the JVM's error state is reported to the user as a failed action rather than silently killing the worker thread, and the portlet container will continue to serve other requests. If this ever becomes a problem, the bridge-and-rethrow pattern can be added in the Creators without changing the ResourceCommand contract.
-
-### 8. Container Configuration
+### 8. Container configuration (historical)
 
 ```groovy
-withReuse(false)                   // Always start a fresh container to prevent state leakage
+withReuse(false)
 withCopyToContainer(...)           // Place portal-ext.properties
-withEnv([                          // Environment variables
+withEnv([
     'LIFERAY_SETUP_WIZARD_ENABLED': 'false',
     'LIFERAY_TERMS_OF_USE_REQUIRED': 'false',
     'LIFERAY_USERS_REMINDER_QUERY_ENABLED': 'false',
 ])
 ```
 
-## Consequences
+The `withReuse(false)` posture is still in force; the wiring is now done by the workspace plugin, not Testcontainers.
 
-### Positive
+## Consequences (historical)
 
-- Login method follows the official Liferay Playwright test patterns
-- `withReuse(false)` guarantees a clean Liferay state for every test run, so entities (users, roles, sites) or password changes from a previous run cannot leak into the next run and hide regressions
-- Installing only Chromium reduces download time
-- Testcontainers 2.0.4 provides compatibility with the latest Docker Engine 29.x
+- Login method follows the official Liferay Playwright test patterns.
+- `withReuse(false)` guarantees a clean Liferay state for every test run, so entities (users, roles, sites) or password changes from a previous run cannot leak into the next and hide regressions.
+- Installing only Chromium reduces download time.
+- Testcontainers 2.0.4 provided compatibility with Docker Engine 29.x.
 
-### Negative
+### Observed limitations
 
-- **No Global Menu in CE**: The DXP-only Global Menu (`Open Applications Menu`) does not exist in CE GA132. Resolved by using direct URL access with `p_p_state=maximized` (e.g., `/group/control_panel/manage?p_p_id=...&p_p_lifecycle=0&p_p_state=maximized`).
-- Each test run pays the full ~8 minute container startup cost, since container reuse is disabled. This is an intentional trade-off to preserve test isolation.
-- Some properties in `portal-ext.properties` (e.g., `passwords.default.policy.change.required`) have no effect on the Docker image's pre-built database. These are handled by the equivalent `LIFERAY_*` environment variables instead.
+- **No Global Menu in CE 7.4**: resolved by using direct URL access with `p_p_state=maximized` (e.g., `/group/control_panel/manage?p_p_id=...&p_p_lifecycle=0&p_p_state=maximized`). This workaround is still used on DXP 2026, where the Global Menu exists but direct URL access is faster and less flaky for tests.
+- Each test run pays the full ~8 minute container startup cost, since container reuse is disabled — an intentional trade-off to preserve test isolation.
+- Some properties in `portal-ext.properties` (e.g., `passwords.default.policy.change.required`) had no effect on the Docker image's pre-built database; these were handled by the equivalent `LIFERAY_*` environment variables instead.
 
-### Resolved Questions
+## Current status (DXP 2026)
 
-1. **PanelApp navigation on CE GA132**: Resolved by using direct URL access with `p_p_state=maximized` query parameter. The URL pattern `/group/control_panel/manage?p_p_id=<portlet_id>&p_p_lifecycle=0&p_p_state=maximized` renders the portlet directly without needing the Product Menu sidebar or Global Menu.
+ADR-0008 migrated the harness to the Liferay workspace plugin's Docker tasks. The impact on this ADR:
 
-### Open Questions
+- **§1 container management — replaced.** Testcontainers is no longer used. `LiferayContainer` is a POJO holding constants (`host=localhost`, `httpPort=8080`, `gogoPort=11311`, `container=test-factory-liferay`); the workspace plugin owns start/stop via `createDockerContainer` → `startDockerContainer` → `stopDockerContainer`. The `deployJar(Path)` helper uses `docker cp` via `ProcessBuilder` against the running container.
+- **§2 login via API POST — still in force, but with a bootstrap step.** DXP 2026 ships the admin user with `USER_.PASSWORDRESET=1` baked into HSQL. `BaseLiferaySpec.bootstrapAdminCredentials()` walks the official `/sign-in` → `/c/portal/login` → `/c/portal/update_password` flow once per container lifetime to clear the flag. See ADR-0008 "DXP 2026 Baked-In Admin Password Reset Trap".
+- **§3 password policy handling — replaced** by the admin bootstrap in §2 above.
+- **§4 JAR deployment via /tmp + chown — simplified.** `LiferayContainer.deployJar` now runs `docker cp modules/.../build/libs/liferay.dummy.factory-1.0.0.jar test-factory-liferay:/opt/liferay/deploy/`; the workspace plugin's generated image already runs Liferay as uid=1000 and the `docker cp` target inherits liferay:liferay ownership.
+- **§5 GoGo Shell verification — unchanged.**
+- **§6 JSONWS-first verification — unchanged**, with the caveat that the JSONWS base path on DXP 2026 is `/portal/api/jsonws/` (portal-context-mounted). See `docs/details/dxp-2026-gotchas.md`.
+- **§7 Creator `throws Throwable` — unchanged.**
+- **§8 container configuration — replaced.** Config overrides now live in `configs/common/` (shared) and `configs/local/` (env-specific). The workspace plugin mounts them via `/mnt/liferay/files/` at container start.
 
-1. **Playwright version**: Currently using 1.59.0. Consider updating as needed while maintaining compatibility with the official Liferay tests.
+For the full DXP 2026 harness contract, read ADR-0008.
 
 ## References
 
 - Liferay Portal source: `/home/yasuflatland/tmp/liferay-portal`
 - Official Liferay Playwright tests: `modules/test/playwright/`
-  - `utils/performLogin.ts` -- API login pattern
-  - `helpers/ApiHelpers.ts` -- CSRF token retrieval
-  - `pages/product-navigation-applications-menu/GlobalMenuPage.ts` -- Global Menu (DXP)
-  - `utils/productMenu.ts` -- Product Menu
-  - `env/portal-ext.properties` -- Test properties
-- Testcontainers source: `/home/yasuflatland/tmp/testcontainers-java`
-- Detailed implementation plan: `.claude/plan/integrationtest.md`
+  - `utils/performLogin.ts` — API login pattern
+  - `helpers/ApiHelpers.ts` — CSRF token retrieval
+  - `utils/productMenu.ts` — Product Menu
+- ADR-0008 — Complete Migration to Liferay DXP 2026.q1.3-lts (the current harness contract)
 
-## Release Cadence Caveat
+## Release cadence caveat (Playwright Java vs Node)
 
 Playwright Java (`com.microsoft.playwright:playwright` on Maven Central) and Playwright Node/CLI (`playwright` on npm) follow independent release cadences. A given `1.x.y` tag does not necessarily exist on both channels. For example, as of 2026-04 the latest stable on npm is `1.59.1`, while the latest on Maven Central is `1.59.0`; `1.59.1` and `1.60.0` have not yet been published to Maven Central.
 
 The Playwright project recommends keeping the client library and the driver pinned to the same version because the wire protocol is only guaranteed to be compatible within a single release. Mixing a Java client with a different Node driver version can fail at runtime with opaque protocol errors.
 
-When bumping the Playwright version, always confirm the target POM actually exists on Maven Central before changing any build file. A HEAD against the pom URL is the most reliable check:
+When bumping the Playwright version, always confirm the target POM actually exists on Maven Central before changing any build file:
 
 ```
 curl -s -o /dev/null -w "%{http_code}" https://repo.maven.apache.org/maven2/com/microsoft/playwright/playwright/<version>/playwright-<version>.pom

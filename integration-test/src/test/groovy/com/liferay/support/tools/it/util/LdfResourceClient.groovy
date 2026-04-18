@@ -19,8 +19,8 @@ import org.slf4j.LoggerFactory
  * a headless Chromium session.
  *
  * <p>
- * Building a portlet ResourceURL by hand is fragile on CE 7.4 GA132 because
- * the URL depends on the runtime Layout and control-panel group resolution.
+ * Building a portlet ResourceURL by hand is fragile because the URL depends
+ * on the runtime Layout and control-panel group resolution.
  * This helper instead uses Playwright to render the portlet once (exactly as
  * the browser does in the existing Functional specs), scrapes the real
  * {@code actionResourceURLs} the JSP hands to the React app, and POSTs to

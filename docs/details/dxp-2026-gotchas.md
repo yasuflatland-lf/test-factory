@@ -2,11 +2,11 @@
 
 L3 detail. Runtime / auth / JSONWS / HTTP-client traps discovered during the DXP 2026.q1.3-lts migration that do not naturally live in the architectural ADR (`docs/ADR/adr-0008-dxp-2026-migration.md`) or the Gradle-flow doc (`docs/details/testing-gradle.md`). Read on demand from `.claude/rules/debugging.md`.
 
-This is DXP-2026-specific. CE 7.4 counterparts (where they exist) live in `docs/details/api-liferay-ce74.md`.
+This file collects DXP 2026-specific runtime / HTTP-client / auth-cache traps. For API signature and blacklist notes (CompanyService blacklist, GroupLocalService.addGroup 16-param, MBCategoryLocalService overload, JSONWS module prefix, etc.), see `docs/details/api-liferay-dxp2026.md`.
 
 ## Baked-in `portal-liferay-online-config.properties` blocks JSONWS
 
-`portal-impl.jar` in the DXP 2026 Docker image ships a `portal-liferay-online-config.properties` inside `WEB-INF/classes/` that sets `json.servlet.hosts.allowed=N/A`. The property loader's last-wins rule means this value wins over anything set in `portal-ext.properties`, and any Basic Auth request to `/api/jsonws/*` or `/o/*` returns HTTP 403 with an empty body (`{}`) before the auth-verifier pipeline even fires. CE 7.4 does not ship this file.
+`portal-impl.jar` in the DXP 2026 Docker image ships a `portal-liferay-online-config.properties` inside `WEB-INF/classes/` that sets `json.servlet.hosts.allowed=N/A`. The property loader's last-wins rule means this value wins over anything set in `portal-ext.properties`, and any Basic Auth request to `/api/jsonws/*` or `/o/*` returns HTTP 403 with an empty body (`{}`) before the auth-verifier pipeline even fires. The workaround is to shadow this file by writing an empty `configs/common/portal-liferay-online-config.properties` in the workspace so the plugin's entrypoint overlays it over the baked copy at container start (commit `6021828`).
 
 **Fix (workspace-native flow):** place an empty `portal-liferay-online-config.properties` under `configs/common/` — the workspace plugin's image entrypoint copies it into Liferay Home before startup, shadowing the baked-in copy. Complementary: `configs/common/portal-ext.properties` must contain `json.servlet.hosts.allowed=` (explicit empty) so nothing ever re-installs `N/A`. Refs: commits `3f7e465`, `7bb05fc`, `95b19b5`.
 

@@ -99,7 +99,7 @@ Detail in the Verification Strategy section of `.claude/rules/testing.md`.
 
 If the diff touches any of:
 
-- Java API signatures → check `docs/details/api-liferay-ce74.md`
+- Java API signatures → check `docs/details/api-liferay-dxp2026.md`
 - Playwright patterns → check `docs/details/testing-playwright.md`
 - Version pins → check `docs/details/dependency-policy.md`
 - Architectural decisions → check `docs/ADR/`

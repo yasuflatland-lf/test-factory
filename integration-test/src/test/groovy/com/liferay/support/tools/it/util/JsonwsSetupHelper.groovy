@@ -65,13 +65,12 @@ class JsonwsSetupHelper {
 	}
 
 	Map createOrganization(String name) {
-		// OrganizationService.addOrganization has two overloads on CE 7.4
-		// GA132: a simple 10-arg form and a 15-arg form with rich
-		// contact-info Lists. Both take a ServiceContext. JSONWS on GA132
-		// consistently returns 404 for both shapes of form-encoded POST
-		// regardless of whether serviceContext is present, so we route
-		// through the headless-admin-user REST API, which uses a clean
-		// JSON body and a single "organizations" endpoint.
+		// OrganizationService.addOrganization takes a ServiceContext which
+		// the JSONWS form encoder cannot serialize, so every form-encoded
+		// POST to /api/jsonws/organization/add-organization returns 404
+		// regardless of overload. Route through the headless-admin-user
+		// REST API instead, which uses a clean JSON body and a single
+		// "organizations" endpoint.
 		String body = "{\"name\":${_jsonQuote(name)}}"
 		Map response = _postJson(
 			'/o/headless-admin-user/v1.0/organizations', body) as Map

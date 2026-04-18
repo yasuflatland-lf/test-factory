@@ -10,7 +10,7 @@ Accepted
 
 ## Context
 
-The portlet's React frontend needs a JavaScript build pipeline that produces an ESM bundle compatible with Liferay CE 7.4 GA132's AMD module loader. Two options were evaluated:
+The portlet's React frontend needs a JavaScript build pipeline that produces an ESM bundle compatible with Liferay DXP 2026.q1.3-lts's AMD module loader. Two options were evaluated:
 
 1. **`@liferay/npm-scripts` (v51.x)** — Liferay's official Webpack-based build toolchain for frontend modules
 2. **Custom esbuild script** (`scripts/build.mjs`) — a ~165-line build script using esbuild directly
@@ -19,7 +19,7 @@ The portlet's React frontend needs a JavaScript build pipeline that produces an 
 
 | Concern | Detail |
 |---------|--------|
-| DXP-first assumptions | npm-scripts targets the portal monorepo and DXP release cadences. External workspace modules on CE 7.4 hit edge cases (dependency resolution, API version skew) |
+| Portal-monorepo assumptions | npm-scripts targets the internal portal monorepo and its release cadence. External workspace modules (including this DXP 2026 bundle) hit edge cases in dependency resolution and API version skew |
 | Build speed | npm-scripts wraps Webpack, which is significantly slower than esbuild for single-module builds |
 | Unnecessary complexity | npm-scripts includes SASS processing, export bridge generation, TypeScript type-checking, and a full linker plugin for 200+ portal-global packages. This portlet needs none of those — it uses Clay CSS classes, has a single entry point, and only externalizes `react` and `react-dom` |
 | Liferay's own direction | The portal monorepo has replaced npm-scripts with `@liferay/node-scripts` (esbuild-based). npm-scripts is the legacy path |
@@ -113,4 +113,4 @@ Variable-parameter calls such as `Liferay.Language.get(variable)` are not matche
 - bnd.bnd Provide-Capability header: `modules/liferay-dummy-factory/bnd.bnd`
 - Language injection: `modules/liferay-dummy-factory/src/main/resources/META-INF/resources/view.jsp` (lines 20-36)
 - Frontend i18n architecture: `.claude/rules/writing-code.md` § "Frontend i18n loading: JSP-injected ResourceBundle"
-- ADR-0002: Use javax.portlet (3.0) for the Portlet API (related CE 7.4 compatibility decision)
+- ADR-0008: Complete Migration to Liferay DXP 2026.q1.3-lts (supersedes the CE-era portlet API decision in ADR-0002)

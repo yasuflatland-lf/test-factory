@@ -101,7 +101,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 		int count = 2
 
 		when: 'POST /ldf/user with fakerEnable=true and locale=en_US'
-		// en_US: ja_JP kanji names are rejected by CE 7.4 default screen-name validator
+		// en_US: ja_JP kanji names are rejected by Liferay's DefaultScreenNameValidator
 		Map response = ldf.createUser([
 			count       : count,
 			baseName    : FAKER_BASE_NAME,
