@@ -194,12 +194,13 @@ abstract class BaseLiferaySpec extends Specification {
 		CookieHandler.setDefault(cookieManager)
 
 		try {
+			// p_auth is a CSRF token for authenticated-state actions. The
+			// login POST itself can accept requests without it on DXP 2026
+			// (LoginFilter treats /c/portal/login as an anonymous public
+			// path). We still try to extract one from the landing page
+			// in case a DXP release starts requiring it for login; otherwise
+			// we POST without.
 			String pAuth = _fetchLoginPageAuth()
-
-			if (pAuth == null) {
-				throw new IllegalStateException(
-					'Admin bootstrap: could not extract p_auth from /sign-in page')
-			}
 
 			_postLogin(pAuth)
 
@@ -291,9 +292,13 @@ abstract class BaseLiferaySpec extends Specification {
 			'login=' + URLEncoder.encode(LiferayContainer.DEFAULT_ADMIN_EMAIL, 'UTF-8') +
 			'&password=' + URLEncoder.encode(LiferayContainer.DEFAULT_ADMIN_PASSWORD, 'UTF-8')
 
+		String url = "${liferay.baseUrl}/c/portal/login"
+		if (pAuth) {
+			url = "${url}?p_auth=${pAuth}"
+		}
+
 		int status = _httpPost(
-			"${liferay.baseUrl}/c/portal/login?p_auth=${pAuth}",
-			'application/x-www-form-urlencoded', body, false)
+			url, 'application/x-www-form-urlencoded', body, false)
 
 		if (status != 302 && status != 200) {
 			throw new IllegalStateException(
