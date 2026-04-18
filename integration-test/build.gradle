@@ -88,13 +88,19 @@ gradle.projectsEvaluated {
 	def createTask = tasks.findByPath(':createDockerContainer')
 	if (createTask == null) {
 		throw new GradleException(
-			"Workspace plugin did not register ':createDockerContainer'."
+			"Workspace plugin did not register ':createDockerContainer' — check plugin version (expect 16.0.5)."
 		)
 	}
 	createTask.configure {
 		// LIFERAY_JVM_OPTS injection: JaCoCo tcpserver agent for coverage collection.
 		withEnvVar 'LIFERAY_JVM_OPTS',
 			'-javaagent:/opt/liferay/jacocoagent.jar=output=tcpserver,address=0.0.0.0,port=6300'
+
+		// Override workspace plugin 16.0.5 default (autoRemove=true at
+		// RootProjectConfigurator.java:540). Keeping the container after
+		// stopDockerContainer preserves logs, JaCoCo exec dumps, and volume
+		// state for post-mortem inspection (see ADR-0008 D4).
+		hostConfig.autoRemove.set(false)
 
 		// Mount the JaCoCo agent JAR from the test runtime classpath into the container.
 		// The Maven artifact is org.jacoco:org.jacoco.agent:<ver>:runtime which resolves
@@ -139,12 +145,16 @@ tasks.register('awaitLiferayReady') {
 					logger.lifecycle("Liferay ready after ${attempt} attempts (${url})")
 					return
 				}
+				logger.lifecycle("awaitLiferayReady attempt ${attempt}: unexpected HTTP ${code} from ${url}")
 			}
 			catch (java.net.ConnectException e) {
 				logger.info("awaitLiferayReady attempt ${attempt}: ConnectException: ${e.message}")
 			}
 			catch (java.net.SocketTimeoutException e) {
 				logger.info("awaitLiferayReady attempt ${attempt}: SocketTimeoutException: ${e.message}")
+			}
+			catch (IOException e) {
+				logger.info("awaitLiferayReady attempt ${attempt}: IOException ${e.class.simpleName}: ${e.message}")
 			}
 			sleep(5000)
 		}

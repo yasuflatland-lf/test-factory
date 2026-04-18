@@ -65,13 +65,10 @@ class JsonwsSetupHelper {
 	}
 
 	Map createOrganization(String name) {
-		// OrganizationService.addOrganization has two overloads on CE 7.4
-		// GA132: a simple 10-arg form and a 15-arg form with rich
-		// contact-info Lists. Both take a ServiceContext. JSONWS on GA132
-		// consistently returns 404 for both shapes of form-encoded POST
-		// regardless of whether serviceContext is present, so we route
-		// through the headless-admin-user REST API, which uses a clean
-		// JSON body and a single "organizations" endpoint.
+		// OrganizationService.addOrganization on DXP 2026 is exposed via JSONWS, but
+		// form-encoded POSTs still tend to drop the ServiceContext structure. Route
+		// through the headless-admin-user REST API for cleaner JSON body handling.
+		// See docs/details/api-liferay-dxp2026.md §5.
 		String body = "{\"name\":${_jsonQuote(name)}}"
 		Map response = _postJson(
 			'/o/headless-admin-user/v1.0/organizations', body) as Map
@@ -206,7 +203,7 @@ class JsonwsSetupHelper {
 
 	Map createDdmStructure(long groupId, String name, String definitionJson) {
 		Map response = _post(
-			'/portal/api/jsonws/ddm/ddmstructure/add-structure',
+			'/portal/api/jsonws/ddm.ddmstructure/add-structure',
 			[
 				'groupId': groupId,
 				'parentStructureId': '0',
@@ -221,7 +218,7 @@ class JsonwsSetupHelper {
 			]) as Map
 
 		_tracked << new Tracked(
-			'ddmStructure', '/portal/api/jsonws/ddm/ddmstructure/delete-structure',
+			'ddmStructure', '/portal/api/jsonws/ddm.ddmstructure/delete-structure',
 			'structureId',
 			response.structureId as Long)
 
@@ -232,7 +229,7 @@ class JsonwsSetupHelper {
 		long groupId, long structureId, String name, String script) {
 
 		Map response = _post(
-			'/portal/api/jsonws/ddm/ddmtemplate/add-template',
+			'/portal/api/jsonws/ddm.ddmtemplate/add-template',
 			[
 				'groupId': groupId,
 				'classNameId': _classNameIdFor(
@@ -251,7 +248,7 @@ class JsonwsSetupHelper {
 			]) as Map
 
 		_tracked << new Tracked(
-			'ddmTemplate', '/portal/api/jsonws/ddm/ddmtemplate/delete-template',
+			'ddmTemplate', '/portal/api/jsonws/ddm.ddmtemplate/delete-template',
 			'templateId',
 			response.templateId as Long)
 

@@ -38,10 +38,9 @@ class UserCreationSpec extends BaseLiferaySpec {
 
 		ldf = new LdfResourceClient(liferay.baseUrl)
 
-		// Prime the admin password via Playwright's login + password-change
-		// flow so JsonwsSetupHelper (which authenticates via Basic Auth to
-		// JSONWS) can succeed on a fresh container regardless of which spec
-		// runs first.
+		// Log in the admin session so JsonwsSetupHelper (which uses Basic Auth against
+		// JSONWS) runs under an already-primed cookie store. D2 removed the
+		// password-change detour; this is now a one-shot login.
 		ldf.login()
 
 		jsonws = new JsonwsSetupHelper(liferay.baseUrl)
@@ -101,7 +100,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 		int count = 2
 
 		when: 'POST /ldf/user with fakerEnable=true and locale=en_US'
-		// en_US: ja_JP kanji names are rejected by CE 7.4 default screen-name validator
+		// en_US: ja_JP kanji names are rejected by Liferay's default screen-name validator
 		Map response = ldf.createUser([
 			count       : count,
 			baseName    : FAKER_BASE_NAME,

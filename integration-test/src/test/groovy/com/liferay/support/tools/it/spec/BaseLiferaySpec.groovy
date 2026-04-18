@@ -124,7 +124,7 @@ abstract class BaseLiferaySpec extends Specification {
 
 		String authToken = page.evaluate('() => Liferay.authToken') as String
 
-		page.request().post("${liferay.baseUrl}/c/portal/login",
+		def response = page.request().post("${liferay.baseUrl}/c/portal/login",
 			RequestOptions.create()
 				.setHeader('Content-Type', 'application/x-www-form-urlencoded')
 				.setHeader('x-csrf-token', authToken)
@@ -134,6 +134,14 @@ abstract class BaseLiferaySpec extends Specification {
 					'&rememberMe=true'
 				)
 		)
+
+		int status = response.status()
+		if (status != 200 && status != 302) {
+			throw new IllegalStateException(
+				"loginAsAdmin: portal login returned HTTP ${status} (expected 200 or 302). " +
+				"Body preview: ${response.text()?.take(500)}"
+			)
+		}
 
 		page.navigate("${liferay.baseUrl}/")
 		page.waitForLoadState()

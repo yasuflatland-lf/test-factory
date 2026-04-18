@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory
  * a headless Chromium session.
  *
  * <p>
- * Building a portlet ResourceURL by hand is fragile on CE 7.4 GA132 because
+ * Building a portlet ResourceURL by hand is fragile on Liferay because
  * the URL depends on the runtime Layout and control-panel group resolution.
  * This helper instead uses Playwright to render the portlet once (exactly as
  * the browser does in the existing Functional specs), scrapes the real

@@ -39,10 +39,9 @@ class SiteCreationSpec extends BaseLiferaySpec {
 
 		ldf = new LdfResourceClient("http://localhost:${liferay.httpPort}")
 
-		// Prime the admin password via Playwright's login + password-change
-		// flow so JsonwsSetupHelper (which authenticates via Basic Auth to
-		// JSONWS) can succeed on a fresh container regardless of which spec
-		// runs first.
+		// Log in the admin session so JsonwsSetupHelper (which uses Basic Auth against
+		// JSONWS) runs under an already-primed cookie store. D2 removed the
+		// password-change detour; this is now a one-shot login.
 		ldf.login()
 
 		jsonws = new JsonwsSetupHelper(
