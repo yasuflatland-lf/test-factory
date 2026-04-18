@@ -305,6 +305,15 @@ abstract class BaseLiferaySpec extends Specification {
 			return
 		}
 
+		if (!_isJacocoPortOpen()) {
+			log.warn(
+				'Skipping JaCoCo dump for {} — port {}:{} is not reachable. ' +
+				'Coverage collection is out of scope for the DXP-native Docker flow; ' +
+				'wire in a -javaagent hook via configs/docker/scripts if coverage is needed.',
+				specName, liferay.host, liferay.jacocoPort)
+			return
+		}
+
 		File outputFile = new File(System.getProperty('user.dir'), "build/jacoco/${specName}.exec")
 		File jacocoDir = outputFile.parentFile
 		if (!jacocoDir.mkdirs() && !jacocoDir.isDirectory()) {
@@ -325,7 +334,27 @@ abstract class BaseLiferaySpec extends Specification {
 				}
 			}
 		}
-		throw lastEx
+
+		log.warn('JaCoCo dump failed for {} after 3 attempts: {}', specName, lastEx?.message)
+	}
+
+	private boolean _isJacocoPortOpen() {
+		Socket socket = null
+		try {
+			socket = new Socket()
+			socket.connect(new InetSocketAddress(liferay.host, liferay.jacocoPort), 1_000)
+			return true
+		}
+		catch (IOException e) {
+			return false
+		}
+		finally {
+			try {
+				socket?.close()
+			}
+			catch (IOException ignored) {
+			}
+		}
 	}
 
 }

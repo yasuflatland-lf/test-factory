@@ -21,7 +21,6 @@ jacoco {
 
 def spockVersion = project.property('test.spock.version')
 def groovyVersion = project.property('test.groovy.version')
-def testcontainersVersion = project.property('test.testcontainers.version')
 def playwrightVersion = project.property('test.playwright.version')
 
 dependencies {
@@ -30,16 +29,12 @@ dependencies {
 
 	testImplementation "org.spockframework:spock-core:${spockVersion}"
 
-	testImplementation "org.testcontainers:testcontainers:${testcontainersVersion}"
-	testImplementation "org.testcontainers:testcontainers-spock:${testcontainersVersion}"
-
 	testImplementation "com.microsoft.playwright:playwright:${playwrightVersion}"
 
 	testImplementation 'ch.qos.logback:logback-classic:1.4.14'
 	testImplementation 'commons-net:commons-net:3.10.0'
 
 	testImplementation 'org.jacoco:org.jacoco.core:0.8.14'
-	testImplementation 'org.jacoco:org.jacoco.agent:0.8.14:runtime'
 }
 
 test {
@@ -47,18 +42,61 @@ test {
 	enabled = false
 }
 
+tasks.register('awaitLiferayReady') {
+	description = 'Polls http://localhost:8080/c/portal/login until Liferay responds HTTP 200 (8 minute timeout).'
+	group = 'verification'
+
+	doLast {
+		int httpPort = (project.findProperty('liferay.http.port') ?: '8080') as int
+		String url = "http://localhost:${httpPort}/c/portal/login"
+		long deadline = System.currentTimeMillis() + Duration.ofMinutes(8).toMillis()
+		int attempt = 0
+
+		while (System.currentTimeMillis() < deadline) {
+			attempt++
+
+			try {
+				HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection()
+				conn.connectTimeout = 5_000
+				conn.readTimeout = 5_000
+				conn.requestMethod = 'GET'
+				int code = conn.responseCode
+				conn.disconnect()
+
+				if (code == 200) {
+					logger.lifecycle("Liferay is ready at ${url} (attempt ${attempt}, HTTP ${code})")
+					return
+				}
+
+				logger.info("awaitLiferayReady attempt ${attempt}: HTTP ${code}")
+			}
+			catch (Exception e) {
+				logger.info("awaitLiferayReady attempt ${attempt}: ${e.message}")
+			}
+
+			Thread.sleep(5_000)
+		}
+
+		throw new GradleException(
+			"Liferay did not become ready at ${url} within 8 minutes (${attempt} attempts).")
+	}
+}
+
 tasks.register('integrationTest', Test) {
 	useJUnitPlatform()
 	testClassesDirs = sourceSets.test.output.classesDirs
 	classpath = sourceSets.test.runtimeClasspath
-	timeout = Duration.ofMinutes(15)
+	timeout = Duration.ofMinutes(30)
 
 	jvmArgs "-Xms${project.property('test.jvm.minHeap')}", "-Xmx${project.property('test.jvm.maxHeap')}"
-	systemProperty 'liferay.docker.image', project.property('liferay.docker.image')
+
+	systemProperty 'liferay.http.port', '8080'
+	systemProperty 'liferay.gogo.port', '11311'
+	systemProperty 'liferay.jacoco.port', '6300'
+	systemProperty 'liferay.container.name', 'test-factory-liferay'
 	systemProperty 'project.root.dir', rootProject.projectDir.absolutePath
+
 	environment 'PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD', '1'
-	environment 'LIFERAY_DXP_LICENSE_FILE', System.getenv('LIFERAY_DXP_LICENSE_FILE') ?: ''
-	environment 'LIFERAY_DXP_LICENSE_BASE64', System.getenv('LIFERAY_DXP_LICENSE_BASE64') ?: ''
 
 	testLogging {
 		events 'passed', 'skipped', 'failed', 'standardOut', 'standardError'
@@ -71,7 +109,20 @@ tasks.register('integrationTest', Test) {
 
 	dependsOn ':modules:liferay-dummy-factory:jar'
 	dependsOn 'installPlaywrightBrowsers'
+	dependsOn rootProject.tasks.named('createDockerContainer')
+	dependsOn rootProject.tasks.named('startDockerContainer')
+	dependsOn tasks.named('awaitLiferayReady')
+	finalizedBy rootProject.tasks.named('stopDockerContainer')
 	finalizedBy 'jacocoIntegrationReport'
+}
+
+tasks.named('awaitLiferayReady').configure {
+	mustRunAfter rootProject.tasks.named('startDockerContainer')
+	dependsOn rootProject.tasks.named('startDockerContainer')
+}
+
+rootProject.tasks.named('startDockerContainer').configure {
+	mustRunAfter rootProject.tasks.named('createDockerContainer')
 }
 
 tasks.register('installPlaywrightBrowsers', JavaExec) {

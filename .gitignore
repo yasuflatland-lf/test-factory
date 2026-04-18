@@ -17,4 +17,7 @@ liferay-theme.json
 coverage/
 
 # DXP license files — never commit these
-/licenses/
+configs/*/deploy/activation-key.xml
+
+# One package manager per repo (yarn.lock is the source of truth)
+package-lock.json
