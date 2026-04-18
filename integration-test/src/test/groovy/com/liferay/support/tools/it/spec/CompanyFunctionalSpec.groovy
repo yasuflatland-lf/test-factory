@@ -73,7 +73,6 @@ class CompanyFunctionalSpec extends BaseLiferaySpec {
 		page.locator('[data-testid="company-result"].alert-success').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
-		page.locator('[data-testid="company-result"].alert-success').isVisible()
 	}
 
 	def 'Created company is visible via headless portal-instances API'() {

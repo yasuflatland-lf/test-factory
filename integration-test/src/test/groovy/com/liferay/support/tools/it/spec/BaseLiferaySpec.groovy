@@ -258,7 +258,8 @@ abstract class BaseLiferaySpec extends Specification {
 				conn.readTimeout = 10_000
 				conn.instanceFollowRedirects = false
 
-				int status = conn.responseCode
+				// Trigger the request; the redirect target is what we care about.
+				conn.responseCode
 				String location = conn.getHeaderField('Location') ?: ''
 
 				if (!location.contains('license_activation')) {
