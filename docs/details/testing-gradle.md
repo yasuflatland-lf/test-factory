@@ -16,14 +16,9 @@ L3 detail. Source of truth for Gradle task wiring, deploy verification, the incr
     --tests "com.liferay.support.tools.it.spec.DeploymentSpec"
 ```
 
-```
-# Integration tests require a DXP license. Set one of:
-export LIFERAY_DXP_LICENSE_FILE=/path/to/activation-key.xml
-# or
-export LIFERAY_DXP_LICENSE_BASE64=$(base64 -w0 activation-key.xml)
-```
+Integration tests require a DXP license at `configs/local/deploy/activation-key.xml` (gitignored). The workspace plugin's `dockerDeploy` copies everything under `configs/<env>/deploy/` into the image at build time; Liferay's deploy-on-startup machinery picks it up automatically.
 
-- **DXP license is required before each integration test run.** Set `LIFERAY_DXP_LICENSE_FILE` (path to a local `activation-key-*.xml`) or `LIFERAY_DXP_LICENSE_BASE64` (base64-encoded content). `LiferayContainer.copyLicenseToContainer()` throws `IllegalStateException` if neither is set. License files must be placed in `licenses/` (gitignored) and must not be committed.
+- **DXP license is required before each integration test run.** Place the license at `configs/local/deploy/activation-key.xml`. The file is gitignored via `configs/*/deploy/activation-key.xml` and must never be committed. No `LIFERAY_DXP_LICENSE_*` env vars are used.
 - The module build depends on `release.dxp.api` (DXP 2026), **not** `release.portal.api`. `com.liferay.journal.api` and `com.liferay.dynamic.data.mapping.api` do not need separate declarations — both are bundled inside `release.dxp.api`. The migration decision is recorded in `docs/ADR/adr-0008-dxp-2026-migration.md`.
 - The default `test` task is **disabled** (`enabled = false`). All integration tests run exclusively via the `integrationTest` task.
 - The `integrationTest` task automatically depends on `:modules:liferay-dummy-factory:jar`, so a standalone `./gradlew :integration-test:integrationTest` will build the JAR first.
@@ -39,23 +34,22 @@ export LIFERAY_DXP_LICENSE_BASE64=$(base64 -w0 activation-key.xml)
 
 ## Container configuration file handling
 
-### Config mount point: `/mnt/liferay/files/`
+### Only `configs/common/` and `configs/<env>/` (env = `local`) are copied
 
-The DXP 2026 Docker image entrypoint copies `/mnt/liferay/files/` to Liferay Home at container startup. Configuration files must be written to `/mnt/liferay/files/` — not to `/opt/liferay/tomcat/webapps/ROOT/WEB-INF/classes/`. Writing directly to the webapp classes directory bypasses the image's copy mechanism.
+The workspace plugin generates a Dockerfile that sets `ENV LIFERAY_WORKSPACE_ENVIRONMENT=local`. Its image entrypoint (`100_liferay_image_setup.sh`) copies `/home/liferay/configs/common/` and `/home/liferay/configs/local/` into `$LIFERAY_HOME` before Liferay starts. **`configs/docker/` is never copied.**
 
-`LiferayContainer` uses `copyFileToContainer(MountableFile, "/mnt/liferay/files/<filename>")` to place both `portal-ext.properties` and `portal-liferay-online-config.properties` before container start.
+All DXP 2026 portal-ext overrides (`setup.wizard.enabled=false`, `passwords.default.policy.change.required=false`, the `configuration.override.*` BasicAuth wiring, etc.) live in `configs/local/portal-ext.properties`. Cross-environment defaults live in `configs/common/portal-ext.properties`.
 
-### `project.root.dir` system property
+### Admin password bootstrap
 
-The `integrationTest` task sets `systemProperty 'project.root.dir', rootProject.projectDir.absolutePath` so that `LiferayContainer` can resolve config files under `configs/` at runtime. Without this, the container code has no reliable way to locate workspace config directories from inside the test JVM.
+The DXP 2026 Docker image ships HSQL with `USER_.PASSWORDRESET=1` baked into the `test@liferay.com` row, which makes Basic Auth JSONWS / Headless calls return HTTP 403 `{}`. `BaseLiferaySpec.bootstrapAdminCredentials()` runs once per JVM and:
 
-### Raw file concatenation for property merging
+1. Checks Basic Auth with `test` and `Test12345` — if either works, skips.
+2. Otherwise walks the form-login → `/c/portal/update_password` ticket flow, POSTs a new password (must differ from old; we use `Test12345`).
+3. Polls `GET /api/jsonws/user/get-current-user` for up to 180 s while the auth-pipeline cache propagates the change.
+4. Switches `activePassword` to `NEW_PASSWORD=Test12345`.
 
-`LiferayContainer._mergeConfigFiles()` concatenates `configs/common/portal-ext.properties` and `configs/docker/portal-ext.properties` with raw string concatenation rather than `Properties.load()` + `Properties.store()`. `Properties.store()` escapes special characters (`B"true"` Liferay typed-config syntax, double-quoted URL patterns) which corrupts values that Liferay's OSGi configuration layer depends on. Raw concatenation preserves values verbatim.
-
-### `File.listFiles()` null safety
-
-`File.listFiles()` returns `null` on I/O errors (e.g. permission failure) even when a preceding `isDirectory()` check succeeds. Always apply safe-navigation (`?.`) or a null guard before iterating the result.
+All subsequent specs inherit the bootstrapped password via `BaseLiferaySpec.basicAuthHeader()`. The ADR at `docs/ADR/adr-0008-dxp-2026-migration.md` has the full rationale.
 
 ## Gradle Incremental Build Trap
 
@@ -85,37 +79,11 @@ Report locations:
 - HTML: `modules/liferay-dummy-factory/build/reports/jacoco/test/html/index.html`
 - XML:  `modules/liferay-dummy-factory/build/reports/jacoco/test/jacocoTestReport.xml`
 
-### Integration tests — Liferay container JVM
+### Integration tests — out of scope for DXP-native flow
 
-Coverage is collected from the Liferay container JVM, not the integration test harness. The JaCoCo agent is injected into the container via `LIFERAY_JVM_OPTS` (not `CATALINA_OPTS`) in tcpserver mode on port 6300. At the end of each spec, `BaseLiferaySpec.cleanupSpec()` dumps a per-spec `.exec` file to `integration-test/build/jacoco/`. The `jacocoIntegrationReport` task merges all exec files and generates the combined report.
+Container-JVM coverage collection is not wired in the DXP-native workspace-plugin flow. The workspace plugin's generated Dockerfile cannot receive a `-javaagent` directive via env vars the way a Testcontainers-managed container can. Integration coverage is currently off by design. The `jacocoIntegrationReport` task remains as a no-op when no exec data exists.
 
-To run integration tests and generate the report:
-
-```bash
-./gradlew :integration-test:integrationTest
-# jacocoIntegrationReport runs automatically as finalizedBy
-```
-
-To regenerate the report from existing exec files without re-running tests:
-
-```bash
-./gradlew :integration-test:jacocoIntegrationReport
-```
-
-Report locations:
-
-- HTML: `integration-test/build/reports/jacoco/integration/html/index.html`
-- XML:  `integration-test/build/reports/jacoco/integration/jacocoIntegrationReport.xml`
-
-### JaCoCo integration pitfalls
-
-**Gradle JaCoCo plugin instruments ALL Test tasks.** Applying `id 'jacoco'` to the integration-test project causes Gradle to auto-instrument every `Test` task, including `integrationTest`. This produces a spurious `integrationTest.exec` from the harness JVM rather than from the Liferay container. Fix: add `jacoco { enabled = false }` inside the `integrationTest` task block to disable harness-side instrumentation and keep coverage collection container-side only.
-
-**The `org.jacoco.agent:runtime` jar has a non-obvious classpath filename.** The Maven artifact `org.jacoco:org.jacoco.agent:0.8.14:runtime` is stored in the Gradle cache as `org.jacoco.agent-0.8.14-runtime.jar`. Searching for the string `jacocoagent` alone will miss it. The correct predicate is: the path contains `jacocoagent` OR (contains `org.jacoco.agent` AND contains `runtime`). See `LiferayContainer._isJacocoAgentJar`.
-
-**Spock `cleanupSpec()` inheritance in Spock 2.x.** A `cleanupSpec()` defined in an abstract base spec IS invoked even when the concrete subclass defines its own `cleanupSpec()`. Spock's `PlatformSpecRunner.doRunCleanupSpec` chains the hierarchy. `BaseLiferaySpec.cleanupSpec()` is therefore guaranteed to dump JaCoCo coverage at the end of every spec, regardless of whether the subclass also defines `cleanupSpec()`. No explicit `super.cleanupSpec()` call is needed in subclasses.
-
-**GString `ClassCastException` in `withEnv(Map)`.** Groovy double-quoted strings with interpolation (`"${expr}"`) produce `GStringImpl`, not `java.lang.String`. Testcontainers' `withEnv(Map<String, String>)` enforces `String` values at runtime. Any GString value in a `withEnv([ ... ])` map literal must be explicitly coerced: `"...${variable}...".toString()`.
+**Spock `cleanupSpec()` inheritance in Spock 2.x.** A `cleanupSpec()` defined in an abstract base spec IS invoked even when the concrete subclass defines its own `cleanupSpec()`. Spock's `PlatformSpecRunner.doRunCleanupSpec` chains the hierarchy. `BaseLiferaySpec.cleanupSpec()` is therefore guaranteed to run at the end of every spec, regardless of whether the subclass defines its own. No explicit `super.cleanupSpec()` call is needed in subclasses.
 
 ## DXP 2026 unit test classpath requirements
 
