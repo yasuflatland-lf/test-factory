@@ -33,3 +33,5 @@ Liferay Portal CE Workspace: MVCPortlet + React portlet + Spock integration test
 ./gradlew :modules:liferay-dummy-factory:test          # Host-JVM unit tests + JaCoCo
 ./gradlew :integration-test:integrationTest             # Spock + Testcontainers (Docker)
 ```
+
+- DXP 2026 migration work — read `.claude/instructions/dxp-2026-references.md` first.
