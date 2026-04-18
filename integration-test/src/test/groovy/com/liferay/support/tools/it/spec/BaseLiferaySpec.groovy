@@ -213,9 +213,11 @@ abstract class BaseLiferaySpec extends Specification {
 
 			// DXP 2026 cold-container password propagation is slow: the
 			// auth-pipeline cache invalidates on a timer, not synchronously.
-			// Observed up to ~70s on fresh containers. Poll up to 180s.
+			// Observed just over 180s on the very first container start
+			// (the auth-cache background refresh interval appears to be 3 min).
+			// Poll up to 300s.
 			boolean ok = false
-			for (int attempt = 0; attempt < 180; attempt++) {
+			for (int attempt = 0; attempt < 300; attempt++) {
 				if (_checkBasicAuth(NEW_PASSWORD)) {
 					ok = true
 					log.info(
@@ -227,7 +229,7 @@ abstract class BaseLiferaySpec extends Specification {
 
 			if (!ok) {
 				throw new IllegalStateException(
-					'Admin bootstrap: update_password flow completed but JSONWS still returns 403 after 180s')
+					'Admin bootstrap: update_password flow completed but JSONWS still returns 403 after 300s')
 			}
 
 			activePassword = NEW_PASSWORD
