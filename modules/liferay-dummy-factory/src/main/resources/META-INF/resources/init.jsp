@@ -1,4 +1,4 @@
-<%@ taglib uri="http://xmlns.jcp.org/portlet_3_0" prefix="portlet" %>
+<%@ taglib uri="jakarta.tags.portlet" prefix="portlet" %>
 <%@ taglib uri="http://liferay.com/tld/portlet" prefix="liferay-portlet" %>
 <%@ taglib uri="http://liferay.com/tld/react" prefix="react" %>
 <%@ taglib uri="http://liferay.com/tld/theme" prefix="liferay-theme" %>

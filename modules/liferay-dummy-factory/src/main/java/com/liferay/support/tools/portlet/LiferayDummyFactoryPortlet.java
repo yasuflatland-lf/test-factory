@@ -18,7 +18,7 @@ import org.osgi.service.component.annotations.Component;
 		"jakarta.portlet.init-param.view-template=/view.jsp",
 		"jakarta.portlet.name=" + LDFPortletKeys.LIFERAY_DUMMY_FACTORY,
 		"jakarta.portlet.resource-bundle=content.Language",
-		"jakarta.portlet.version=3.0"
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
