@@ -21,11 +21,12 @@ Dummy Factory generates dummy data for debugging use. Please don't use this for 
 
 ## Required environment
 * Java 21 or above
-* Liferay 7.4 GA1 (Master / Develop branch)
-* Liferay 7.3 GA1 (Master / Develop branch)
-* Liferay 7.2 (Please see 7.2.x branch)
-* Liferay 7.1 (Please see 7.1.x branch)
-* Liferay 7.0 (Please see 7.0.x branch)
+* Liferay DXP 2026.Q1.3-LTS (this branch)
+* Liferay 7.4 (please see the 7.4.x branch)
+* Liferay 7.3 GA1 (please see the 7.3.x branch)
+* Liferay 7.2 (please see the 7.2.x branch)
+* Liferay 7.1 (please see the 7.1.x branch)
+* Liferay 7.0 (please see the 7.0.x branch)
 
 > For development rules and contracts, start with [`CLAUDE.md`](CLAUDE.md) and the task-based files under [`.claude/rules/`](.claude/rules/). Concrete details live under [`docs/details/`](docs/details/), and architectural decisions in [`docs/ADR/`](docs/ADR/).
 
@@ -34,7 +35,7 @@ Dummy Factory generates dummy data for debugging use. Please don't use this for 
 
 | Layer | Technology |
 |-------|------------|
-| Portal | Liferay Portal 7.4.3.132-ga132 |
+| Portal | Liferay DXP 2026.Q1.3-LTS |
 | Backend | MVCPortlet + MVCResourceCommand (layered) |
 | Frontend | React + Clay CSS |
 | Build | Gradle 8.5 + Liferay Workspace Plugin 10.1.9 |
@@ -57,63 +58,29 @@ Dummy Factory generates dummy data for debugging use. Please don't use this for 
 1. Navigate to `Control Panel`, under `Marketplace`, `Dummy Factory` will be found.
 1. Now you are ready to create dummy data! Enjoy!
 
-## Quick Start (Docker)
+## Quick Start (Docker via Workspace Plugin)
 
-Steps to start Liferay with Docker and deploy the portlet.
-
-### 1. Start the Liferay Container
+Provision the DXP 2026 activation key (required):
 
 ```bash
-# Foreground mode (view logs directly, Ctrl+C to stop)
-docker run -it -m 8g -p 8080:8080 -p 11311:11311 \
-  -e LIFERAY_SETUP_PERIOD_WIZARD_PERIOD_ENABLED=false \
-  -e LIFERAY_TERMS_PERIOD_OF_PERIOD_USE_PERIOD_REQUIRED=false \
-  -e LIFERAY_USERS_PERIOD_REMINDER_PERIOD_QUERIES_PERIOD_ENABLED=false \
-  -e LIFERAY_PASSWORDS_PERIOD_DEFAULT_PERIOD_POLICY_PERIOD_CHANGE_PERIOD_REQUIRED=false \
-  liferay/portal:7.4.3.132-ga132
+# Local: point to your file
+export LIFERAY_DXP_LICENSE_FILE=/path/to/activation-key.xml
 
-# Background mode (with a named container)
-docker run -d --name liferay -m 8g -p 8080:8080 -p 11311:11311 \
-  -e LIFERAY_SETUP_PERIOD_WIZARD_PERIOD_ENABLED=false \
-  -e LIFERAY_TERMS_PERIOD_OF_PERIOD_USE_PERIOD_REQUIRED=false \
-  -e LIFERAY_USERS_PERIOD_REMINDER_PERIOD_QUERIES_PERIOD_ENABLED=false \
-  -e LIFERAY_PASSWORDS_PERIOD_DEFAULT_PERIOD_POLICY_PERIOD_CHANGE_PERIOD_REQUIRED=false \
-  liferay/portal:7.4.3.132-ga132
+# Or CI: base64-encoded XML in an env var
+export LIFERAY_DXP_LICENSE_BASE64="$(base64 -w0 /path/to/activation-key.xml)"
 ```
 
-| Option | Description |
-|-----------|------|
-| `-m 8g` | Memory limit 8GB |
-| `-p 8080:8080` | HTTP port |
-| `-p 11311:11311` | GoGo Shell port (for checking bundle status) |
-| Environment variables | Disable setup wizard, terms of use, reminder queries, and forced password change |
-
-Startup takes approximately 5-8 minutes. If running in background mode, check with:
+Start the container:
 
 ```bash
-docker logs -f liferay   # When the "Server startup" message appears, startup is complete. Ctrl+C to exit.
+./gradlew startDockerContainer       # builds the image and boots Liferay on :8080
+./gradlew stopDockerContainer        # stop (preserves state for next run by default)
+./gradlew removeDockerContainer      # hard reset (forces image rebuild next start)
 ```
 
-To restart an existing container:
+The workspace plugin manages everything — the old `docker run liferay/portal:...` workflow is no longer used.
 
-```bash
-docker start liferay && docker logs -f liferay
-```
-
-### 2. Build and Deploy the Portlet
-
-```bash
-# Build the module JAR
-./gradlew :modules:liferay-dummy-factory:jar
-
-# Deploy the JAR to the container
-docker cp modules/liferay-dummy-factory/build/libs/liferay.dummy.factory-1.0.0.jar liferay:/opt/liferay/deploy/
-
-# Verify deployment (if STARTED appears, deployment is successful)
-docker logs -f liferay 2>&1 | grep -i "dummy.factory"
-```
-
-### 3. Verify Operation
+### Verify Operation
 
 Navigate to http://localhost:8080 and log in as admin (`test@liferay.com` / `test`).
 **Liferay Dummy Factory** will appear under Control Panel > Configuration.

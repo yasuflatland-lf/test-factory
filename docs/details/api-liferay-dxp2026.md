@@ -7,7 +7,7 @@ L3 detail. Non-obvious API facts for DXP 2026.Q1.3-LTS. This file is the single 
 DXP 2026 ships a managed BOM artifact. Use it as the single dependency for all Liferay APIs in `modules/liferay-dummy-factory/build.gradle`:
 
 ```groovy
-compileOnly group: "com.liferay.portal", name: "release.dxp.api"
+compileOnly group: "com.liferay.portal", name: "release.dxp.api", version: "default"
 ```
 
 The BOM includes journals (`com.liferay.journal.api`), DDM (`com.liferay.dynamic.data.mapping.api`), message boards (`com.liferay.message.boards.api`), blogs, vocabulary/category, and all portal-kernel artifacts at the correct version. Adding individual API dependencies alongside `release.dxp.api` causes version skew and runtime `ClassCastException` or `NoClassDefFoundError`. Do not add per-API entries.

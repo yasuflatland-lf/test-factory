@@ -45,7 +45,7 @@ The workspace plugin 16.0.5 registers these root-project tasks:
 ```
 startDockerContainer      # Chains: resolveLicenseFile → dockerDeploy → buildDockerImage
                           #         → createDockerContainer → start
-stopDockerContainer       # Stops the container; volume is preserved (autoRemove=false)
+stopDockerContainer       # Stops the container; volume is preserved (autoRemove=false override in integration-test/build.gradle)
 removeDockerContainer     # Stops + removes the container and volume (hard clean)
 ```
 

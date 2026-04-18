@@ -95,7 +95,7 @@ The liferay-dummy-factory project needs to build E2E integration tests for the p
 
 Key workspace plugin container behaviors:
 - Container name: `${project.name}-liferay` (e.g. `test-factory-liferay`)
-- `autoRemove=false` by default — container persists after `stopDockerContainer` for post-mortem inspection.
+- `autoRemove=false` via explicit override in `integration-test/build.gradle` (workspace plugin 16.0.5 defaults to `true` at `RootProjectConfigurator.java:540`). Container persists after `stopDockerContainer` for post-mortem inspection.
 - `LIFERAY_JVM_OPTS` is injected via `createDockerContainer { withEnvVar(...) }` (JaCoCo agent, JPDA).
 - Portal configuration lands in `configs/common/portal-ext.properties` and is merged at image build time.
 - Activation key is copied to `configs/local/deploy/` by the `resolveLicenseFile` task before `dockerDeploy`.

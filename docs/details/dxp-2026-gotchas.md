@@ -85,17 +85,21 @@ include 'modules:liferay-dummy-factory'
 
 Both lines are required. Without the `modules:liferay-dummy-factory` line, the bundle JAR is never built and `integrationTest` fails immediately.
 
-## 7. Headless `portal-instances list` endpoint has an indexing lag
+## 7. Headless organizations `?search=` has Elasticsearch indexing lag
 
 **Symptom**: `GET /o/headless-admin-user/v1.0/organizations?search=<name>` returns an empty list immediately after a create call, even though the organization was created successfully.
 
 **Root cause**: The `?search=` parameter routes through Elasticsearch. There is an observable indexing lag (typically 1–5 seconds, but potentially longer under load) between when the entity is persisted and when it appears in search results.
 
-**Fix**: Use `?pageSize=100` without `?search=`, then filter client-side by name. For post-condition assertions in specs, always use the page-and-filter pattern:
+**Fix**: Drop `?search=` and use `?pageSize=100` instead, then filter client-side by name. For post-condition assertions in specs, always use the page-and-filter pattern:
 
 ```groovy
-def resp = jsonwsGet("organization/get-organizations?companyId=${companyId}&parentOrganizationId=0&start=0&end=100")
-def match = resp.list.find { it.name == expectedName }
+List orgs = jsonwsGet(
+    "organization/get-organizations" +
+    "/company-id/${companyId}/parent-organization-id/0/start/0/end/100"
+) as List
+
+def match = orgs.find { it.name == expectedName }
 assert match != null
 ```
 

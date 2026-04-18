@@ -34,7 +34,7 @@ A Gradle task (`resolveLicenseFile`) reads either `LIFERAY_DXP_LICENSE_FILE` (a 
 
 ### D4 — Container lifecycle: autoRemove=false, stop-only on test completion
 
-The Docker container is not removed after the test run (`autoRemove=false` is the observed behavior with workspace plugin 16.0.5 when no explicit override is applied; see `RootProjectConfigurator.java` at `/home/yasuflatland/tmp/liferay-portal/modules/sdk/gradle-plugins-workspace/src/main/java/com/liferay/gradle/plugins/workspace/configurator/RootProjectConfigurator.java`). `integrationTest` uses `finalizedBy ':stopDockerContainer'` so the container is stopped but its volume is preserved. This allows post-mortem inspection (logs, `docker exec`, JaCoCo exec file recovery) after test failures. To force volume recreation, run `./gradlew removeDockerContainer` explicitly.
+The Docker container is not removed after the test run. Workspace plugin 16.0.5 sets `autoRemove=true` by default at `RootProjectConfigurator.java:540` (`/home/yasuflatland/tmp/liferay-portal/modules/sdk/gradle-plugins-workspace/src/main/java/com/liferay/gradle/plugins/workspace/configurator/RootProjectConfigurator.java`), so D4 is implemented via an explicit `hostConfig.autoRemove.set(false)` override in the `:createDockerContainer` configure block of `integration-test/build.gradle`. `integrationTest` uses `finalizedBy ':stopDockerContainer'` so the container is stopped but its volume is preserved. This allows post-mortem inspection (logs, `docker exec`, JaCoCo exec file recovery) after test failures. To force volume recreation, run `./gradlew removeDockerContainer` explicitly.
 
 ### D5 — Fixed Docker ports: 8080 / 11311 / 8000
 
