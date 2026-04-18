@@ -22,8 +22,9 @@ import java.util.concurrent.TimeUnit
 
 abstract class BaseLiferaySpec extends Specification {
 
-	protected static final String NEW_PASSWORD = 'Test12345'
 	protected static final String PORTLET_ID = 'com_liferay_support_tools_portlet_LiferayDummyFactoryPortlet'
+
+	protected static final String JSONWS_BASE = '/portal/api/jsonws/'
 
 	private static final Logger log = LoggerFactory.getLogger(BaseLiferaySpec)
 
@@ -32,9 +33,6 @@ abstract class BaseLiferaySpec extends Specification {
 
 	@Shared
 	static boolean bundleVerified = false
-
-	@Shared
-	static String activePassword = NEW_PASSWORD
 
 	@Shared
 	static Long cachedCompanyId = null
@@ -76,7 +74,11 @@ abstract class BaseLiferaySpec extends Specification {
 					int lineCount = allLines.size()
 					def tail = allLines.takeRight(5)
 					log.info('GoGo Shell attempt {}: {} lines, last 5: {}', i + 1, lineCount, tail)
-					def lines = allLines.findAll { it.toLowerCase().contains('liferay') && it.toLowerCase().contains('dummy') && it.toLowerCase().contains('factory') }
+					def lines = allLines.findAll {
+						it.toLowerCase().contains('liferay') &&
+							it.toLowerCase().contains('dummy') &&
+							it.toLowerCase().contains('factory')
+					}
 					log.info('Matches: {}', lines ?: '(no match)')
 
 					if (lines.any { it.contains('Active') }) {
@@ -105,7 +107,16 @@ abstract class BaseLiferaySpec extends Specification {
 		bundleVerified = true
 	}
 
-	protected static String loginAsAdmin(PlaywrightLifecycle pw) {
+	/**
+	 * Establish a Playwright-side authenticated session as the default admin.
+	 *
+	 * With D2 (portal-ext.properties suppressing PASSWORDRESET, terms-of-use,
+	 * and reminder queries) the post-login flow is a single form POST with no
+	 * password-reset detour. Kept as a protected method because many specs
+	 * call it from setupSpec() to prime a Playwright session used later for
+	 * UI-driven assertions.
+	 */
+	protected static void loginAsAdmin(PlaywrightLifecycle pw) {
 		Page page = pw.newPage()
 
 		page.navigate("${liferay.baseUrl}/")
@@ -113,45 +124,24 @@ abstract class BaseLiferaySpec extends Specification {
 
 		String authToken = page.evaluate('() => Liferay.authToken') as String
 
-		def passwords = [LiferayContainer.DEFAULT_ADMIN_PASSWORD, NEW_PASSWORD]
-		String loggedInPassword = null
-
-		for (pwd in passwords) {
-			def response = page.request().post("${liferay.baseUrl}/c/portal/login",
-				RequestOptions.create()
-					.setHeader('Content-Type', 'application/x-www-form-urlencoded')
-					.setHeader('x-csrf-token', authToken)
-					.setData("login=${URLEncoder.encode(LiferayContainer.DEFAULT_ADMIN_EMAIL, 'UTF-8')}&password=${URLEncoder.encode(pwd, 'UTF-8')}&rememberMe=true")
-			)
-
-			if (response.status() == 200) {
-				loggedInPassword = pwd
-				break
-			}
-		}
+		page.request().post("${liferay.baseUrl}/c/portal/login",
+			RequestOptions.create()
+				.setHeader('Content-Type', 'application/x-www-form-urlencoded')
+				.setHeader('x-csrf-token', authToken)
+				.setData(
+					"login=${URLEncoder.encode(LiferayContainer.DEFAULT_ADMIN_EMAIL, 'UTF-8')}" +
+					"&password=${URLEncoder.encode(LiferayContainer.DEFAULT_ADMIN_PASSWORD, 'UTF-8')}" +
+					'&rememberMe=true'
+				)
+		)
 
 		page.navigate("${liferay.baseUrl}/")
 		page.waitForLoadState()
+	}
 
-		if (page.title().contains('New Password')) {
-			page.locator('#password1').fill(NEW_PASSWORD)
-			page.locator('#password2').fill(NEW_PASSWORD)
-			page.waitForNavigation({ ->
-				page.locator('[type=submit], button.btn-primary').first().click()
-			})
-			loggedInPassword = NEW_PASSWORD
-		}
-
-		activePassword = loggedInPassword ?: LiferayContainer.DEFAULT_ADMIN_PASSWORD
-
-		if (page.locator('#reminderQueryAnswer').isVisible()) {
-			page.locator('#reminderQueryAnswer').fill('test')
-			page.waitForNavigation({ ->
-				page.locator('[type=submit], button.btn-primary').first().click()
-			})
-		}
-
-		return activePassword
+	protected String jsonwsUrl(String path) {
+		return "${LiferayContainer.getInstance().baseUrl}${JSONWS_BASE}" +
+			path.replaceFirst('^/', '')
 	}
 
 	protected static int httpGet(String url) {
@@ -165,7 +155,7 @@ abstract class BaseLiferaySpec extends Specification {
 	}
 
 	protected Map headlessGet(String path) {
-		return _request('GET', path, 'application/json', null, null) { status, body ->
+		return _httpGet(path, 'application/json') { status, body ->
 			if (status >= 400) {
 				throw new IllegalStateException(
 					"headlessGet ${path} returned HTTP ${status}: ${body}")
@@ -176,7 +166,7 @@ abstract class BaseLiferaySpec extends Specification {
 	}
 
 	protected Object jsonwsGet(String path) {
-		return _request('GET', path, 'application/json', null, null) { status, body ->
+		return _httpGet(jsonwsUrl(path), 'application/json') { status, body ->
 			if (status >= 400) {
 				throw new IllegalStateException(
 					"jsonwsGet ${path} returned HTTP ${status}: ${body}")
@@ -196,8 +186,8 @@ abstract class BaseLiferaySpec extends Specification {
 				"${URLEncoder.encode(v == null ? '' : v.toString(), 'UTF-8')}"
 		}.join('&')
 
-		return _request(
-				'POST', path, 'application/json',
+		return _httpPost(
+				jsonwsUrl(path), 'application/json',
 				'application/x-www-form-urlencoded', body) { status, responseBody ->
 
 			if (status >= 400) {
@@ -215,18 +205,16 @@ abstract class BaseLiferaySpec extends Specification {
 
 	protected Long getCompanyId() {
 		if (cachedCompanyId == null) {
-			def company = jsonwsGet(
-				'/api/jsonws/company/get-company-by-virtual-host' +
-				'/virtual-host/localhost') as Map
-			cachedCompanyId = company.companyId as Long
+			def user = jsonwsGet('user/get-current-user') as Map
+			cachedCompanyId = user.companyId as Long
 		}
 
 		return cachedCompanyId
 	}
 
 	protected Map headlessPost(String path, String jsonBody) {
-		return _request(
-				'POST', path, 'application/json', 'application/json',
+		return _httpPost(
+				absoluteUrl(path), 'application/json', 'application/json',
 				jsonBody) { status, body ->
 
 			if (status >= 400) {
@@ -239,22 +227,71 @@ abstract class BaseLiferaySpec extends Specification {
 	}
 
 	protected int headlessDelete(String path) {
-		return _request('DELETE', path, null, null, null) { status, _body ->
-			return status
-		} as int
-	}
-
-	private Object _request(
-			String method, String path, String acceptType, String contentType,
-			String requestBody, Closure<Object> responseHandler) {
-
-		def conn = new URL("${liferay.baseUrl}${path}").openConnection() as HttpURLConnection
+		def conn = new URL(absoluteUrl(path)).openConnection() as HttpURLConnection
 
 		try {
-			conn.requestMethod = method
+			conn.requestMethod = 'DELETE'
 			conn.connectTimeout = 10_000
 			conn.readTimeout = 30_000
 			conn.setRequestProperty('Authorization', basicAuthHeader())
+			conn.setRequestProperty('Accept-Encoding', 'identity')
+
+			return conn.responseCode
+		}
+		finally {
+			conn.disconnect()
+		}
+	}
+
+	protected String absoluteUrl(String path) {
+		if (path.startsWith('http://') || path.startsWith('https://')) {
+			return path
+		}
+		return "${liferay.baseUrl}${path.startsWith('/') ? '' : '/'}${path}"
+	}
+
+	private Object _httpGet(
+			String pathOrUrl, String acceptType, Closure<Object> responseHandler) {
+
+		String url = absoluteUrl(pathOrUrl)
+		def conn = new URL(url).openConnection() as HttpURLConnection
+
+		try {
+			conn.requestMethod = 'GET'
+			conn.connectTimeout = 10_000
+			conn.readTimeout = 30_000
+			conn.setRequestProperty('Authorization', basicAuthHeader())
+			conn.setRequestProperty('Accept-Encoding', 'identity')
+
+			if (acceptType) {
+				conn.setRequestProperty('Accept', acceptType)
+			}
+
+			int status = conn.responseCode
+			String body = (status < 400)
+				? (conn.inputStream?.text ?: '')
+				: (conn.errorStream?.text ?: '')
+
+			return responseHandler.call(status, body)
+		}
+		finally {
+			conn.disconnect()
+		}
+	}
+
+	private Object _httpPost(
+			String pathOrUrl, String acceptType, String contentType,
+			String requestBody, Closure<Object> responseHandler) {
+
+		String url = absoluteUrl(pathOrUrl)
+		def conn = new URL(url).openConnection() as HttpURLConnection
+
+		try {
+			conn.requestMethod = 'POST'
+			conn.connectTimeout = 10_000
+			conn.readTimeout = 30_000
+			conn.setRequestProperty('Authorization', basicAuthHeader())
+			conn.setRequestProperty('Accept-Encoding', 'identity')
 
 			if (acceptType) {
 				conn.setRequestProperty('Accept', acceptType)
@@ -285,7 +322,7 @@ abstract class BaseLiferaySpec extends Specification {
 
 	protected String basicAuthHeader() {
 		String credentials =
-			"${LiferayContainer.DEFAULT_ADMIN_EMAIL}:${activePassword}"
+			"${LiferayContainer.DEFAULT_ADMIN_EMAIL}:${LiferayContainer.DEFAULT_ADMIN_PASSWORD}"
 
 		return "Basic ${credentials.bytes.encodeBase64().toString()}"
 	}

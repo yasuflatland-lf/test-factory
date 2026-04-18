@@ -34,7 +34,7 @@ class CompanyFunctionalSpec extends BaseLiferaySpec {
 	def cleanupSpec() {
 		// CompanyService is excluded from JSON-WS by Liferay's default
 		// json.service.invalid.class.names, so there is no remote delete path.
-		// The Testcontainers instance is not reused (withReuse(false)), so the
+		// The workspace-managed Docker container is disposable per run, so the
 		// created company is discarded with the container at the end of the run.
 		pw?.close()
 	}
