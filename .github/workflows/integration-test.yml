@@ -41,6 +41,17 @@ jobs:
       - name: Wait for Docker image pull
         run: wait
 
+      - name: Provision DXP activation key
+        env:
+          LIFERAY_DXP_LICENSE_BASE64: ${{ secrets.LIFERAY_DXP_LICENSE_BASE64 }}
+        run: |
+          if [ -z "$LIFERAY_DXP_LICENSE_BASE64" ]; then
+            echo "::warning::LIFERAY_DXP_LICENSE_BASE64 secret is not set; skipping license provisioning"
+            exit 0
+          fi
+          mkdir -p configs/local/deploy
+          echo "$LIFERAY_DXP_LICENSE_BASE64" | base64 -d > configs/local/deploy/activation-key.xml
+
       - name: Run integration tests
         env:
           LIFERAY_DXP_LICENSE_BASE64: ${{ secrets.LIFERAY_DXP_LICENSE_BASE64 }}
