@@ -38,7 +38,7 @@ class DocumentFunctionalSpec extends BaseLiferaySpec {
 		createdFileEntryIds.each { id ->
 			try {
 				jsonwsPost(
-					'/api/jsonws/dlapp/delete-file-entry',
+					'dlapp/delete-file-entry',
 					['fileEntryId': id])
 			}
 			catch (Exception e) {
@@ -57,7 +57,7 @@ class DocumentFunctionalSpec extends BaseLiferaySpec {
 	def 'Discover Guest site groupId'() {
 		when:
 		def group = jsonwsGet(
-			"/api/jsonws/group/get-group/company-id/${companyId}" +
+			"group/get-group/company-id/${companyId}" +
 			'/group-key/Guest') as Map
 
 		then:
@@ -117,7 +117,7 @@ class DocumentFunctionalSpec extends BaseLiferaySpec {
 	def 'Created documents are visible via JSONWS DLAppService'() {
 		when:
 		def entries = jsonwsGet(
-			"/api/jsonws/dlapp/get-file-entries/repository-id/${guestGroupId}" +
+			"dlapp/get-file-entries/repository-id/${guestGroupId}" +
 			'/folder-id/0') as List
 
 		then:

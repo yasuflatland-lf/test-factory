@@ -44,7 +44,7 @@ class CategoryFunctionalSpec extends BaseLiferaySpec {
 
 		// Discover Guest site groupId for the prereq vocabulary.
 		def group = jsonwsGet(
-			"/api/jsonws/group/get-group/company-id/${companyId}" +
+			"group/get-group/company-id/${companyId}" +
 			'/group-key/Guest') as Map
 
 		guestGroupId = group.groupId as Long
@@ -142,11 +142,13 @@ class CategoryFunctionalSpec extends BaseLiferaySpec {
 		page.locator('[data-testid="category-result"].alert-success').isVisible()
 
 		when: 'query headless taxonomy API for created categories'
+		// Drop ?search= — Headless Delivery goes through Elasticsearch with
+		// ingestion lag after a create. Fetch with pageSize=100 and filter
+		// client-side for deterministic post-condition checks.
 		def response = headlessGet(
 			"/o/headless-admin-taxonomy/v1.0/taxonomy-vocabularies" +
 			"/${prereqVocabularyId}/taxonomy-categories" +
-			"?search=${URLEncoder.encode(BASE_CATEGORY_NAME, 'UTF-8')}" +
-			'&pageSize=100')
+			"?pageSize=100")
 
 		then:
 		response != null
