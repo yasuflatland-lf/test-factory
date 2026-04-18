@@ -73,7 +73,7 @@ No `LIFERAY_DXP_LICENSE_*` env vars are used. `LiferayContainer` no longer mount
 
 The workspace plugin's generated Dockerfile sets `ENV LIFERAY_WORKSPACE_ENVIRONMENT=local` and its image entrypoint (`100_liferay_image_setup.sh`) copies only `configs/common/` and `configs/<env>/` (where `env=local` by default). **`configs/docker/` is never copied.**
 
-All DXP 2026 portal overrides (`setup.wizard.enabled=false`, `passwords.default.policy.change.required=false`, `enterprise.product.notification.enabled=false`, the `configuration.override.*` BasicAuth wiring, etc.) live in `configs/local/portal-ext.properties`. Cross-environment defaults live in `configs/common/portal-ext.properties`.
+Every DXP 2026 portal override that the tests depend on — `setup.wizard.enabled=false`, `passwords.default.policy.change.required=false`, `enterprise.product.notification.enabled=false`, the `configuration.override.*` BasicAuth wiring, the JSONWS-enabling trio (`jsonws.web.service.api.discoverable`, `json.web.service.enabled`, `json.servlet.hosts.allowed=`), etc. — lives in `configs/common/portal-ext.properties` so that any environment inherits the same working baseline. Environment-only overrides (JDBC, etc.) go under `configs/local/portal-ext.properties`. The empty `configs/common/portal-liferay-online-config.properties` shadows the DXP-baked `json.servlet.hosts.allowed=N/A` that otherwise blocks all JSONWS access (commit `6021828`; see `docs/details/dxp-2026-gotchas.md`).
 
 ## Bundle Resolution Trap: Portlet Taglib URI Stays on JCP Namespace
 
@@ -128,12 +128,21 @@ The integration test harness clears this flag once per container lifetime in `Ba
 
 `/o/headless-portal-instances/v1.0/portal-instances` exposes the company's `webId` under the field name `portalInstanceId`. Tests querying for a newly-created company must use the path-based getter `/o/headless-portal-instances/v1.0/portal-instances/{portalInstanceId}` and compare on `.portalInstanceId` (not `.webId`). The list endpoint (`/portal-instances`) can lag for newly-created companies because `PortalInstancePool` caches the iterator.
 
+## Workspace Plugin Module Discovery
+
+The workspace plugin 16.0.5 (required for DXP 2026) does not auto-discover `modules/liferay-dummy-factory` from the plugin-configured `modules.dir` alone. The two settings are both required: `liferay.workspace.modules.dir=modules` in `gradle.properties` AND an explicit `include 'modules:liferay-dummy-factory'` with `project(':modules:liferay-dummy-factory').projectDir = file('modules/liferay-dummy-factory')` in `settings.gradle`. Omitting either makes `:modules:liferay-dummy-factory:jar` fail with "project not found". Refs: commits `717ae24`, `2d006cd`.
+
+## bnd.bnd `Import-Package` must exclude `javax.servlet`
+
+The DXP 2026 OSGi framework exports `jakarta.servlet` but NOT `javax.servlet`. Transitive references from older libraries can still emit `javax.servlet` into the bundle's auto-generated `Import-Package`, leaving the bundle `Installed` with `Unresolved requirements`. Add `!javax.servlet,!javax.servlet.http,*` to the bundle's `bnd.bnd` `Import-Package` directive. Ref: commit `423924e`.
+
 ## Consequences
 
 - CE 7.4 is no longer supported. The `-Pbuild.target=ce` Gradle flag is removed.
 - All `javax.portlet.*` and `javax.servlet.*` imports in portlet-related source files become `jakarta.*`.
 - JSP portlet taglib URI stays on `http://xmlns.jcp.org/portlet_3_0` per DXP 2026's `Provide-Capability` inventory.
 - Integration tests require a valid DXP license at `configs/<env>/deploy/activation-key.xml`.
-- `configs/docker/` is no longer read by the workspace plugin. All overrides live under `configs/local/`.
+- `configs/docker/` is no longer read by the workspace plugin. Shared overrides live in `configs/common/`; environment-only overrides in `configs/<env>/`.
 - JaCoCo is out of scope for the DXP-native flow (the workspace plugin cannot inject `-javaagent` via env vars). The `jacocoIntegrationReport` task remains as a no-op when no exec data exists.
 - Integration specs may assume the admin password is `Test12345` after `ensureBundleActive()` returns (not `test`).
+- Runtime / HTTP-client / auth-cache gotchas discovered during migration live in `docs/details/dxp-2026-gotchas.md`. Read on demand.
