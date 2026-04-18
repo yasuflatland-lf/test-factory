@@ -43,7 +43,7 @@ Affected file: `modules/liferay-dummy-factory/src/main/java/com/liferay/support/
 
 ## 3. `CompanyService` is blacklisted from JSON-WS
 
-`portal.properties` lists `com.liferay.portal.kernel.service.CompanyServiceUtil` in `json.service.invalid.class.names`. Every path under `/portal/api/jsonws/company/*` (and the legacy `/api/jsonws/company/*`) returns HTTP 404 regardless of method or parameters.
+`portal.properties` lists `com.liferay.portal.kernel.service.CompanyServiceUtil` in `json.service.invalid.class.names`. Every path under `/api/jsonws/company/*` (and the legacy `/api/jsonws/company/*`) returns HTTP 404 regardless of method or parameters.
 
 For tests that need the current company ID, use `user/get-current-user` and extract the `.companyId` field:
 
@@ -67,7 +67,7 @@ No simpler overload exists on `CompanyLocalService`. The shorter overload lives 
 
 ## 5. `OrganizationService.addOrganization` — JSONWS availability on DXP 2026
 
-`OrganizationService.addOrganization` remains exposed via `/portal/api/jsonws/organization/add-organization` on DXP 2026, but Headless Admin User is the recommended path; verify behavior against a running container before relying on either endpoint.
+`OrganizationService.addOrganization` remains exposed via `/api/jsonws/organization/add-organization` on DXP 2026, but Headless Admin User is the recommended path; verify behavior against a running container before relying on either endpoint.
 
 Headless endpoint for reference:
 
@@ -132,17 +132,17 @@ The caller is responsible for lowercasing and for appending any disambiguating i
 
 ## 11. JSONWS paths for module-level services use a dot-prefixed context
 
-Portal-core services use simple paths: `/portal/api/jsonws/user/get-user-by-email-address`. Module services (OSGi JARs) require a dot-prefixed module context:
+Portal-core services use simple paths: `/api/jsonws/user/get-user-by-email-address`. Module services (OSGi JARs) require a dot-prefixed module context:
 
 | Service | JSONWS path |
 |---------|-------------|
-| Blogs | `/portal/api/jsonws/blogs.blogsentry/get-group-entries` |
-| Journal | `/portal/api/jsonws/journal.journalarticle/get-articles` |
-| DDM | `/portal/api/jsonws/ddm.ddmstructure/get-structures` |
+| Blogs | `/api/jsonws/blogs.blogsentry/get-group-entries` |
+| Journal | `/api/jsonws/journal.journalarticle/get-articles` |
+| DDM | `/api/jsonws/ddm.ddmstructure/get-structures` |
 
 The module name matches the `Bundle-SymbolicName` prefix (e.g. `com.liferay.blogs.service` → `blogs`). Omitting the prefix returns HTTP 404.
 
-Note: In DXP 2026 the JSONWS base path changes from `/api/jsonws/` to `/portal/api/jsonws/`. All paths shown above use the new base. `BaseLiferaySpec.jsonwsGet/Post` centralizes this; individual specs pass only the path suffix.
+Note: DXP 2026.Q1.3-LTS exposes JSONWS at `/api/jsonws/` (unchanged from earlier releases). `BaseLiferaySpec.jsonwsGet/Post` centralizes this; individual specs pass only the path suffix.
 
 ## 12. `PanelCategoryKeys.CONTROL_PANEL_APPS` — `MARKETPLACE` constant does not exist in CE 7.4
 
@@ -162,9 +162,12 @@ Import-Package: !javax.servlet,!javax.servlet.http,*
 
 Without this exclusion the bundle will show as UNSATISFIED in GoGo Shell even though the code compiles successfully.
 
-## 14. JSONWS base path is `/portal/api/jsonws/`
+## 14. JSONWS base path is `/api/jsonws/`
 
-DXP 2026 changed the JSONWS base path from `/api/jsonws/` to `/portal/api/jsonws/`. The old path returns 404 for all services.
+DXP 2026.Q1.3-LTS keeps the JSONWS base path at `/api/jsonws/`. Earlier migration notes speculated the path had moved to `/portal/api/jsonws/`, but `/portal/api/jsonws/*` is not registered in this release and returns 404.
+
+The real DXP 2026 gotcha is BasicAuth: `BasicAuthHeaderAuthVerifierPipelineConfigurator` is declared with `configuration-policy="require"`, so BasicAuth is silently skipped unless an OSGi config file is deployed at
+`configs/common/osgi/configs/com.liferay.portal.security.auth.verifier.internal.basic.auth.header.configuration.BasicAuthHeaderAuthVerifierConfiguration.config` with `enabled=B"true"` and `urlsIncludes=["/api/*","/o/*","/xmlrpc/*"]`. Without the file, every JSONWS call returns HTTP 403 with an empty JSON body.
 
 `BaseLiferaySpec.jsonwsGet/Post` centralizes the base path. Individual specs and cleanup code must never hard-code the full path — pass only the suffix (e.g. `'user/get-current-user'`). When sweeping for old-path references, grep both dotted access and string literals:
 
