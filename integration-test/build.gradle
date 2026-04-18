@@ -77,9 +77,21 @@ def resolveLicenseFile = tasks.register('resolveLicenseFile') {
 // so the root-project tasks registered by the workspace plugin are already
 // available regardless of which project is evaluated first.
 gradle.projectsEvaluated {
-	tasks.findByPath(':dockerDeploy')?.dependsOn(resolveLicenseFile)
+	def deployTask = tasks.findByPath(':dockerDeploy')
+	if (deployTask == null) {
+		throw new GradleException(
+			"Workspace plugin did not register ':dockerDeploy' — check plugin version (expect 16.0.5)."
+		)
+	}
+	deployTask.dependsOn(resolveLicenseFile)
 
-	tasks.findByPath(':createDockerContainer')?.configure {
+	def createTask = tasks.findByPath(':createDockerContainer')
+	if (createTask == null) {
+		throw new GradleException(
+			"Workspace plugin did not register ':createDockerContainer'."
+		)
+	}
+	createTask.configure {
 		// LIFERAY_JVM_OPTS injection: JaCoCo tcpserver agent for coverage collection.
 		withEnvVar 'LIFERAY_JVM_OPTS',
 			'-javaagent:/opt/liferay/jacocoagent.jar=output=tcpserver,address=0.0.0.0,port=6300'
@@ -107,11 +119,13 @@ gradle.projectsEvaluated {
 // ----- awaitLiferayReady task -----
 tasks.register('awaitLiferayReady') {
 	group = 'liferay'
-	description = 'Poll http://localhost:8080/c/portal/login until Liferay is ready (max 8 min)'
+	description = 'Poll Liferay login page until ready (max 8 min). Host/port from liferay.host / liferay.http.port.'
 	mustRunAfter ':startDockerContainer'
 	doLast {
+		def liferayHost = project.findProperty('liferay.host') ?: System.getProperty('liferay.host', 'localhost')
+		def liferayHttpPort = project.findProperty('liferay.http.port') ?: System.getProperty('liferay.http.port', '8080')
+		def url = new URL("http://${liferayHost}:${liferayHttpPort}/c/portal/login")
 		def deadline = System.currentTimeMillis() + 8 * 60 * 1000
-		def url = new URL('http://localhost:8080/c/portal/login')
 		int attempt = 0
 		while (System.currentTimeMillis() < deadline) {
 			attempt++
@@ -122,15 +136,19 @@ tasks.register('awaitLiferayReady') {
 				conn.instanceFollowRedirects = false
 				int code = conn.responseCode
 				if (code == 200 || code == 302) {
-					logger.lifecycle("Liferay ready after ${attempt} attempts")
+					logger.lifecycle("Liferay ready after ${attempt} attempts (${url})")
 					return
 				}
 			}
-			catch (IOException ignored) {
+			catch (java.net.ConnectException e) {
+				logger.info("awaitLiferayReady attempt ${attempt}: ConnectException: ${e.message}")
+			}
+			catch (java.net.SocketTimeoutException e) {
+				logger.info("awaitLiferayReady attempt ${attempt}: SocketTimeoutException: ${e.message}")
 			}
 			sleep(5000)
 		}
-		throw new GradleException("Liferay not ready after 8 minutes (${attempt} attempts)")
+		throw new GradleException("Liferay not ready after 8 minutes (${attempt} attempts, ${url})")
 	}
 }
 

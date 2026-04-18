@@ -1,14 +1,11 @@
 apply plugin: 'jacoco'
 
 dependencies {
-	compileOnly group: "com.liferay.portal", name: "release.portal.api", version: "default"
-
-	compileOnly group: "com.liferay", name: "com.liferay.journal.api"
-	compileOnly group: "com.liferay", name: "com.liferay.dynamic.data.mapping.api"
+	compileOnly group: "com.liferay.portal", name: "release.dxp.api", version: "default"
 
 	compileInclude group: "net.datafaker", name: "datafaker", version: "2.5.4"
 
-	testImplementation group: "com.liferay.portal", name: "release.portal.api", version: "default"
+	testImplementation group: "com.liferay.portal", name: "release.dxp.api", version: "default"
 	testImplementation group: "org.junit.jupiter", name: "junit-jupiter", version: "5.10.2"
 }
 

@@ -76,17 +76,4 @@ class CompanyFunctionalSpec extends BaseLiferaySpec {
 		page.locator('[data-testid="company-result"].alert-success').isVisible()
 	}
 
-	def 'Created company visible via portlet UI alert'() {
-		// TODO(G7): CompanyService is blacklisted from JSON-WS in DXP 2026
-		// (json.service.invalid.class.names). The original test called
-		// /jsonws/company/get-company-by-web-id which returns 404. Replaced
-		// with Headless Admin User API once verified available, or verify
-		// via Playwright UI response. createdCompanyId is set below from the
-		// previous Stepwise step's portlet UI success. For now assert the
-		// prior step already established success via .alert-success locator.
-		expect:
-		// Verification deferred to G7 — no JSON-WS path for CompanyService.
-		true
-	}
-
 }

@@ -1,8 +1,15 @@
 package com.liferay.support.tools.it.container
 
+import java.net.ConnectException
+import java.net.SocketTimeoutException
 import java.nio.file.Path
 
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
 class LiferayContainer {
+
+	private static final Logger LOG = LoggerFactory.getLogger(LiferayContainer)
 
 	static final int HTTP_PORT = 8080
 	static final int GOGO_PORT = 11311
@@ -51,7 +58,14 @@ class LiferayContainer {
 			int code = conn.responseCode
 			return code == 200 || code == 302
 		}
-		catch (IOException ignored) {
+		catch (ConnectException ignored) {
+			return false
+		}
+		catch (SocketTimeoutException ignored) {
+			return false
+		}
+		catch (IOException e) {
+			LOG.warn("LiferayContainer.isRunning() unexpected IOException: {}", e.message)
 			return false
 		}
 	}

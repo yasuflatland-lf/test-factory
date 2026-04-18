@@ -64,6 +64,7 @@ public class SiteCreator {
 			try {
 				Group group = BatchTransaction.run(
 					() -> {
+						// externalReferenceCode: dummy-factory sites intentionally omit ERC (no idempotency keying).
 						Group newGroup = _groupLocalService.addGroup(
 							null, userId, parentGroupId, null, 0,
 							GroupConstants.DEFAULT_LIVE_GROUP_ID, nameMap,

@@ -1,6 +1,6 @@
-<%-- NOTE: DXP 2026 の Provide-Capability は http://xmlns.jcp.org/portlet_3_0 のみ広告。
-     jakarta.tags.portlet への切替はバンドル解決で死ぬ。変更禁止。
-     see docs/ADR/adr-0008-dxp-2026-migration.md --%>
+<%-- NOTE: DXP 2026 only advertises Provide-Capability for http://xmlns.jcp.org/portlet_3_0.
+     Switching to jakarta.tags.portlet breaks bundle resolution. Do not change the URI.
+     See docs/ADR/adr-0008-dxp-2026-migration.md. --%>
 <%@ taglib uri="http://xmlns.jcp.org/portlet_3_0" prefix="portlet" %>
 <%@ taglib uri="http://liferay.com/tld/portlet" prefix="liferay-portlet" %>
 <%@ taglib uri="http://liferay.com/tld/react" prefix="react" %>
