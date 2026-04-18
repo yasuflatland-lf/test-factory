@@ -208,11 +208,11 @@ abstract class BaseLiferaySpec extends Specification {
 
 			_postUpdatePassword(ticket, formTokens, NEW_PASSWORD)
 
-			// DXP commits the password change asynchronously; observed
-			// propagation delay on first-run cold containers is up to ~20s
-			// (cache invalidation + auth pipeline refresh). Poll up to 60s.
+			// DXP 2026 cold-container password propagation is slow: the
+			// auth-pipeline cache invalidates on a timer, not synchronously.
+			// Observed up to ~70s on fresh containers. Poll up to 180s.
 			boolean ok = false
-			for (int attempt = 0; attempt < 60; attempt++) {
+			for (int attempt = 0; attempt < 180; attempt++) {
 				if (_checkBasicAuth(NEW_PASSWORD)) {
 					ok = true
 					log.info(
@@ -224,7 +224,7 @@ abstract class BaseLiferaySpec extends Specification {
 
 			if (!ok) {
 				throw new IllegalStateException(
-					'Admin bootstrap: update_password flow completed but JSONWS still returns 403 after 60s')
+					'Admin bootstrap: update_password flow completed but JSONWS still returns 403 after 180s')
 			}
 
 			activePassword = NEW_PASSWORD
@@ -266,11 +266,24 @@ abstract class BaseLiferaySpec extends Specification {
 	}
 
 	private static String _fetchLoginPageAuth() {
-		String body = _httpGet("${liferay.baseUrl}/sign-in")
+		// Try /sign-in first, then /c, then /. On a cold container the landing
+		// page varies; any authenticated-redirect landing page will contain a
+		// p_auth token embedded in a form or URL.
+		for (String path in ['/sign-in', '/c', '/']) {
+			String body = _httpGet("${liferay.baseUrl}${path}")
 
-		Matcher matcher = Pattern.compile(/p_auth=([A-Za-z0-9]+)/).matcher(body)
+			Matcher matcher = Pattern.compile(/p_auth=([A-Za-z0-9]+)/).matcher(body)
 
-		return matcher.find() ? matcher.group(1) : null
+			if (matcher.find()) {
+				return matcher.group(1)
+			}
+
+			log.debug(
+				'Admin bootstrap: p_auth not found in {} (body length {})',
+				path, body?.length() ?: 0)
+		}
+
+		return null
 	}
 
 	private static void _postLogin(String pAuth) {
