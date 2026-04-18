@@ -76,22 +76,20 @@ def resolveLicenseFile = tasks.register('resolveLicenseFile') {
 // NOTE: gradle.projectsEvaluated runs after *all* projects have been evaluated,
 // so the root-project tasks registered by the workspace plugin are already
 // available regardless of which project is evaluated first.
-gradle.projectsEvaluated {
-	def deployTask = tasks.findByPath(':dockerDeploy')
-	if (deployTask == null) {
+def requireWorkspaceTask = { String path ->
+	def task = tasks.findByPath(path)
+	if (task == null) {
 		throw new GradleException(
-			"Workspace plugin did not register ':dockerDeploy' — check plugin version (expect 16.0.5)."
+			"Workspace plugin did not register '${path}' — check plugin version (expect 16.0.5)."
 		)
 	}
-	deployTask.dependsOn(resolveLicenseFile)
+	return task
+}
 
-	def createTask = tasks.findByPath(':createDockerContainer')
-	if (createTask == null) {
-		throw new GradleException(
-			"Workspace plugin did not register ':createDockerContainer' — check plugin version (expect 16.0.5)."
-		)
-	}
-	createTask.configure {
+gradle.projectsEvaluated {
+	requireWorkspaceTask(':dockerDeploy').dependsOn(resolveLicenseFile)
+
+	requireWorkspaceTask(':createDockerContainer').configure {
 		// LIFERAY_JVM_OPTS injection: JaCoCo tcpserver agent for coverage collection.
 		withEnvVar 'LIFERAY_JVM_OPTS',
 			'-javaagent:/opt/liferay/jacocoagent.jar=output=tcpserver,address=0.0.0.0,port=6300'
@@ -147,14 +145,8 @@ tasks.register('awaitLiferayReady') {
 				}
 				logger.lifecycle("awaitLiferayReady attempt ${attempt}: unexpected HTTP ${code} from ${url}")
 			}
-			catch (java.net.ConnectException e) {
-				logger.info("awaitLiferayReady attempt ${attempt}: ConnectException: ${e.message}")
-			}
-			catch (java.net.SocketTimeoutException e) {
-				logger.info("awaitLiferayReady attempt ${attempt}: SocketTimeoutException: ${e.message}")
-			}
 			catch (IOException e) {
-				logger.info("awaitLiferayReady attempt ${attempt}: IOException ${e.class.simpleName}: ${e.message}")
+				logger.info("awaitLiferayReady attempt ${attempt}: ${e.class.simpleName}: ${e.message}")
 			}
 			sleep(5000)
 		}

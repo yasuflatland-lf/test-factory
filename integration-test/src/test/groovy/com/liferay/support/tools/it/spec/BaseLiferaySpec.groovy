@@ -261,41 +261,28 @@ abstract class BaseLiferaySpec extends Specification {
 	private Object _httpGet(
 			String pathOrUrl, String acceptType, Closure<Object> responseHandler) {
 
-		String url = absoluteUrl(pathOrUrl)
-		def conn = new URL(url).openConnection() as HttpURLConnection
-
-		try {
-			conn.requestMethod = 'GET'
-			conn.connectTimeout = 10_000
-			conn.readTimeout = 30_000
-			conn.setRequestProperty('Authorization', basicAuthHeader())
-			conn.setRequestProperty('Accept-Encoding', 'identity')
-
-			if (acceptType) {
-				conn.setRequestProperty('Accept', acceptType)
-			}
-
-			int status = conn.responseCode
-			String body = (status < 400)
-				? (conn.inputStream?.text ?: '')
-				: (conn.errorStream?.text ?: '')
-
-			return responseHandler.call(status, body)
-		}
-		finally {
-			conn.disconnect()
-		}
+		return _request('GET', pathOrUrl, acceptType, null, null, responseHandler)
 	}
 
 	private Object _httpPost(
 			String pathOrUrl, String acceptType, String contentType,
 			String requestBody, Closure<Object> responseHandler) {
 
+		return _request(
+			'POST', pathOrUrl, acceptType, contentType, requestBody,
+			responseHandler)
+	}
+
+	private Object _request(
+			String method, String pathOrUrl, String acceptType,
+			String contentType, String requestBody,
+			Closure<Object> responseHandler) {
+
 		String url = absoluteUrl(pathOrUrl)
 		def conn = new URL(url).openConnection() as HttpURLConnection
 
 		try {
-			conn.requestMethod = 'POST'
+			conn.requestMethod = method
 			conn.connectTimeout = 10_000
 			conn.readTimeout = 30_000
 			conn.setRequestProperty('Authorization', basicAuthHeader())
