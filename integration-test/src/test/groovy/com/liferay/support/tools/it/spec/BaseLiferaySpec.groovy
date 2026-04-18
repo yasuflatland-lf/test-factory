@@ -359,13 +359,12 @@ abstract class BaseLiferaySpec extends Specification {
 			url = "${url}?p_auth=${pAuth}"
 		}
 
-		int status = _httpPost(
-			url, 'application/x-www-form-urlencoded', body, false)
+		// Use _httpPostRead so we can inspect the final body (after redirect) for
+		// alert-danger markers. A 302 redirect (success) is followed automatically
+		// because instanceFollowRedirects=true; the final body is then checked.
+		String html = _httpPostRead(url, 'application/x-www-form-urlencoded', body)
 
-		if (status != 302 && status != 200) {
-			throw new IllegalStateException(
-				"Admin bootstrap: login POST returned HTTP ${status}")
-		}
+		_assertNoAlertDanger(html, 'login POST')
 	}
 
 	private static Map<String, String> _fetchUpdatePasswordTicket() {
@@ -425,13 +424,29 @@ abstract class BaseLiferaySpec extends Specification {
 			'password2=' + URLEncoder.encode(newPassword, 'UTF-8')
 		].join('&')
 
-		int status = _httpPost(
+		// Use _httpPostRead so we can inspect the final body for alert-danger
+		// markers. DXP rejects invalid passwords (policy violation, ticket mismatch,
+		// same-as-old) with HTTP 200 + an alert-danger block rather than an error
+		// status, so status-only checks miss these failures.
+		String html = _httpPostRead(
 			"${liferay.baseUrl}/c/portal/update_password",
-			'application/x-www-form-urlencoded', body, false)
+			'application/x-www-form-urlencoded', body)
 
-		if (status != 302 && status != 200) {
-			throw new IllegalStateException(
-				"Admin bootstrap: update_password POST returned HTTP ${status}")
+		_assertNoAlertDanger(html, 'update_password POST')
+	}
+
+	// Scans the response body for a DXP alert-danger block. DXP returns HTTP 200
+	// with an inline error message when credentials are wrong, the account is
+	// locked, or a password-policy check fails. Without this check the caller
+	// proceeds silently and fails later with a misleading "ticketId not found"
+	// error. Throws IllegalStateException with a trimmed snippet on detection.
+	private static void _assertNoAlertDanger(String html, String step) {
+		Matcher m = Pattern.compile(
+			/class\s*=\s*"[^"]*alert[^"]*alert-danger[^"]*"[^>]*>([\s\S]{0,400}?)</).matcher(html ?: '')
+
+		if (m.find()) {
+			String msg = m.group(1).replaceAll('<[^>]+>', ' ').replaceAll('\\s+', ' ').trim()
+			throw new IllegalStateException("Admin bootstrap: ${step} failed — ${msg}")
 		}
 	}
 
@@ -742,8 +757,8 @@ abstract class BaseLiferaySpec extends Specification {
 		if (!_isJacocoPortOpen()) {
 			log.warn(
 				'Skipping JaCoCo dump for {} — port {}:{} is not reachable. ' +
-				'Coverage collection is out of scope for the DXP-native Docker flow; ' +
-				'wire in a -javaagent hook via configs/docker/scripts if coverage is needed.',
+				'JaCoCo collection is out of scope for the DXP-native Docker flow; ' +
+				'see docs/ADR/adr-0008-dxp-2026-migration.md',
 				specName, liferay.host, liferay.jacocoPort)
 			return
 		}
