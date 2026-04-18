@@ -29,7 +29,7 @@ public class DummyFactoryPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" +
+		target = "(jakarta.portlet.name=" +
 			LDFPortletKeys.LIFERAY_DUMMY_FACTORY + ")"
 	)
 	private Portlet _portlet;
