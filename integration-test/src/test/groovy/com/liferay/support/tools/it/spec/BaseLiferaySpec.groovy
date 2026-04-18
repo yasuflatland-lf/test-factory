@@ -279,9 +279,18 @@ abstract class BaseLiferaySpec extends Specification {
 				return matcher.group(1)
 			}
 
-			log.debug(
-				'Admin bootstrap: p_auth not found in {} (body length {})',
-				path, body?.length() ?: 0)
+			// Fallback: Liferay.authToken in a JS block
+			Matcher altMatcher = Pattern.compile(
+				/"authToken"\s*:\s*"([A-Za-z0-9]+)"|Liferay\.authToken\s*=\s*['"]([A-Za-z0-9]+)['"]/).matcher(body)
+
+			if (altMatcher.find()) {
+				return altMatcher.group(1) ?: altMatcher.group(2)
+			}
+
+			log.warn(
+				'Admin bootstrap: p_auth not found in {} (body length {}). Preview: {}',
+				path, body?.length() ?: 0,
+				body?.length() > 500 ? body.substring(0, 500) : body)
 		}
 
 		return null
@@ -395,6 +404,12 @@ abstract class BaseLiferaySpec extends Specification {
 			conn.connectTimeout = 10_000
 			conn.readTimeout = 30_000
 			conn.instanceFollowRedirects = true
+			// Force identity encoding — HttpURLConnection does not auto-decode
+			// gzip, and Groovy .text would then garble the bytes as UTF-8.
+			conn.setRequestProperty('Accept-Encoding', 'identity')
+			conn.setRequestProperty(
+				'Accept',
+				'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8')
 
 			int status = conn.responseCode
 
@@ -444,6 +459,7 @@ abstract class BaseLiferaySpec extends Specification {
 			conn.readTimeout = 30_000
 			conn.instanceFollowRedirects = true
 			conn.setRequestProperty('Content-Type', contentType)
+			conn.setRequestProperty('Accept-Encoding', 'identity')
 			conn.doOutput = true
 			conn.outputStream.withWriter('UTF-8') { writer ->
 				writer.write(body)
