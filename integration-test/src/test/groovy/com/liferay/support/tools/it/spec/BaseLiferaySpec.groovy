@@ -175,6 +175,8 @@ abstract class BaseLiferaySpec extends Specification {
 			return
 		}
 
+		_waitForLicenseActivated()
+
 		if (_checkBasicAuth(LiferayContainer.DEFAULT_ADMIN_PASSWORD)) {
 			activePassword = LiferayContainer.DEFAULT_ADMIN_PASSWORD
 			adminBootstrapped = true
@@ -237,6 +239,48 @@ abstract class BaseLiferaySpec extends Specification {
 		}
 	}
 
+	// DXP 2026 redirects every page to /c/portal/license_activation until its
+	// license file is processed (~14 s after Tomcat startup). awaitLiferayReady
+	// only checks TCP port 8080, which responds before the license chain is
+	// registered. Poll until the login page stops redirecting to the
+	// license-activation page. Cap at 120 s.
+	private static void _waitForLicenseActivated() {
+		for (int attempt = 0; attempt < 120; attempt++) {
+			HttpURLConnection conn = null
+			try {
+				conn = new URL(
+					"${liferay.baseUrl}/sign-in"
+				).openConnection() as HttpURLConnection
+				conn.requestMethod = 'GET'
+				conn.connectTimeout = 5_000
+				conn.readTimeout = 10_000
+				conn.instanceFollowRedirects = false
+
+				int status = conn.responseCode
+				String location = conn.getHeaderField('Location') ?: ''
+
+				if (!location.contains('license_activation')) {
+					if (attempt > 0) {
+						log.info(
+							'Admin bootstrap: license activated after {}s', attempt)
+					}
+					return
+				}
+			}
+			catch (IOException e) {
+				log.debug('Admin bootstrap: license probe failed: {}', e.message)
+			}
+			finally {
+				conn?.disconnect()
+			}
+
+			TimeUnit.SECONDS.sleep(1)
+		}
+
+		log.warn(
+			'Admin bootstrap: license still not activated after 120s — proceeding anyway')
+	}
+
 	private static boolean _checkBasicAuth(String password) {
 		HttpURLConnection conn = null
 
@@ -287,10 +331,17 @@ abstract class BaseLiferaySpec extends Specification {
 				return altMatcher.group(1) ?: altMatcher.group(2)
 			}
 
+			// Dump hex of first 64 bytes for diagnostics — body may look empty
+			// if it starts with whitespace/newlines or non-ASCII.
+			StringBuilder hex = new StringBuilder()
+			int dumpLen = Math.min(64, body?.length() ?: 0)
+			for (int i = 0; i < dumpLen; i++) {
+				hex.append(String.format('%02x ', (int)body.charAt(i) & 0xff))
+			}
+
 			log.warn(
-				'Admin bootstrap: p_auth not found in {} (body length {}). Preview: {}',
-				path, body?.length() ?: 0,
-				body?.length() > 500 ? body.substring(0, 500) : body)
+				'Admin bootstrap: p_auth not found in {} (body length {}). First 64 bytes hex: {}',
+				path, body?.length() ?: 0, hex.toString())
 		}
 
 		return null
