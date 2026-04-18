@@ -405,19 +405,30 @@ abstract class BaseLiferaySpec extends Specification {
 			conn.readTimeout = 30_000
 			conn.instanceFollowRedirects = true
 			// Force identity encoding — HttpURLConnection does not auto-decode
-			// gzip, and Groovy .text would then garble the bytes as UTF-8.
+			// gzip, and decoding as UTF-8 then garbles the bytes.
 			conn.setRequestProperty('Accept-Encoding', 'identity')
 			conn.setRequestProperty(
 				'Accept',
 				'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8')
 
 			int status = conn.responseCode
+			InputStream in = status < 400 ? conn.inputStream : conn.errorStream
 
-			return (status < 400 ? conn.inputStream : conn.errorStream)?.text ?: ''
+			return in == null ? '' : _readAll(in)
 		}
 		finally {
 			conn?.disconnect()
 		}
+	}
+
+	private static String _readAll(InputStream in) {
+		ByteArrayOutputStream out = new ByteArrayOutputStream()
+		byte[] buf = new byte[8192]
+		int n
+		while ((n = in.read(buf)) > 0) {
+			out.write(buf, 0, n)
+		}
+		return new String(out.toByteArray(), 'UTF-8')
 	}
 
 	private static int _httpPost(
@@ -466,8 +477,9 @@ abstract class BaseLiferaySpec extends Specification {
 			}
 
 			int status = conn.responseCode
+			InputStream in = status < 400 ? conn.inputStream : conn.errorStream
 
-			return (status < 400 ? conn.inputStream : conn.errorStream)?.text ?: ''
+			return in == null ? '' : _readAll(in)
 		}
 		finally {
 			conn?.disconnect()
