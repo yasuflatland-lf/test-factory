@@ -5,7 +5,6 @@ dependencies {
 
 	compileInclude group: "net.datafaker", name: "datafaker", version: "2.5.4"
 
-	testImplementation group: "com.liferay.portal", name: "release.dxp.api", version: "default"
 	testImplementation group: "org.junit.jupiter", name: "junit-jupiter", version: "5.10.2"
 	testImplementation 'org.apache.logging.log4j:log4j-core:2.24.3'
 }

@@ -121,7 +121,6 @@ tasks.register('integrationTest', Test) {
 
 tasks.named('awaitLiferayReady').configure {
 	mustRunAfter rootProject.tasks.named('startDockerContainer')
-	dependsOn rootProject.tasks.named('startDockerContainer')
 }
 
 rootProject.tasks.named('startDockerContainer').configure {
