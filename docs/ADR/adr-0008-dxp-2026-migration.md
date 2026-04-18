@@ -103,6 +103,12 @@ This is a DXP 2026 release inconsistency (the TLD file inside `util-taglib.jar` 
 | `jsonws.web.service.api.discoverable` | `true` | Required for integration-test JSONWS calls |
 | `json.web.service.enabled` | `true` | Required for JSONWS endpoints |
 
+## DXP 2026 License Activation Race
+
+DXP 2026 processes its activation key asynchronously ~14 s after Tomcat startup. Until the license is activated, every page (including `/c/portal/login`) redirects to `/c/portal/license_activation`. The workspace plugin's `awaitLiferayReady` task polls `/c/portal/login` and exits on the first HTTP 200 — but DXP happens to return 200 for `/c/portal/login` even during license-activation state (the login form is served under that URL while the license page is being composed).
+
+`BaseLiferaySpec.bootstrapAdminCredentials()` runs `_waitForLicenseActivated()` first, polling `GET /sign-in` and waiting for the `Location` response header to stop matching `license_activation`. Cap is 120 s.
+
 ## DXP 2026 Baked-In Admin Password Reset Trap
 
 The DXP 2026 Docker image ships with the HSQL database pre-seeded. The admin user row (`test@liferay.com`) has `USER_.PASSWORDRESET=1` baked in. The `passwords.default.policy.change.required=false` property only affects the default PasswordPolicy created at first boot — it does NOT retroactively clear the pre-seeded `PASSWORDRESET` flag on the admin user row.
