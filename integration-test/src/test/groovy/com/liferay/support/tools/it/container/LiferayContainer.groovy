@@ -81,7 +81,7 @@ class LiferayContainer {
 		String tmpPath = "/tmp/${fileName}"
 		String targetPath = DEPLOY_DIR + fileName
 		_runDocker('cp', jarPath.toString(), "${containerName}:${tmpPath}")
-		_runDocker('exec', containerName, 'bash', '-c',
+		_runDocker('exec', '-u', '0', containerName, 'bash', '-c',
 			"cp ${tmpPath} ${targetPath} && " +
 				"chown liferay:liferay ${targetPath} && " +
 				"rm ${tmpPath}")
