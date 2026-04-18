@@ -46,7 +46,7 @@ The DXP 2026 Docker image ships HSQL with `USER_.PASSWORDRESET=1` baked into the
 
 1. Checks Basic Auth with `test` and `Test12345` — if either works, skips.
 2. Otherwise walks the form-login → `/c/portal/update_password` ticket flow, POSTs a new password (must differ from old; we use `Test12345`).
-3. Polls `GET /api/jsonws/user/get-current-user` for up to 180 s while the auth-pipeline cache propagates the change.
+3. Polls `GET /api/jsonws/user/get-current-user` for up to 30 s. Because the form-login cookies are cleared before the Basic Auth probe, DXP re-evaluates against the updated DB state immediately. The 30-second poll is a safety margin.
 4. Switches `activePassword` to `NEW_PASSWORD=Test12345`.
 
 All subsequent specs inherit the bootstrapped password via `BaseLiferaySpec.basicAuthHeader()`. The ADR at `docs/ADR/adr-0008-dxp-2026-migration.md` has the full rationale.

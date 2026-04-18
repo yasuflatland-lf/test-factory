@@ -70,8 +70,11 @@ tasks.register('awaitLiferayReady') {
 
 				logger.info("awaitLiferayReady attempt ${attempt}: HTTP ${code}")
 			}
-			catch (Exception e) {
+			catch (IOException e) {
 				logger.info("awaitLiferayReady attempt ${attempt}: ${e.message}")
+			}
+			catch (Exception e) {
+				logger.warn("awaitLiferayReady attempt ${attempt}: unexpected ${e.class.simpleName}: ${e.message}", e)
 			}
 
 			Thread.sleep(5_000)

@@ -121,7 +121,7 @@ The integration test harness clears this flag once per container lifetime in `Ba
 2. POST `/c/portal/login` with `test@liferay.com:test`. DXP returns a 302 to an auto-submit form containing `ticketId`/`ticketKey`.
 3. GET `/c` to pick up those ticket values.
 4. POST `/c/portal/update_password` with the ticket + `password1=password2=Test12345` (new password must differ from old per DXP policy).
-5. Poll `GET /api/jsonws/user/get-current-user` with Basic Auth `test@liferay.com:Test12345` until HTTP 200 (the cache invalidation after the password commit can take 10–20 s on cold containers; cap at 60 s).
+5. Poll `GET /api/jsonws/user/get-current-user` with Basic Auth `test@liferay.com:Test12345` until HTTP 200 (cap at 30 s). Because the form-login cookies are cleared before the Basic Auth probe, DXP re-evaluates against the updated DB state immediately without cache delay.
 6. Switch the shared `activePassword` to `NEW_PASSWORD=Test12345`. All subsequent JSONWS / Headless calls use it.
 
 ## Headless portal-instances API: `portalInstanceId`, not `webId`
