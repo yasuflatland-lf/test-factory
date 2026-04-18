@@ -7,6 +7,10 @@ dependencies {
 
 	testImplementation group: "com.liferay.portal", name: "release.dxp.api", version: "default"
 	testImplementation group: "org.junit.jupiter", name: "junit-jupiter", version: "5.10.2"
+
+	// DXP release.dxp.api does not bundle log4j; provide it for the test JVM
+	// so Liferay's Log4jLogFactoryImpl static init can resolve LogManager.
+	testRuntimeOnly group: "org.apache.logging.log4j", name: "log4j-core", version: "2.24.3"
 }
 
 java {
