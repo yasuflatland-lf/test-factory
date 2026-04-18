@@ -32,11 +32,17 @@ Note: `typeSettings` (String, 10th position) exists in DXP 2026 but was absent f
 
 ### JAX-RS namespace: jakarta.ws.rs (not javax.ws.rs)
 
-DXP 2026 ships Jakarta REST 3.x via Apache CXF. The JAX-RS whiteboard (`osgi.jaxrs.*`) only discovers `jakarta.ws.rs.core.Application` subclasses. Classes annotated with `javax.ws.rs.*` will not be registered and their endpoints will 404 silently. Migrate all JAX-RS imports to `jakarta.ws.rs.*`.
+DXP 2026 ships Jakarta REST 3.x via Apache CXF. The JAX-RS whiteboard (`osgi.jaxrs.*`) only discovers `jakarta.ws.rs.core.Application` subclasses. Classes annotated with `javax.ws.rs.*` will not be registered and their endpoints will 404 silently. Migrate both the `Application` subclass AND every per-resource annotation (`@Path`, `@GET`, `@Produces`, `@Context`, etc.) to `jakarta.ws.rs.*`. Mixing the two namespaces on one resource class is the most common source of silent 404s — CXF discovers the class but ignores annotations from the wrong namespace. Refs: commits `42ead15`, `e744578`.
 
-### Portlet taglib URI: portlet_3_0
+### Runtime / auth / HTTP-client gotchas
 
-JSP files that include the portlet taglib must use `http://xmlns.jcp.org/portlet_3_0` (Portlet 3.0) instead of `http://java.sun.com/portlet_2_0` (Portlet 2.0). Both URIs resolve in DXP 2026 via the compatibility shim, but `portlet_3_0` is the canonical URI for modules declaring `jakarta.portlet.version=3.0`.
+The full catalog of DXP 2026 runtime traps (baked-in `portal-liferay-online-config.properties` JSONWS block, `AuthVerifierPipeline` 3-minute failure-cache, gzip `Accept-Encoding` response corruption, license-activation redirect vs HTTP 200, `p_auth` optionality on the login POST, `default_urlsIncludes` glob-pattern requirement, etc.) lives in `docs/details/dxp-2026-gotchas.md`. Read on demand.
+
+### Portlet taglib URI: portlet_3_0 (legacy JCP namespace)
+
+JSP files that include the portlet taglib must use `http://xmlns.jcp.org/portlet_3_0`. The `jakarta.tags.portlet` URI that the TLD declares is NOT advertised by `util-taglib.jar`'s OSGi `Provide-Capability` in DXP 2026.q1.3-lts — using it leaves the bundle `Installed` with an unresolvable `jsp.taglib` requirement. See ADR-0008 "Bundle Resolution Trap" for the bnd/Provide-Capability inconsistency.
+
+This is independent of the `jakarta.portlet.version` property, which MUST be `4.0` on DXP 2026 (not `3.0`, despite the legacy taglib URI). The version property wires the bundle to the Portlet 4.0 runtime API; the taglib URI wires the JSP to the taglib extender. Ref: commit `efb762c`.
 
 ## 1. `MBThreadLocalService.getThreads(groupId, categoryId, status, start, end)` — `categoryId` is an exact-match filter
 
