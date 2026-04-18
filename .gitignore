@@ -17,3 +17,6 @@ liferay-theme.json
 coverage/
 configs/*/deploy/activation-key.xml
 configs/*/deploy/*.lic
+
+# Enforce single package manager (yarn only)
+package-lock.json
