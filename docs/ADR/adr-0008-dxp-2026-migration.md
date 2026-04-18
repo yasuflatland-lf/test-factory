@@ -26,7 +26,7 @@ Start part 2 from `master`. PR #42 is closed without merging. A single clean PR 
 
 ### D2 — Admin password reset suppressed via portal-ext.properties
 
-`company.security.update.password.required=false` and `passwords.default.policy.change.required=false` are set in `configs/common/portal-ext.properties`. This prevents the `PASSWORDRESET` flag from being set at container startup, eliminating the 7-step HTTP ticket flow that was required in the Testcontainers-based harness. `BaseLiferaySpec` becomes significantly simpler.
+`company.security.update.password.required=false` and `passwords.default.policy.change.required=false` are set in `configs/common/portal-ext.properties`. This prevents the `PASSWORDRESET` flag from being set at container startup, eliminating the 7-step HTTP ticket flow that was required in the Testcontainers-based harness. The password-reset ticket flow is removed from `BaseLiferaySpec`, simplifying the login path (file total line count may remain similar because new JSONWS/headless helpers were added).
 
 ### D3 — License injection via environment variable
 
@@ -34,7 +34,7 @@ A Gradle task (`resolveLicenseFile`) reads either `LIFERAY_DXP_LICENSE_FILE` (a 
 
 ### D4 — Container lifecycle: autoRemove=false, stop-only on test completion
 
-The Docker container is not removed after the test run (`autoRemove=false` is the workspace plugin default). `integrationTest` uses `finalizedBy ':stopDockerContainer'` so the container is stopped but its volume is preserved. This allows post-mortem inspection (logs, `docker exec`, JaCoCo exec file recovery) after test failures. To force volume recreation, run `./gradlew removeDockerContainer` explicitly.
+The Docker container is not removed after the test run (`autoRemove=false` is the observed behavior with workspace plugin 16.0.5 when no explicit override is applied; see `RootProjectConfigurator.java` at `/home/yasuflatland/tmp/liferay-portal/modules/sdk/gradle-plugins-workspace/src/main/java/com/liferay/gradle/plugins/workspace/configurator/RootProjectConfigurator.java`). `integrationTest` uses `finalizedBy ':stopDockerContainer'` so the container is stopped but its volume is preserved. This allows post-mortem inspection (logs, `docker exec`, JaCoCo exec file recovery) after test failures. To force volume recreation, run `./gradlew removeDockerContainer` explicitly.
 
 ### D5 — Fixed Docker ports: 8080 / 11311 / 8000
 
@@ -70,7 +70,7 @@ The module JAR is deployed by `dockerDeploy`, which copies `configs/` overlays (
 
 ### Neutral
 
-- The JSP taglib URI (`http://xmlns.jcp.org/portlet_3_0`) is unchanged — intentionally. This is not a regression; it reflects the actual capability advertised by DXP 2026. See D2 in `adr-0002-portlet-api-javax-namespace.md` for background.
+- The JSP taglib URI (`http://xmlns.jcp.org/portlet_3_0`) is unchanged — intentionally. This is not a regression; it reflects the actual capability advertised by DXP 2026. See `adr-0002-portlet-api-javax-namespace.md` for the background on the JSP taglib URI decision.
 - `BaseLiferaySpec` retains `ensureBundleActive()` and the GoGo Shell polling mechanism unchanged.
 - Playwright version (1.59.0) is unchanged.
 

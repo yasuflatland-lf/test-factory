@@ -50,17 +50,11 @@ Note that both `/api/*` (legacy path, some endpoints still respond there) and `/
 
 **Root cause**: The `AuthVerifierPipeline` caches its configuration. The cache clears after approximately 3 minutes.
 
-**Note**: This is rarely encountered in normal test runs because D2 (suppressing the password reset) means Admin bootstrap completes without any pipeline interaction. It is noted here for cases where `portal-ext.properties` is hot-updated during debugging.
+**Note**: Not typically observed during test runs because the container is disposable per run; a fresh AuthVerifierPipeline starts cold each time. It is noted here for cases where `portal-ext.properties` is hot-updated during debugging.
 
-## 4. License activation: `_waitForLicenseActivated` reads the `Location` header
+## 4. License activation: readiness polling watch-point
 
-**Background** (PR #42 learning): When polling for DXP license activation, a GET to `/c/portal/login` before the license is active returns an HTTP redirect (302) to a license-required page. After activation it returns 200 or a redirect to the normal login page.
-
-**Pattern**: Poll `http://localhost:8080/c/portal/login` with `instanceFollowRedirects=false`. Check:
-- `200` or `302` to `/web/guest` or `/c/portal/login` → ready.
-- `302` to a URL containing `licenseExpired` or `activation` → not yet ready; wait and retry.
-
-The `awaitLiferayReady` Gradle task in `integration-test/build.gradle` implements this polling loop.
+License activation races the first HTTP request. Current implementation uses a simple HTTP 200/302 readiness poll (see `awaitLiferayReady` in `integration-test/build.gradle`). If DXP 2026's license-activation sequence ever redirects to `/portal/update_language` or similar, extend the polling to inspect the `Location` header.
 
 ## 5. `Accept-Encoding: identity` must be forced on HTTP test requests
 

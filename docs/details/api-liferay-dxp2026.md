@@ -12,12 +12,12 @@ compileOnly group: "com.liferay.portal", name: "release.dxp.api"
 
 The BOM includes journals (`com.liferay.journal.api`), DDM (`com.liferay.dynamic.data.mapping.api`), message boards (`com.liferay.message.boards.api`), blogs, vocabulary/category, and all portal-kernel artifacts at the correct version. Adding individual API dependencies alongside `release.dxp.api` causes version skew and runtime `ClassCastException` or `NoClassDefFoundError`. Do not add per-API entries.
 
-## 2. `GroupLocalService.addGroup` — new 18-argument signature
+## 2. `GroupLocalService.addGroup` — new 17-argument signature
 
-DXP 2026 adds `externalReferenceCode` as the first argument and `typeSettings` before `serviceContext`:
+DXP 2026 adds `externalReferenceCode` as the first argument and `typeSettings` after `type`:
 
 ```java
-// Before (CE 7.4 GA132) — 16 args
+// Before (CE 7.4 GA132) — 15 args
 _groupLocalService.addGroup(
     userId, parentGroupId, className, classPK,
     liveGroupId, nameMap, descriptionMap, type,
@@ -25,19 +25,19 @@ _groupLocalService.addGroup(
     site, inheritContent, active,
     serviceContext);
 
-// After (DXP 2026) — 18 args
+// After (DXP 2026) — 17 args
 _groupLocalService.addGroup(
     externalReferenceCode,           // NEW: pass null for auto-generated ERC
     userId, parentGroupId, className, classPK,
     liveGroupId, nameMap, descriptionMap, type,
+    typeSettings,                    // NEW: pass null or StringPool.BLANK for defaults
     manualMembership, membershipRestriction, friendlyURL,
     site, inheritContent, active,
-    typeSettings,                    // NEW: pass null for defaults
     serviceContext);
 ```
 
 Verify the exact signature against the source:
-`/home/yasuflatland/tmp/liferay-portal/portal-service/src/com/liferay/portal/kernel/service/GroupLocalService.java`
+`/home/yasuflatland/tmp/liferay-portal/portal-kernel/src/com/liferay/portal/kernel/service/GroupLocalService.java`
 
 Affected file: `modules/liferay-dummy-factory/src/main/java/com/liferay/support/tools/service/SiteCreator.java`.
 
@@ -65,9 +65,11 @@ addCompany(Long companyId, String webId, String virtualHostname, String mx,
 
 No simpler overload exists on `CompanyLocalService`. The shorter overload lives on `CompanyService`, which is blacklisted (see #3). For dummy company creation, pass `addDefaultAdminUser=false` and all admin fields as `null`. Reference: `CompanyCreator.java`.
 
-## 5. `OrganizationService.addOrganization` returns 404 via JSONWS — use Headless
+## 5. `OrganizationService.addOrganization` — JSONWS availability on DXP 2026
 
-`OrganizationService.addOrganization` is reachable via JSONWS in CE 7.4, but DXP 2026 routes it through Headless Admin User instead:
+`OrganizationService.addOrganization` remains exposed via `/portal/api/jsonws/organization/add-organization` on DXP 2026, but Headless Admin User is the recommended path; verify behavior against a running container before relying on either endpoint.
+
+Headless endpoint for reference:
 
 ```
 POST /o/headless-admin-user/v1.0/organizations
@@ -76,7 +78,7 @@ Content-Type: application/json
 {"name": "...", "organizationType": "Organization"}
 ```
 
-Tests that previously called `/portal/api/jsonws/organization/add-organization` must migrate to the Headless endpoint. For verification (read), use `GET /o/headless-admin-user/v1.0/organizations?search=<name>` with `?pageSize=100` and client-side filtering (Elasticsearch ingestion lag makes `?search=` non-deterministic immediately post-create).
+For verification (read), use `GET /o/headless-admin-user/v1.0/organizations?pageSize=100` and filter client-side by name. Avoid `?search=` for immediate post-create assertions — it routes through Elasticsearch and has an observable indexing lag.
 
 ## 6. `MBThreadLocalService.getThreads` — `categoryId` is an exact-match filter
 
@@ -84,14 +86,16 @@ The `categoryId` parameter is an exact-match filter, not a "no filter" sentinel.
 
 To list all threads regardless of category, iterate `MBCategoryLocalService.getCategories(groupId)` and union per-category results with the root-level call. No single overload returns group-wide threads in one shot.
 
-## 7. `MBCategoryLocalService.addCategory` — only the 6-argument overload exists
+## 7. `MBCategoryLocalService.addCategory` — 5-argument overload removed in DXP 2026
+
+The 5-argument overload (without `externalReferenceCode`) no longer exists in DXP 2026; use the 6-argument form for the typical case:
 
 ```java
 addCategory(String externalReferenceCode, long userId, long parentCategoryId,
             String name, String description, ServiceContext serviceContext)
 ```
 
-Pass `externalReferenceCode=null` and `parentCategoryId=0L` for top-level categories. The 5-argument overload (without `externalReferenceCode`) does not exist.
+Pass `externalReferenceCode=null` and `parentCategoryId=0L` for top-level categories. A full-featured overload for advanced scenarios also exists — consult the source if additional parameters are needed.
 
 ## 8. `DefaultScreenNameValidator` accepts only `[a-zA-Z0-9._-]`
 
