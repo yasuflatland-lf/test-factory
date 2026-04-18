@@ -57,6 +57,10 @@ abstract class BaseLiferaySpec extends Specification {
 		return jar.toPath()
 	}
 
+	private static final String BUNDLE_SYMBOLIC_NAME = 'liferay.dummy.factory'
+	private static final int BUNDLE_ACTIVATION_MAX_ATTEMPTS = 60
+	private static final int BUNDLE_ACTIVATION_INTERVAL_SECONDS = 5
+
 	static synchronized void ensureBundleActive() {
 		if (bundleVerified) {
 			return
@@ -67,8 +71,10 @@ abstract class BaseLiferaySpec extends Specification {
 		log.info('JAR copied to container. GoGo Shell at {}:{}', liferay.host, liferay.gogoPort)
 
 		boolean active = false
+		List<String> lastMatches = []
+		String lastBundleId = null
 
-		for (int i = 0; i < 60; i++) {
+		for (int i = 0; i < BUNDLE_ACTIVATION_MAX_ATTEMPTS; i++) {
 			try {
 				new GogoShellClient(liferay.host, liferay.gogoPort).withCloseable { gogo ->
 					String output = gogo.execute('lb')
@@ -78,6 +84,14 @@ abstract class BaseLiferaySpec extends Specification {
 					log.info('GoGo Shell attempt {}: {} lines, last 5: {}', i + 1, lineCount, tail)
 					def lines = allLines.findAll { it.toLowerCase().contains('liferay') && it.toLowerCase().contains('dummy') && it.toLowerCase().contains('factory') }
 					log.info('Matches: {}', lines ?: '(no match)')
+					lastMatches = lines
+
+					if (lines) {
+						def idMatcher = (lines[0] =~ /^\s*(\d+)/)
+						if (idMatcher.find()) {
+							lastBundleId = idMatcher.group(1)
+						}
+					}
 
 					if (lines.any { it.contains('Active') }) {
 						active = true
@@ -92,17 +106,54 @@ abstract class BaseLiferaySpec extends Specification {
 				log.warn('GoGo Shell attempt {} failed: {}', i + 1, e.message)
 			}
 
-			TimeUnit.SECONDS.sleep(5)
+			TimeUnit.SECONDS.sleep(BUNDLE_ACTIVATION_INTERVAL_SECONDS)
 		}
 
 		if (!active) {
-			throw new IllegalStateException(
-				'Bundle liferay.dummy.factory did not reach ACTIVE ' +
-				'state within timeout'
-			)
+			throw new IllegalStateException(_buildActivationFailureMessage(lastMatches, lastBundleId))
 		}
 
 		bundleVerified = true
+	}
+
+	private static String _buildActivationFailureMessage(List<String> lastMatches, String lastBundleId) {
+		int timeoutSeconds = BUNDLE_ACTIVATION_MAX_ATTEMPTS * BUNDLE_ACTIVATION_INTERVAL_SECONDS
+
+		StringBuilder message = new StringBuilder()
+		message.append('Bundle ').append(BUNDLE_SYMBOLIC_NAME)
+		message.append(' did not reach ACTIVE state within ').append(timeoutSeconds).append('s.\n')
+
+		String lbOutput = _safeGogoExecute("lb ${BUNDLE_SYMBOLIC_NAME}".toString())
+		message.append('--- lb ').append(BUNDLE_SYMBOLIC_NAME).append(' ---\n')
+		message.append(lbOutput ?: '(gogo unreachable)').append('\n')
+
+		if (lastMatches) {
+			message.append('--- last lb matches from polling loop ---\n')
+			message.append(lastMatches.join('\n')).append('\n')
+		}
+		else {
+			message.append('--- bundle never appeared in lb output during polling (not installed) ---\n')
+		}
+
+		if (lastBundleId) {
+			String diagOutput = _safeGogoExecute("diag ${lastBundleId}".toString())
+			message.append('--- diag ').append(lastBundleId).append(' ---\n')
+			message.append(diagOutput ?: '(gogo unreachable)').append('\n')
+		}
+
+		return message.toString()
+	}
+
+	private static String _safeGogoExecute(String command) {
+		try {
+			return new GogoShellClient(liferay.host, liferay.gogoPort).withCloseable { gogo ->
+				return gogo.execute(command)
+			}
+		}
+		catch (Exception e) {
+			log.warn('GoGo diagnostic command "{}" failed: {}', command, e.message)
+			return null
+		}
 	}
 
 	protected static String loginAsAdmin(PlaywrightLifecycle pw) {
