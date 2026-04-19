@@ -52,6 +52,20 @@ jobs:
         run: |
           ./gradlew :integration-test:integrationTest --no-daemon --info
 
+      - name: Collect Liferay container diagnostics on failure
+        if: failure()
+        env:
+          CONTAINER: test-factory-liferay
+        run: |
+          DIAG=integration-test/build/reports/container
+          mkdir -p "${DIAG}"
+          docker logs "${CONTAINER}" 2>&1 | gzip > "${DIAG}/liferay.log.gz" || true
+          docker inspect "${CONTAINER}" > "${DIAG}/inspect.json" 2>&1 || true
+          docker ps -a > "${DIAG}/ps.txt" 2>&1 || true
+          docker cp "${CONTAINER}:/opt/liferay/deploy" "${DIAG}/deploy" 2>&1 || true
+          docker cp "${CONTAINER}:/opt/liferay/logs" "${DIAG}/liferay-logs" 2>&1 || true
+          ls -laR "${DIAG}" || true
+
       - name: Upload integration test report on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -60,3 +74,4 @@ jobs:
           path: |
             integration-test/build/reports/tests/
             integration-test/build/reports/jacoco/
+            integration-test/build/reports/container/
