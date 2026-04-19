@@ -78,6 +78,15 @@ jobs:
         run: |
           ./gradlew :integration-test:integrationTest --no-daemon --info
 
+      - name: Verify integration JaCoCo XML exists
+        if: always()
+        run: |
+          f=integration-test/build/reports/jacoco/integration/jacoco.xml
+          if [ ! -s "$f" ]; then
+            echo "::error::Integration JaCoCo XML missing or empty at $f — jacocoIntegrationReport likely skipped (no .exec files dumped). Check ExecDumpClient connectivity to 127.0.0.1:6300 in BaseLiferaySpec.cleanupSpec."
+            exit 1
+          fi
+
       - name: Upload integration coverage to Codecov
         if: always()
         uses: codecov/codecov-action@v5
