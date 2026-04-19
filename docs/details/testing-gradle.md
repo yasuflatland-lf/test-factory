@@ -141,8 +141,8 @@ To regenerate the report from existing exec files without re-running tests:
 
 Report locations:
 
-- HTML: `integration-test/build/reports/jacoco/integration/html/index.html`
-- XML:  `integration-test/build/reports/jacoco/integration/jacocoIntegrationReport.xml`
+- HTML: `integration-test/build/reports/jacoco/integration/index.html`
+- XML:  `integration-test/build/reports/jacoco/integration/jacoco.xml`
 
 ### JaCoCo integration pitfalls
 
