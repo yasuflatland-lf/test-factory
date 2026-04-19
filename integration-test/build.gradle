@@ -5,6 +5,11 @@ plugins {
 	id 'jacoco'
 }
 
+// jacocoIntegrationReport references sourceSets.main of the liferay-dummy-factory
+// project. Force that project to be fully evaluated first so sourceSets are
+// available regardless of settings.gradle include order.
+evaluationDependsOn(':modules:liferay-dummy-factory')
+
 java {
 	sourceCompatibility = JavaVersion.VERSION_21
 	targetCompatibility = JavaVersion.VERSION_21
