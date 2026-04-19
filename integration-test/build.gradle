@@ -5,6 +5,11 @@ plugins {
 	id 'jacoco'
 }
 
+// jacocoIntegrationReport references sourceSets.main of the liferay-dummy-factory
+// project. Force that project to be fully evaluated first so sourceSets are
+// available regardless of settings.gradle include order.
+evaluationDependsOn(':modules:liferay-dummy-factory')
+
 java {
 	sourceCompatibility = JavaVersion.VERSION_21
 	targetCompatibility = JavaVersion.VERSION_21
@@ -94,17 +99,41 @@ gradle.projectsEvaluated {
 		withEnvVar 'LIFERAY_JVM_OPTS',
 			'-javaagent:/opt/liferay/jacocoagent.jar=output=tcpserver,address=0.0.0.0,port=6300'
 
+		// Publish the JaCoCo tcpserver port on all interfaces (same as the other
+		// workspace-plugin ports 8080/11311/8000). Binding to 127.0.0.1 only
+		// caused "Connection refused" on GitHub Actions because Java 21 resolves
+		// "localhost" to ::1 (IPv6) while the 127.0.0.1-only binding has no IPv6
+		// counterpart. Binding without a host-IP prefix lets Docker publish on
+		// both 127.0.0.1 and ::1, so ExecDumpClient reaches the agent regardless
+		// of which address the JVM picks for "localhost".
+		//
+		// exposePorts is ALSO required: unlike 8080/11311/8000 which are EXPOSE'd
+		// in liferay/dxp:2026.q1.3-lts, port 6300 is unknown to the base image.
+		// Docker silently drops portBindings for ports that are neither EXPOSE'd
+		// by the image nor added to the container's ExposedPorts, producing the
+		// symptom that 6300 appears in HostConfig.PortBindings but never reaches
+		// NetworkSettings.Ports.
+		exposePorts('tcp', [6300])
+		hostConfig.portBindings.add('6300:6300')
+
 		// Override workspace plugin 16.0.5 default (autoRemove=true at
 		// RootProjectConfigurator.java:540). Keeping the container after
 		// stopDockerContainer preserves logs, JaCoCo exec dumps, and volume
 		// state for post-mortem inspection (see ADR-0008 D4).
 		hostConfig.autoRemove.set(false)
 
-		// Mount the JaCoCo agent JAR from the test runtime classpath into the container.
-		// The Maven artifact is org.jacoco:org.jacoco.agent:<ver>:runtime which resolves
-		// to a file named org.jacoco.agent-<ver>-runtime.jar in the Gradle cache.
+		// Mount the JaCoCo agent JAR at configuration time. bmuschko's
+		// DockerCreateContainer annotates `binds` as @Input, so Gradle
+		// finalizes the MapProperty before task actions run — binds.put(...)
+		// MUST happen at configuration time, not in doFirst. Gradle 7+ warns
+		// about configuration-time resolution of configurations; accept the
+		// warning as a known tradeoff since doFirst breaks the task with
+		// "binds is final and cannot be changed any further". The filter
+		// matches both the legacy 'jacocoagent.jar' name and the
+		// Maven-classifier form 'org.jacoco.agent-<ver>-runtime.jar' in the
+		// Gradle cache.
 		def jacocoJar = configurations.testRuntimeClasspath.find {
-			(it.name.contains('jacocoagent')) ||
+			it.name.contains('jacocoagent') ||
 				(it.name.contains('org.jacoco.agent') && it.name.contains('runtime'))
 		}
 		if (jacocoJar == null) {
@@ -113,9 +142,7 @@ gradle.projectsEvaluated {
 				'Ensure org.jacoco:org.jacoco.agent:0.8.14:runtime is declared as a testImplementation dependency.'
 			)
 		}
-		// hostConfig.binds is a MapProperty<String, String>: host path -> container target.
-		// The bmuschko docker plugin renders each entry as "<key>:<value>" for the
-		// container bind mount list.
+		// Mount read-only (:ro) so a compromised container cannot tamper with the host-side agent JAR.
 		hostConfig.binds.put(jacocoJar.absolutePath, '/opt/liferay/jacocoagent.jar:ro')
 	}
 }

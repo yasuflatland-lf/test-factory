@@ -78,6 +78,24 @@ jobs:
         run: |
           ./gradlew :integration-test:integrationTest --no-daemon --info
 
+      - name: Verify integration JaCoCo XML exists
+        if: always()
+        run: |
+          f=integration-test/build/reports/jacoco/integration/jacoco.xml
+          if [ ! -s "$f" ]; then
+            echo "::error::Integration JaCoCo XML missing or empty at $f — jacocoIntegrationReport was skipped. Common causes: (a) :createDockerContainer failed before tests ran; (b) ExecDumpClient could not reach 127.0.0.1:6300 in BaseLiferaySpec.cleanupSpec; (c) all tests were filtered out."
+            exit 1
+          fi
+
+      - name: Upload integration coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: integration-test/build/reports/jacoco/integration/jacoco.xml
+          flags: integration
+          fail_ci_if_error: false
+
       - name: Collect Liferay container diagnostics on failure
         if: failure()
         env:

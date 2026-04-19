@@ -1,7 +1,7 @@
 # liferay-dummy-factory
 
-[![Build Status](https://travis-ci.org/yasuflatland-lf/liferay-dummy-factory.svg?branch=master)](https://travis-ci.org/yasuflatland-lf/liferay-dummy-factory)
-[![Coverage Status](https://coveralls.io/repos/github/yasuflatland-lf/liferay-dummy-factory/badge.svg)](https://coveralls.io/github/yasuflatland-lf/liferay-dummy-factory)
+[![Unit Tests](https://github.com/yasuflatland-lf/test-factory/actions/workflows/unit-test.yml/badge.svg?branch=master)](https://github.com/yasuflatland-lf/test-factory/actions/workflows/unit-test.yml)
+[![codecov](https://codecov.io/gh/yasuflatland-lf/test-factory/branch/master/graph/badge.svg)](https://codecov.io/gh/yasuflatland-lf/test-factory)
 
 Dummy Factory generates dummy data for debugging use. Please don't use this for a production use.
 
@@ -39,7 +39,7 @@ Dummy Factory generates dummy data for debugging use. Please don't use this for 
 | Backend | MVCPortlet + MVCResourceCommand (layered) |
 | Frontend | React + Clay CSS |
 | Build | Gradle 8.5 + Liferay Workspace Plugin 10.1.9 |
-| Testing | Spock 2.4 / Groovy 5.0 / Testcontainers 2.0.4 / Playwright 1.59.0 |
+| Testing | Spock 2.4 / Groovy 5.0 / Playwright 1.59.0 |
 | Java | JDK 21 |
 
 ## Usage
@@ -100,17 +100,25 @@ docker exec liferay bash -c "(echo 'lb dummy.factory'; sleep 2) | telnet localho
 
 ## Testing
 
-Requires Docker to be running.
+Requires Docker to be running and a valid DXP activation key.
 
 ```bash
-# Run all integration tests
+# Run all integration tests (inline license path)
+LIFERAY_DXP_LICENSE_FILE=/path/to/activation-key.xml ./gradlew :integration-test:integrationTest --info
+
+# CI: base64-encoded XML
+export LIFERAY_DXP_LICENSE_BASE64="$(base64 -w0 /path/to/activation-key.xml)"
+
+# Run all integration tests (if env var already exported)
 ./gradlew :integration-test:integrationTest --info
 
 # Run a specific spec
-./gradlew :integration-test:integrationTest --tests "com.liferay.support.tools.it.spec.DeploymentSpec"
+LIFERAY_DXP_LICENSE_FILE=/path/to/activation-key.xml ./gradlew :integration-test:integrationTest --tests "com.liferay.support.tools.it.spec.DeploymentSpec"
 ```
 
-Tests automatically start a Liferay container via Testcontainers and verify:
+The `integrationTest` task manages the DXP container lifecycle via the Liferay Workspace Plugin (no Testcontainers). It starts the container, deploys the bundle, waits up to 8 minutes for Liferay to become ready, runs the specs, then stops the container.
+
+Specs:
 
 - **DeploymentSpec** -- Bundle deployment and activation (via GoGo Shell)
 - **PortletRenderSpec** -- Login and portlet rendering through the browser (Playwright)

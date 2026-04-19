@@ -36,5 +36,3 @@ Liferay DXP 2026.Q1.3-LTS Workspace: MVCPortlet + React portlet + Spock integrat
 ./gradlew stopDockerContainer                           # Stop the container (keeps volume; reuse next run)
 ./gradlew removeDockerContainer                         # Hard clean (force volume recreation)
 ```
-
-- DXP 2026 migration work — read `.claude/instructions/dxp-2026-references.md` first.

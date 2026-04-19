@@ -11,6 +11,10 @@ flags:
     paths:
       - modules/liferay-dummy-factory/src/main/java/
     carryforward: true
+  integration:
+    paths:
+      - modules/liferay-dummy-factory/src/main/java/
+    carryforward: true
   frontend:
     paths:
       - modules/liferay-dummy-factory/src/main/resources/META-INF/resources/js/
