@@ -46,6 +46,25 @@ jobs:
           # Gradle's resolveLicenseFile task reads LIFERAY_DXP_LICENSE_BASE64 and decodes it.
           # No pre-decode needed here; passing via env is sufficient.
 
+      - name: Build Docker deploy context
+        env:
+          LIFERAY_DXP_LICENSE_BASE64: ${{ secrets.LIFERAY_DXP_LICENSE_BASE64 }}
+        run: |
+          ./gradlew :modules:liferay-dummy-factory:jar \
+                    :dockerDeploy \
+                    :modules:liferay-dummy-factory:dockerDeploy \
+                    --no-daemon --info
+
+      - name: Align bind-mount ownership with container liferay user (UID 1000)
+        # The workspace plugin bind-mounts build/docker/{deploy,work,client-extensions}
+        # into the container. GitHub runner's user is UID 1001, but the container's
+        # liferay user is UID 1000. Without chown, /mnt/liferay/deploy appears
+        # unwritable to liferay (UID 1000), so AutoDeployScanner logs "Unable to
+        # write" then loops forever on "Processing" because FileUtil.move silently
+        # fails to delete the source file. Aligning the host ownership to UID 1000
+        # lets move() succeed and liferay.dummy.factory reach ACTIVE.
+        run: sudo chown -R 1000:1000 build/docker
+
       - name: Run integration tests
         env:
           LIFERAY_DXP_LICENSE_BASE64: ${{ secrets.LIFERAY_DXP_LICENSE_BASE64 }}
