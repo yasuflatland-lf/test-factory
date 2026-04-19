@@ -113,32 +113,26 @@ gradle.projectsEvaluated {
 		// state for post-mortem inspection (see ADR-0008 D4).
 		hostConfig.autoRemove.set(false)
 
-		// Mount the JaCoCo agent JAR from the test runtime classpath into the container.
-		// Resolution is deferred to task-execution time via a Gradle Provider so the
-		// testRuntimeClasspath configuration is not resolved during the configuration
-		// phase (Gradle 7+ warns about configuration-time resolution and will elevate
-		// it to an error in a future release). The Maven artifact
-		// org.jacoco:org.jacoco.agent:<ver>:runtime resolves to a file named
-		// org.jacoco.agent-<ver>-runtime.jar in the Gradle cache.
-		def jacocoAgentProvider = providers.provider {
-			def jar = configurations.testRuntimeClasspath.find {
+		// Resolve and mount the JaCoCo agent JAR at task-execution time. Using
+		// doFirst (not a top-level def) keeps testRuntimeClasspath out of the
+		// configuration phase — Gradle 7+ warns on configuration-time resolution
+		// and will elevate it to an error in a future release. The filter matches
+		// both the legacy 'jacocoagent.jar' name and the Maven-classifier form
+		// 'org.jacoco.agent-<ver>-runtime.jar' that lives in the Gradle cache.
+		doFirst {
+			def jacocoJar = configurations.testRuntimeClasspath.find {
 				it.name.contains('jacocoagent') ||
 					(it.name.contains('org.jacoco.agent') && it.name.contains('runtime'))
 			}
-			if (jar == null) {
+			if (jacocoJar == null) {
 				throw new GradleException(
 					'jacocoagent.jar not found on testRuntimeClasspath. ' +
 					'Ensure org.jacoco:org.jacoco.agent:0.8.14:runtime is declared as a testImplementation dependency.'
 				)
 			}
-			return jar.absolutePath
+			// Mount read-only (:ro) so a compromised container cannot tamper with the host-side agent JAR.
+			hostConfig.binds.put(jacocoJar.absolutePath, '/opt/liferay/jacocoagent.jar:ro')
 		}
-
-		// hostConfig.binds is a MapProperty<String, String>: host path -> container target.
-		// The bmuschko docker plugin serializes each entry as "<key>:<value>" and feeds
-		// the string to docker-java's Bind.parse, which accepts the three-part
-		// host:container:mode form. The :ro suffix enforces a read-only mount.
-		hostConfig.binds.put(jacocoAgentProvider, '/opt/liferay/jacocoagent.jar:ro')
 	}
 }
 
