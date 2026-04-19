@@ -72,6 +72,51 @@ jobs:
           sudo mkdir -p build/docker/deploy build/docker/work build/docker/client-extensions
           sudo chmod -R a+rwX build/docker/deploy build/docker/work build/docker/client-extensions
 
+      - name: Pre-test JaCoCo port 6300 diagnostics
+        env:
+          LIFERAY_DXP_LICENSE_BASE64: ${{ secrets.LIFERAY_DXP_LICENSE_BASE64 }}
+          CONTAINER: test-factory-liferay
+        run: |
+          ./gradlew :startDockerContainer :integration-test:awaitLiferayReady --no-daemon --info
+
+          echo "=== HostConfig.PortBindings ==="
+          docker inspect "$CONTAINER" --format '{{json .HostConfig.PortBindings}}' | python3 -m json.tool || true
+
+          echo "=== NetworkSettings.Ports ==="
+          docker inspect "$CONTAINER" --format '{{json .NetworkSettings.Ports}}' | python3 -m json.tool || true
+
+          echo "=== Config.Env (LIFERAY_JVM_OPTS / JACOCO) ==="
+          docker inspect "$CONTAINER" --format '{{range .Config.Env}}{{println .}}{{end}}' \
+            | grep -iE 'JVM|JACOCO' || echo '(no matching env vars)'
+
+          echo "=== Mounts ==="
+          docker inspect "$CONTAINER" --format '{{json .Mounts}}' | python3 -m json.tool || true
+
+          echo "=== host: listening on :6300 ==="
+          ss -ltnp '( sport = :6300 )' || true
+
+          echo "=== host -> 127.0.0.1:6300 reachability ==="
+          (nc -zv -w 3 127.0.0.1 6300 2>&1) || true
+          echo "=== host -> ::1:6300 reachability ==="
+          (nc -zv -w 3 ::1 6300 2>&1) || true
+
+          echo "=== container: /opt/liferay/jacocoagent.jar ==="
+          docker exec "$CONTAINER" ls -la /opt/liferay/jacocoagent.jar 2>&1 || true
+
+          echo "=== container: java process args (jacoco) ==="
+          docker exec "$CONTAINER" sh -c 'ps -efww 2>/dev/null | grep -i jacoco | grep -v grep' \
+            || docker exec "$CONTAINER" sh -c 'cat /proc/1/cmdline | tr "\0" "\n" | grep -i jacoco' \
+            || echo '(jacoco not found in process args)'
+
+          echo "=== container: listening sockets (6300 = hex 189C) ==="
+          docker exec "$CONTAINER" sh -c 'ss -ltn 2>/dev/null | grep 6300' \
+            || docker exec "$CONTAINER" sh -c 'netstat -ltn 2>/dev/null | grep 6300' \
+            || docker exec "$CONTAINER" sh -c 'awk "\$2 ~ /:189C$/" /proc/net/tcp /proc/net/tcp6 2>/dev/null' \
+            || echo '(no listener found via ss/netstat/proc)'
+
+          echo "=== container startup log: first jacoco mentions ==="
+          docker logs "$CONTAINER" 2>&1 | grep -i jacoco | head -20 || echo '(no jacoco mentions in logs)'
+
       - name: Run integration tests
         env:
           LIFERAY_DXP_LICENSE_BASE64: ${{ secrets.LIFERAY_DXP_LICENSE_BASE64 }}
