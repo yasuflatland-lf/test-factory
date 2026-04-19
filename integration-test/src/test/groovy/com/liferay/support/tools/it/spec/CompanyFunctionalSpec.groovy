@@ -70,8 +70,11 @@ class CompanyFunctionalSpec extends BaseLiferaySpec {
 		page.locator('[data-testid="company-submit"]').click()
 
 		then: 'success alert appears'
+		// DXP 2026 runs BundleSiteInitializer (welcome site, ~4s) plus 5
+		// BatchEngineImportTaskExecutor tasks synchronously inside addCompany,
+		// which pushes the server response past 30s under local runs.
 		page.locator('[data-testid="company-result"].alert-success').waitFor(
-			new Locator.WaitForOptions().setTimeout(30_000)
+			new Locator.WaitForOptions().setTimeout(90_000)
 		)
 		page.locator('[data-testid="company-result"].alert-success').isVisible()
 	}
