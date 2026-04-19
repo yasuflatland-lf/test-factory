@@ -94,6 +94,14 @@ gradle.projectsEvaluated {
 		withEnvVar 'LIFERAY_JVM_OPTS',
 			'-javaagent:/opt/liferay/jacocoagent.jar=output=tcpserver,address=0.0.0.0,port=6300'
 
+		// Publish the JaCoCo tcpserver port to the host loopback only.
+		// The workspace plugin's default portBindings (8000/8080/11311) do not
+		// include 6300, so without this line ExecDumpClient on the host cannot
+		// reach the agent and every spec's dumpJacocoCoverage() silently fails.
+		// Binding to 127.0.0.1 avoids exposing the unauthenticated tcpserver to
+		// other processes on the CI runner or the developer's LAN.
+		hostConfig.portBindings.add('127.0.0.1:6300:6300')
+
 		// Override workspace plugin 16.0.5 default (autoRemove=true at
 		// RootProjectConfigurator.java:540). Keeping the container after
 		// stopDockerContainer preserves logs, JaCoCo exec dumps, and volume
@@ -101,22 +109,31 @@ gradle.projectsEvaluated {
 		hostConfig.autoRemove.set(false)
 
 		// Mount the JaCoCo agent JAR from the test runtime classpath into the container.
-		// The Maven artifact is org.jacoco:org.jacoco.agent:<ver>:runtime which resolves
-		// to a file named org.jacoco.agent-<ver>-runtime.jar in the Gradle cache.
-		def jacocoJar = configurations.testRuntimeClasspath.find {
-			(it.name.contains('jacocoagent')) ||
-				(it.name.contains('org.jacoco.agent') && it.name.contains('runtime'))
+		// Resolution is deferred to task-execution time via a Gradle Provider so the
+		// testRuntimeClasspath configuration is not resolved during the configuration
+		// phase (Gradle 7+ warns about configuration-time resolution and will elevate
+		// it to an error in a future release). The Maven artifact
+		// org.jacoco:org.jacoco.agent:<ver>:runtime resolves to a file named
+		// org.jacoco.agent-<ver>-runtime.jar in the Gradle cache.
+		def jacocoAgentProvider = providers.provider {
+			def jar = configurations.testRuntimeClasspath.find {
+				it.name.contains('jacocoagent') ||
+					(it.name.contains('org.jacoco.agent') && it.name.contains('runtime'))
+			}
+			if (jar == null) {
+				throw new GradleException(
+					'jacocoagent.jar not found on testRuntimeClasspath. ' +
+					'Ensure org.jacoco:org.jacoco.agent:0.8.14:runtime is declared as a testImplementation dependency.'
+				)
+			}
+			return jar.absolutePath
 		}
-		if (jacocoJar == null) {
-			throw new GradleException(
-				'jacocoagent.jar not found on testRuntimeClasspath. ' +
-				'Ensure org.jacoco:org.jacoco.agent:0.8.14:runtime is declared as a testImplementation dependency.'
-			)
-		}
+
 		// hostConfig.binds is a MapProperty<String, String>: host path -> container target.
-		// The bmuschko docker plugin renders each entry as "<key>:<value>" for the
-		// container bind mount list.
-		hostConfig.binds.put(jacocoJar.absolutePath, '/opt/liferay/jacocoagent.jar:ro')
+		// The bmuschko docker plugin serializes each entry as "<key>:<value>" and feeds
+		// the string to docker-java's Bind.parse, which accepts the three-part
+		// host:container:mode form. The :ro suffix enforces a read-only mount.
+		hostConfig.binds.put(jacocoAgentProvider, '/opt/liferay/jacocoagent.jar:ro')
 	}
 }
 
