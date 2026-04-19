@@ -1,7 +1,7 @@
 # liferay-dummy-factory
 
-[![Build Status](https://travis-ci.org/yasuflatland-lf/liferay-dummy-factory.svg?branch=master)](https://travis-ci.org/yasuflatland-lf/liferay-dummy-factory)
-[![Coverage Status](https://coveralls.io/repos/github/yasuflatland-lf/liferay-dummy-factory/badge.svg)](https://coveralls.io/github/yasuflatland-lf/liferay-dummy-factory)
+[![Unit Tests](https://github.com/yasuflatland-lf/test-factory/actions/workflows/unit-test.yml/badge.svg?branch=master)](https://github.com/yasuflatland-lf/test-factory/actions/workflows/unit-test.yml)
+[![codecov](https://codecov.io/gh/yasuflatland-lf/test-factory/branch/master/graph/badge.svg)](https://codecov.io/gh/yasuflatland-lf/test-factory)
 
 Dummy Factory generates dummy data for debugging use. Please don't use this for a production use.
 
