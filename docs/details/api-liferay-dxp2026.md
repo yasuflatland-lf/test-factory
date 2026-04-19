@@ -166,12 +166,62 @@ Without this exclusion the bundle will show as UNSATISFIED in GoGo Shell even th
 
 DXP 2026.Q1.3-LTS keeps the JSONWS base path at `/api/jsonws/`. Earlier migration notes speculated the path had moved to `/portal/api/jsonws/`, but `/portal/api/jsonws/*` is not registered in this release and returns 404.
 
-The real DXP 2026 gotcha is BasicAuth: `BasicAuthHeaderAuthVerifierPipelineConfigurator` is declared with `configuration-policy="require"`, so BasicAuth is silently skipped unless an OSGi config file is deployed at
-`configs/common/osgi/configs/com.liferay.portal.security.auth.verifier.internal.basic.auth.header.configuration.BasicAuthHeaderAuthVerifierConfiguration.config` with `enabled=B"true"` and `urlsIncludes=["/api/*","/o/*","/xmlrpc/*"]`. Without the file, every JSONWS call returns HTTP 403 with an empty JSON body.
-
 `BaseLiferaySpec.jsonwsGet/Post` centralizes the base path. Individual specs and cleanup code must never hard-code the full path — pass only the suffix (e.g. `'user/get-current-user'`). When sweeping for old-path references, grep both dotted access and string literals:
 
 ```bash
 grep -rn '"/api/jsonws/' integration-test/src/
 grep -rn "'/api/jsonws/" integration-test/src/
 ```
+
+DXP 2026 BasicAuth + SAP gotchas around JSONWS auth are detailed in `docs/details/dxp-2026-gotchas.md` §10–§15.
+
+## 15. `BaseAuthVerifierConfiguration.urlsIncludes()` returns `String`, not `String[]`
+
+The OCD method signature is:
+
+```java
+@AttributeDefinition(required = false)
+public String urlsIncludes() default "/*";
+```
+
+`.config` files for any verifier that extends `BaseAuthVerifierConfiguration` (BasicAuth, PortalSession, OAuth2, etc.) MUST use **comma-separated String** form, NOT array form:
+
+```
+# Correct
+urlsIncludes="/api/*,/o/*,/xmlrpc/*"
+
+# Wrong — silently breaks URL matching
+urlsIncludes=["/api/*","/o/*","/xmlrpc/*"]
+```
+
+The array form parses successfully and serializes as `[Ljava.lang.String;@<hash>` (Java's default `toString` for arrays). Liferay then treats that gibberish as a single URL pattern that matches nothing, and BasicAuth silently falls through to the Guest user on every request. There is no warning in the log.
+
+The same rule applies to `urlsExcludes`, and to any `@AttributeDefinition` whose return type is `String` rather than `String[]`. When in doubt, read the OCD interface in
+`/home/yasuflatland/tmp/liferay-portal/portal-impl/src/com/liferay/portal/security/auth/verifier/internal/.../BaseAuthVerifierConfiguration.java`.
+
+## 16. SAP entries are persisted in `SAPEntry` table — `.config` cannot update existing rows
+
+`SAPServiceVerifyProcess` runs once per company and **only creates missing rows**. It never updates existing ones. Once `SYSTEM_DEFAULT` and `SYSTEM_USER_PASSWORD` rows are persisted, an OSGi `.config` override of `SAPConfiguration` has **no effect** on those rows.
+
+To widen an existing SAP entry at test time, mutate it in-process via `SAPEntryLocalService.updateSAPEntry(...)`. This is a local-service call and is not subject to HTTP-layer SAP enforcement. Reference: `modules/liferay-dummy-factory/src/main/java/com/liferay/support/tools/sap/SAPTestSetup.java`.
+
+```java
+// Widen SYSTEM_USER_PASSWORD to allow all service signatures.
+SAPEntry entry = _sapEntryLocalService.fetchSAPEntry(
+    companyId, "SYSTEM_USER_PASSWORD");
+
+_sapEntryLocalService.updateSAPEntry(
+    entry.getSapEntryId(), "*", entry.isDefaultSAPEntry(), true,
+    entry.getName(), entry.getTitleMap(), new ServiceContext());
+```
+
+The `configuration.override.com.liferay.portal.security.service.access.policy.configuration.SAPConfiguration_systemDefaultSAPEntryServiceSignatures=*` entry in `portal-ext.properties` only affects the **default values used when creating missing rows on a fresh database** — it does not retroactively widen an existing row. For test runs against a fresh container (`removeDockerContainer` → `startDockerContainer`) the override does take effect because rows have not yet been seeded; for runs that reuse a container it does not.
+
+## 17. `SYSTEM_USER_PASSWORD` SAP requires `passwordBasedAuthentication=true` on the AuthVerifierResult
+
+The `SYSTEM_USER_PASSWORD` SAP policy only activates when the inbound request's AuthVerifierResult carries `passwordBasedAuthentication=true`. Two verifiers set this flag:
+
+- `PortalSessionAuthVerifier` (when the session was established by a username/password login)
+- `BasicAuthHeaderAutoLoginSupport.doLogin()` (when BasicAuth credentials succeed)
+
+`BasicAuthHeaderAutoLoginSupport.doLogin()` itself gates on `BasicAuthHeaderSupportConfiguration.enabled` (COMPANY scope). DXP 2026 ships with this disabled by default — see `docs/details/dxp-2026-gotchas.md` §11. Without enabling it, even a successful BasicAuth handshake fails to set `passwordBasedAuthentication=true`, so `SYSTEM_USER_PASSWORD` never fires and the call falls through to `SYSTEM_DEFAULT`'s narrower allowlist.

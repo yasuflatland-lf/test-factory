@@ -81,6 +81,25 @@ def matching = response.items.findAll { it.title?.startsWith(BASE_NAME) }
 
 The `message-board-sections` listing endpoint is DB-backed (not ES-backed), so there is no indexing lag.
 
+## DXP 2026 deferred module bootstrap — `Liferay.authToken` is not synchronous
+
+`page.evaluate('() => Liferay.authToken')` immediately after `page.goto(...)` fails on DXP 2026 with `ReferenceError: Liferay is not defined`, even though the DOM has rendered and `LoadState.NETWORKIDLE` has been reached. DXP 2026 loads the `Liferay` global through the Liferay AMD module loader, which resolves asynchronously after page load — the standard Playwright readiness states do not wait for it.
+
+Always poll for the global before reading it:
+
+```groovy
+page.waitForFunction(
+    "typeof window.Liferay !== 'undefined' && " +
+        "typeof window.Liferay.authToken === 'string'",
+    null,
+    new Page.WaitForFunctionOptions().setTimeout(15_000)
+)
+
+String authToken = page.evaluate('() => Liferay.authToken') as String
+```
+
+Wrap this in a `_waitForLiferayGlobal(Page page)` helper if you call it more than twice — `LdfResourceClient.groovy` does exactly that. The same applies to anything else exposed on the `Liferay` namespace (`Liferay.Session`, `Liferay.Util`, etc.).
+
 ## Headless API vs Java API names for the same Message Boards entities
 
 The IDs match between layers, so you can create with one API and verify/delete with the other.
