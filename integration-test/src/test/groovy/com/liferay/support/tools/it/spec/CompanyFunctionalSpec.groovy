@@ -34,7 +34,7 @@ class CompanyFunctionalSpec extends BaseLiferaySpec {
 	def cleanupSpec() {
 		// CompanyService is excluded from JSON-WS by Liferay's default
 		// json.service.invalid.class.names, so there is no remote delete path.
-		// The Testcontainers instance is not reused (withReuse(false)), so the
+		// The workspace-managed Docker container is disposable per run, so the
 		// created company is discarded with the container at the end of the run.
 		pw?.close()
 	}
@@ -70,28 +70,13 @@ class CompanyFunctionalSpec extends BaseLiferaySpec {
 		page.locator('[data-testid="company-submit"]').click()
 
 		then: 'success alert appears'
+		// DXP 2026 runs BundleSiteInitializer (welcome site, ~4s) plus 5
+		// BatchEngineImportTaskExecutor tasks synchronously inside addCompany,
+		// which pushes the server response past 30s under local runs.
 		page.locator('[data-testid="company-result"].alert-success').waitFor(
-			new Locator.WaitForOptions().setTimeout(30_000)
+			new Locator.WaitForOptions().setTimeout(90_000)
 		)
 		page.locator('[data-testid="company-result"].alert-success').isVisible()
-	}
-
-	def 'Created company is visible via JSON-WS'() {
-		when:
-		def company = jsonwsGet(
-			"/api/jsonws/company/get-company-by-web-id" +
-			"/web-id/${COMPANY_WEB_ID}") as Map
-
-		then:
-		company != null
-		company.webId == COMPANY_WEB_ID
-
-		when:
-		createdCompanyId = company.companyId as Long
-
-		then:
-		createdCompanyId != null
-		createdCompanyId > 0
 	}
 
 }

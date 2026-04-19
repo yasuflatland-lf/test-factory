@@ -46,7 +46,7 @@ class TransactionalBatchFailureSpec extends BaseLiferaySpec {
 		createdOrganizationIds.each { id ->
 			try {
 				jsonwsPost(
-					'/api/jsonws/organization/delete-organization',
+					'organization/delete-organization',
 					['organizationId': id])
 			}
 			catch (Exception e) {
@@ -58,7 +58,7 @@ class TransactionalBatchFailureSpec extends BaseLiferaySpec {
 		if (preExistingOrgId) {
 			try {
 				jsonwsPost(
-					'/api/jsonws/organization/delete-organization',
+					'organization/delete-organization',
 					['organizationId': preExistingOrgId])
 			}
 			catch (Exception e) {
@@ -120,8 +120,8 @@ class TransactionalBatchFailureSpec extends BaseLiferaySpec {
 		and: 'submit the batch'
 		page.locator('[data-testid="org-submit"]').click()
 
-		then: 'portlet finishes with an alert (success or partial rollback)'
-		page.locator('[data-testid="org-result"]').waitFor(
+		then: 'partial rollback yields an alert-danger (iteration 2 collides)'
+		page.locator('[data-testid="org-result"].alert-danger').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
 	}
@@ -129,7 +129,7 @@ class TransactionalBatchFailureSpec extends BaseLiferaySpec {
 	def 'Iteration 1 committed independently of iteration 2 rollback'() {
 		when: 'query organizations via JSONWS'
 		def orgs = jsonwsGet(
-			"/api/jsonws/organization/get-organizations/company-id/${companyId}" +
+			"organization/get-organizations/company-id/${companyId}" +
 			'/parent-organization-id/0/start/-1/end/-1') as List
 
 		then:

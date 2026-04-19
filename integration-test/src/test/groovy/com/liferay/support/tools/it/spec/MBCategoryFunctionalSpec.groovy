@@ -39,7 +39,7 @@ class MBCategoryFunctionalSpec extends BaseLiferaySpec {
 
 		// Discover Guest site groupId for MB category creation.
 		def group = jsonwsGet(
-			"/api/jsonws/group/get-group/company-id/${companyId}" +
+			"group/get-group/company-id/${companyId}" +
 			'/group-key/Guest') as Map
 
 		guestGroupId = group.groupId as Long

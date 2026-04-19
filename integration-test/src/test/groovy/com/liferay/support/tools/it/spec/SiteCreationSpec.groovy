@@ -39,10 +39,9 @@ class SiteCreationSpec extends BaseLiferaySpec {
 
 		ldf = new LdfResourceClient("http://localhost:${liferay.httpPort}")
 
-		// Prime the admin password via Playwright's login + password-change
-		// flow so JsonwsSetupHelper (which authenticates via Basic Auth to
-		// JSONWS) can succeed on a fresh container regardless of which spec
-		// runs first.
+		// Log in the admin session so JsonwsSetupHelper (which uses Basic Auth against
+		// JSONWS) runs under an already-primed cookie store. D2 removed the
+		// password-change detour; this is now a one-shot login.
 		ldf.login()
 
 		jsonws = new JsonwsSetupHelper(
@@ -53,7 +52,7 @@ class SiteCreationSpec extends BaseLiferaySpec {
 		createdSiteIds.each { Long id ->
 			try {
 				jsonwsPost(
-					'/api/jsonws/group/delete-group',
+					'group/delete-group',
 					['groupId': id])
 			}
 			catch (Exception e) {
@@ -92,7 +91,7 @@ class SiteCreationSpec extends BaseLiferaySpec {
 		then: 'every created group exists and is an open site'
 		groupIds.every { Long groupId ->
 			Map group = jsonwsGet(
-				"/api/jsonws/group/get-group/group-id/${groupId}") as Map
+				"group/get-group/group-id/${groupId}") as Map
 			(group?.type as Integer) == TYPE_SITE_OPEN
 		}
 	}
@@ -123,7 +122,7 @@ class SiteCreationSpec extends BaseLiferaySpec {
 		then: 'every created group is a private site'
 		groupIds.every { Long groupId ->
 			Map group = jsonwsGet(
-				"/api/jsonws/group/get-group/group-id/${groupId}") as Map
+				"group/get-group/group-id/${groupId}") as Map
 			(group?.type as Integer) == TYPE_SITE_PRIVATE
 		}
 	}
@@ -140,10 +139,10 @@ class SiteCreationSpec extends BaseLiferaySpec {
 
 		and: 'fetch prototype uuids via JSONWS'
 		Map publicProtoDetail = jsonwsGet(
-			"/api/jsonws/layoutsetprototype/get-layout-set-prototype" +
+			"layoutsetprototype/get-layout-set-prototype" +
 			"/layout-set-prototype-id/${publicProtoId}") as Map
 		Map privateProtoDetail = jsonwsGet(
-			"/api/jsonws/layoutsetprototype/get-layout-set-prototype" +
+			"layoutsetprototype/get-layout-set-prototype" +
 			"/layout-set-prototype-id/${privateProtoId}") as Map
 
 		String expectedPublicUuid = publicProtoDetail.uuid as String
@@ -204,7 +203,7 @@ class SiteCreationSpec extends BaseLiferaySpec {
 
 		when: 'collect created child site id and parent metadata from response'
 		// SiteCreator echoes back inheritContent and parentGroupId so we do
-		// not need to round-trip through /api/jsonws/group/get-group, which
+		// not need to round-trip through group/get-group, which
 		// would not expose inheritContent on the default Group JSON view.
 		Map created = (response.items as List).first() as Map
 		Long childGroupId = created.groupId as Long

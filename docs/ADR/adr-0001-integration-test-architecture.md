@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted
+Accepted (original 2026-04-09) — container strategy section superseded in part by ADR-0008 (2026-04-18).
+
+See `docs/ADR/adr-0008-dxp-2026-migration.md` for the DXP 2026 migration decisions, including the replacement of Testcontainers with workspace-native Docker (Liferay workspace plugin 16.0.5).
 
 ## Date
 
@@ -10,13 +12,17 @@ Accepted
 
 ## Context
 
-The liferay-dummy-factory project needs to build E2E integration tests using Testcontainers for the portlet (MVCPortlet + React).
+The liferay-dummy-factory project needs to build E2E integration tests for the portlet (MVCPortlet + React).
+
+**Original context (CE 7.4 GA132)**: Integration tests used Testcontainers 2.0.4 against `liferay/portal:7.4.3.132-ga132`.
+
+**Current context (DXP 2026.Q1.3-LTS)**: Testcontainers has been removed entirely. Container lifecycle is managed by workspace-native Docker tasks from `com.liferay.gradle.plugins.workspace:16.0.5` (`startDockerContainer` / `stopDockerContainer` / `removeDockerContainer`). The container image is `liferay/dxp:2026.q1.3-lts`. See ADR-0008 for rationale.
 
 ### Constraints
 
-- **Target**: Liferay Portal CE 7.4 GA132 (Community Edition, not DXP)
+- **Target**: Liferay DXP 2026.Q1.3-LTS (as of 2026-04-18; formerly CE 7.4 GA132)
 - **Runtime environment**: WSL2 + Docker Desktop 29.x
-- **Build**: Gradle 8.5 + Liferay Workspace Plugin
+- **Build**: Gradle 8.5 + Liferay Workspace Plugin 16.0.5
 - **Test scope**: OSGi bundle deployment verification, bundle state validation via GoGo Shell, and browser E2E tests via Playwright
 
 ## Decision
@@ -26,7 +32,7 @@ The liferay-dummy-factory project needs to build E2E integration tests using Tes
 | Component | Choice | Rationale |
 |-----------|--------|-----------|
 | Test framework | Spock 2.4 + Groovy 5.0.4 | Groovy's concise syntax, test ordering via `@Stepwise`, Power Assert |
-| Container management | Testcontainers 2.0.4 | Docker Engine 29.x support (bundles docker-java 3.7.1). Version 1.21.x ships a shaded docker-java supporting up to API v1.44, which is incompatible with Docker 29.x's minimum API v1.40 |
+| Container management | Workspace-native Docker (plugin 16.0.5) | Replaces Testcontainers 2.0.4. `startDockerContainer` / `stopDockerContainer` / `removeDockerContainer` tasks manage lifecycle natively. Fixed ports 8080/11311/8000. See ADR-0008 D1-D8. |
 | Browser tests | Playwright Java 1.59.0 (Chromium only) | Same technology stack as the official Liferay tests. Installing only Chromium reduces download time |
 | GoGo Shell communication | Apache Commons Net (Telnet) | Used to connect to the Liferay OSGi console |
 
@@ -47,13 +53,13 @@ The liferay-dummy-factory project needs to build E2E integration tests using Tes
 
 ### 3. Password Policy Handling
 
-**Decision**: `LIFERAY_PASSWORDS_DEFAULT_POLICY_CHANGE_REQUIRED=false` env var + fallback password trial + interactive handler.
+**Decision (DXP 2026)**: Suppressed entirely via `configs/common/portal-ext.properties`.
 
-- Set `LIFERAY_PASSWORDS_DEFAULT_POLICY_CHANGE_REQUIRED=false` so the pre-built DB is patched at container startup and the default admin password is accepted as-is.
-- `portal-ext.properties` is still placed in `/opt/liferay/tomcat/webapps/ROOT/WEB-INF/classes/` for the non-password settings that do take effect from properties (setup wizard, terms-of-use, reminder queries).
-- The test side still tries both `test` and `Test12345` in sequence to tolerate both fresh containers and any future image change that re-enables the policy. If the password change page still appears, it is handled automatically.
+`company.security.update.password.required=false` and `passwords.default.policy.change.required=false` are set in `portal-ext.properties` (baked into the image via `dockerDeploy`). The `PASSWORDRESET` flag is never set, so the admin account (`test@liferay.com` / `test`) is usable immediately without any password change flow. `BaseLiferaySpec` needs no special handling. See ADR-0008 D2.
 
-**Rejected alternatives**:
+**Original CE 7.4 approach (historical)**: Used the `LIFERAY_PASSWORDS_DEFAULT_POLICY_CHANGE_REQUIRED=false` environment variable plus a password-trial fallback (`test` then `Test12345`). This approach was necessary because CE Docker images use a pre-built database that env vars can patch at startup, while `portal-ext.properties` only affects non-password settings in that environment. This complexity is eliminated in DXP 2026.
+
+**Rejected alternatives (CE 7.4 era)**:
 - **DB update via GoGo Shell**: Direct SQL execution is not possible from the OSGi console.
 - **Groovy script execution**: `groovy:exec` in GoGo Shell is not available in the CE Docker image.
 
@@ -85,6 +91,16 @@ The liferay-dummy-factory project needs to build E2E integration tests using Tes
 
 ### 8. Container Configuration
 
+**DXP 2026 (current)**: Container lifecycle is managed by workspace-native Gradle tasks. Configuration is baked into the Docker image via `configs/` overlays during `dockerDeploy`. No Testcontainers API calls remain.
+
+Key workspace plugin container behaviors:
+- Container name: `${project.name}-liferay` (e.g. `test-factory-liferay`)
+- `autoRemove=false` via explicit override in `integration-test/build.gradle` (workspace plugin 16.0.5 defaults to `true` at `RootProjectConfigurator.java:540`). Container persists after `stopDockerContainer` for post-mortem inspection.
+- `LIFERAY_JVM_OPTS` is injected via `createDockerContainer { withEnvVar(...) }` (JaCoCo agent, JPDA).
+- Portal configuration lands in `configs/common/portal-ext.properties` and is merged at image build time.
+- Activation key is copied to `configs/local/deploy/` by the `resolveLicenseFile` task before `dockerDeploy`.
+
+**CE 7.4 original (historical, removed)**:
 ```groovy
 withReuse(false)                   // Always start a fresh container to prevent state leakage
 withCopyToContainer(...)           // Place portal-ext.properties
@@ -95,20 +111,22 @@ withEnv([                          // Environment variables
 ])
 ```
 
+The intent of `withReuse(false)` (preventing state leakage between test runs) is preserved in DXP 2026 by `autoRemove=false` + `stopDockerContainer` (container is stopped and volume kept, but not reused by the next `startDockerContainer` invocation which creates a fresh container from the image). For a guaranteed clean state, run `./gradlew removeDockerContainer` before the next `startDockerContainer`.
+
 ## Consequences
 
 ### Positive
 
 - Login method follows the official Liferay Playwright test patterns
-- `withReuse(false)` guarantees a clean Liferay state for every test run, so entities (users, roles, sites) or password changes from a previous run cannot leak into the next run and hide regressions
+- Workspace-native Docker guarantees a clean Liferay state for every test run (each `startDockerContainer` starts from the baked image). Entities or password changes from a previous run cannot leak across runs.
 - Installing only Chromium reduces download time
-- Testcontainers 2.0.4 provides compatibility with the latest Docker Engine 29.x
+- Testcontainers dependency removed — no more Testcontainers version compatibility concerns with Docker Engine
 
 ### Negative
 
-- **No Global Menu in CE**: The DXP-only Global Menu (`Open Applications Menu`) does not exist in CE GA132. Resolved by using direct URL access with `p_p_state=maximized` (e.g., `/group/control_panel/manage?p_p_id=...&p_p_lifecycle=0&p_p_state=maximized`).
-- Each test run pays the full ~8 minute container startup cost, since container reuse is disabled. This is an intentional trade-off to preserve test isolation.
-- Some properties in `portal-ext.properties` (e.g., `passwords.default.policy.change.required`) have no effect on the Docker image's pre-built database. These are handled by the equivalent `LIFERAY_*` environment variables instead.
+- **No Global Menu in CE GA132 (historical note)**: The DXP-only Global Menu did not exist in CE GA132. Resolved by using direct URL access with `p_p_state=maximized`. In DXP 2026 the Global Menu exists but direct URL access is still used for speed.
+- Each test run pays the full ~8 minute container startup cost. This is an intentional trade-off to preserve test isolation.
+- Fixed ports (8080/11311/8000) conflict with any other Liferay process running on the developer machine. Developers must stop conflicting processes before running tests.
 
 ### Resolved Questions
 

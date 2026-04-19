@@ -1,8 +1,8 @@
 {
-    "private": true,
-    "workspaces": {
-        "packages": [
-            "modules/liferay-dummy-factory"
-        ]
-    }
+	"private": true,
+	"workspaces": {
+		"packages": [
+			"modules/liferay-dummy-factory"
+		]
+	}
 }

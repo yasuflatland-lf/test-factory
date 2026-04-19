@@ -45,10 +45,9 @@ class WebContentCreationSpec extends BaseLiferaySpec {
 
 		ldf = new LdfResourceClient(liferay.baseUrl)
 
-		// Prime the admin password by running Playwright's login + forced
-		// password-change flow before any JSONWS helper call, so that
-		// JsonwsSetupHelper can authenticate straight away on a fresh
-		// container regardless of which spec runs first.
+		// Log in the admin session so JsonwsSetupHelper (which uses Basic Auth against
+		// JSONWS) runs under an already-primed cookie store. D2 removed the
+		// password-change detour; this is now a one-shot login.
 		ldf.login()
 
 		jsonws = new JsonwsSetupHelper(liferay.baseUrl)
@@ -81,7 +80,7 @@ class WebContentCreationSpec extends BaseLiferaySpec {
 
 		and:
 		int articleCount = jsonwsGet(
-			"/api/jsonws/journal.journalarticle/get-articles-count" +
+			"journal.journalarticle/get-articles-count" +
 			"/group-id/${siteId}/folder-id/0") as int
 
 		articleCount == 3
@@ -129,10 +128,10 @@ class WebContentCreationSpec extends BaseLiferaySpec {
 
 		and: 'JSONWS confirms 5 articles in each site'
 		int countA = jsonwsGet(
-			"/api/jsonws/journal.journalarticle/get-articles-count" +
+			"journal.journalarticle/get-articles-count" +
 			"/group-id/${siteAId}/folder-id/0") as int
 		int countB = jsonwsGet(
-			"/api/jsonws/journal.journalarticle/get-articles-count" +
+			"journal.journalarticle/get-articles-count" +
 			"/group-id/${siteBId}/folder-id/0") as int
 
 		countA == 5
@@ -164,14 +163,14 @@ class WebContentCreationSpec extends BaseLiferaySpec {
 
 		and: 'JSONWS reports 2 articles in the site'
 		int articleCount = jsonwsGet(
-			"/api/jsonws/journal.journalarticle/get-articles-count" +
+			"journal.journalarticle/get-articles-count" +
 			"/group-id/${siteId}/folder-id/0") as int
 
 		articleCount == 2
 
 		and: 'each article content carries at least 3 paragraph lines'
 		List articles = jsonwsGet(
-			"/api/jsonws/journal.journalarticle/get-articles" +
+			"journal.journalarticle/get-articles" +
 			"/group-id/${siteId}/folder-id/0/locale/en_US") as List
 
 		articles.size() == 2
@@ -191,7 +190,7 @@ class WebContentCreationSpec extends BaseLiferaySpec {
 
 	def 'reports per-site failure when structure id is missing'() {
 		// DDMStructureService#addStructure does not accept a raw definition
-		// JSON via JSONWS form-encoded POST on CE 7.4 GA132 (it expects a
+		// JSON via JSONWS form-encoded POST on Liferay (it expects a
 		// serialized DDMForm Java object), so we cannot cheaply build a
 		// site-scoped structure for this test. Instead, we pass a
 		// deliberately nonexistent ddmStructureId; the WebContentCreator
@@ -225,10 +224,10 @@ class WebContentCreationSpec extends BaseLiferaySpec {
 
 		and: 'JSONWS shows both sites have zero articles'
 		int countA = jsonwsGet(
-			"/api/jsonws/journal.journalarticle/get-articles-count" +
+			"journal.journalarticle/get-articles-count" +
 			"/group-id/${siteAId}/folder-id/0") as int
 		int countB = jsonwsGet(
-			"/api/jsonws/journal.journalarticle/get-articles-count" +
+			"journal.journalarticle/get-articles-count" +
 			"/group-id/${siteBId}/folder-id/0") as int
 
 		countA == 0

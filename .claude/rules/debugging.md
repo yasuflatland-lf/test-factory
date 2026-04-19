@@ -10,6 +10,16 @@ L2 layer for bug investigation, error analysis, and root-cause work on test fail
 
 ## Inspecting the Liferay container
 
+### Hard reset: remove container and volume
+
+```bash
+./gradlew removeDockerContainer
+```
+
+Use this when the container is in an inconsistent state (failed startup, corrupt volume) and
+`stopDockerContainer` alone does not resolve it. The next `startDockerContainer` will build
+a fresh container from the image.
+
 ### Check bundle state via GoGo Shell
 
 ```bash
@@ -22,11 +32,11 @@ docker exec liferay bash -c "(echo 'lb dummy.factory'; sleep 2) | telnet localho
 
 Look for `UNSATISFIED REFERENCE` entries. For example, if the PortletTracker isn't picking up your portlet, the corresponding PanelApp `@Reference` will stay unsatisfied.
 
-The PortletTracker / `jakarta.portlet` compatibility trap is documented in `docs/details/api-liferay-ce74.md` (and `docs/ADR/adr-0002-portlet-api-javax-namespace.md` records the original decision).
+The PortletTracker / `jakarta.portlet` migration details are in `docs/details/api-liferay-dxp2026.md` (and `docs/ADR/adr-0008-dxp-2026-migration.md` records the migration decision).
 
 ### Check `Import-Package` with `headers <bundle-id>`
 
-Verifies which portlet API package the bundle actually imports (`javax.portlet` vs `jakarta.portlet`).
+Verifies which portlet API package the bundle actually imports (should be `jakarta.portlet` for DXP 2026).
 
 ## Inspecting entity state via JSONWS
 
@@ -69,6 +79,20 @@ Full Gradle execution details in `docs/details/testing-gradle.md`.
 - **`:has-text` vs `:text-is`**: substring vs exact. Strict-mode violation when `categories` matches both `categories` and `mb-categories`. Detail in `docs/details/testing-playwright.md`.
 - **Headless Delivery `?search=`**: hits Elasticsearch with ingestion lag. For post-condition assertions, drop `?search=` and fetch with `?pageSize=100` then filter client-side.
 
+### JSONWS 403 immediately after container start
+
+If every JSONWS call returns 403 from the first test onwards, check whether
+`configs/common/portal-liferay-online-config.properties` is deployed as an empty file:
+
+```bash
+docker exec <container-name> cat /home/liferay/portal-liferay-online-config.properties
+```
+
+If the output contains `json.servlet.hosts.allowed=N/A`, the shadow file was not deployed.
+Verify that `configs/common/portal-liferay-online-config.properties` exists and is empty in
+the repo, then rebuild the image with `./gradlew removeDockerContainer startDockerContainer`.
+Detail: `docs/details/dxp-2026-gotchas.md` §1.
+
 ### Vitest migration gotchas
 
 Silent skips and silently disabled type checking are easy to introduce. Mock typing, globals setting, RTL cleanup registration, `vi.mock` factory hoisting, React double-resolution, ESM `setup.ts` details. Full catalog in `docs/details/ui-vitest-gotchas.md`.
@@ -76,9 +100,11 @@ Silent skips and silently disabled type checking are easy to introduce. Mock typ
 ## Reading logs
 
 - `./gradlew :integration-test:integrationTest --info` for verbose Gradle output.
-- `docker logs -f liferay` for the container log (5–8 minute startup included).
+- `docker logs -f <project-name>-liferay` for the container log (e.g. `docker logs -f test-factory-liferay`). Startup takes 5–8 minutes.
 - Test logging includes `passed`, `skipped`, `failed`, `standardOut`, `standardError`.
 
-## Known CE 7.4 API traps
+## Known DXP 2026 API constraints
 
-CE 7.4 GA132 has several non-obvious API constraints (`MBThreadLocalService.getThreads` categoryId being exact-match, `CompanyService` blacklist, the 13-arg `CompanyLocalService.addCompany`, `DefaultScreenNameValidator` character set, `MBCategoryLocalService.addCategory` overload, `ResourceCommandUtil.setErrorResponse` field naming, validation outside `TransactionInvokerUtil`, etc.). Full catalog in `docs/details/api-liferay-ce74.md`.
+DXP 2026.Q1.3-LTS has several non-obvious API constraints (`GroupLocalService.addGroup` new 18-arg signature,
+`CompanyService` blacklist, `MBThreadLocalService.getThreads` exact-match categoryId, JSONWS base path
+`/portal/api/jsonws/`, `bnd.bnd` javax.servlet exclusion, etc.). Full catalog in `docs/details/api-liferay-dxp2026.md`.

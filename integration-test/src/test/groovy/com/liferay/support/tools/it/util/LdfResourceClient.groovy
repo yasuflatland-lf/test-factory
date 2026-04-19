@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory
  * a headless Chromium session.
  *
  * <p>
- * Building a portlet ResourceURL by hand is fragile on CE 7.4 GA132 because
+ * Building a portlet ResourceURL by hand is fragile on Liferay because
  * the URL depends on the runtime Layout and control-panel group resolution.
  * This helper instead uses Playwright to render the portlet once (exactly as
  * the browser does in the existing Functional specs), scrapes the real
@@ -184,6 +184,8 @@ class LdfResourceClient implements Closeable {
 		_page.navigate("${_baseUrl}/")
 		_page.waitForLoadState()
 
+		_waitForLiferayGlobal(_page)
+
 		String initialAuthToken = _page.evaluate('() => Liferay.authToken') as String
 
 		// Try the initial password first, fall back to the post-reset password
@@ -222,17 +224,29 @@ class LdfResourceClient implements Closeable {
 		_page.navigate("${_baseUrl}/")
 		_page.waitForLoadState()
 
+		// Liferay may still redirect to /c/portal/update_password after login
+		// if another actor hasn't already consumed the flag.
+		if (!_page.url().contains('/c/portal/update_password') &&
+				!(_page.title()?.contains('New Password'))) {
+
+			_waitForLiferayGlobal(_page)
+		}
+
 		// Liferay forces a password change on first login for the default admin
 		// even when passwords.default.policy.change.required=false: the reset
 		// happens because the admin's password has never been changed. Fill the
 		// form with a stable value so subsequent navigations reach the portlet.
-		if (_page.title()?.contains('New Password')) {
+		if (_page.url().contains('/c/portal/update_password') ||
+				_page.title()?.contains('New Password')) {
+
 			_page.locator('#password1').fill(NEW_PASSWORD)
 			_page.locator('#password2').fill(NEW_PASSWORD)
 			_page.waitForNavigation({ ->
 				_page.locator('[type=submit], button.btn-primary').first().click()
 			})
 			_password = NEW_PASSWORD
+
+			_waitForLiferayGlobal(_page)
 		}
 
 		// Ignore the reminder-query prompt that some builds still render even
@@ -332,6 +346,18 @@ class LdfResourceClient implements Closeable {
 
 	private static String _encode(String value) {
 		return URLEncoder.encode(value ?: '', 'UTF-8')
+	}
+
+	/**
+	 * DXP 2026 registers {@code window.Liferay} via a deferred module bootstrap,
+	 * so the window-load event can fire before {@code Liferay.authToken} is
+	 * populated. Poll the global before reading it so the evaluate call does
+	 * not see {@code ReferenceError: Liferay is not defined}.
+	 */
+	private static void _waitForLiferayGlobal(Page page) {
+		page.waitForFunction(
+			'() => typeof window.Liferay !== "undefined" && ' +
+				'!!window.Liferay.authToken')
 	}
 
 }

@@ -65,13 +65,10 @@ class JsonwsSetupHelper {
 	}
 
 	Map createOrganization(String name) {
-		// OrganizationService.addOrganization has two overloads on CE 7.4
-		// GA132: a simple 10-arg form and a 15-arg form with rich
-		// contact-info Lists. Both take a ServiceContext. JSONWS on GA132
-		// consistently returns 404 for both shapes of form-encoded POST
-		// regardless of whether serviceContext is present, so we route
-		// through the headless-admin-user REST API, which uses a clean
-		// JSON body and a single "organizations" endpoint.
+		// OrganizationService.addOrganization on DXP 2026 is exposed via JSONWS, but
+		// form-encoded POSTs still tend to drop the ServiceContext structure. Route
+		// through the headless-admin-user REST API for cleaner JSON body handling.
+		// See docs/details/api-liferay-dxp2026.md §5.
 		String body = "{\"name\":${_jsonQuote(name)}}"
 		Map response = _postJson(
 			'/o/headless-admin-user/v1.0/organizations', body) as Map
@@ -98,61 +95,8 @@ class JsonwsSetupHelper {
 	}
 
 	private Object _postJson(String path, String jsonBody) {
-		int lastStatus = 0
-		String lastResponseBody = ''
-
-		for (String password : _candidatePasswords) {
-			String authHeader = _basicAuthFor(password)
-
-			def conn = new URL(_baseUrl + path).openConnection() as HttpURLConnection
-
-			try {
-				conn.requestMethod = 'POST'
-				conn.connectTimeout = 10_000
-				conn.readTimeout = 30_000
-				conn.setRequestProperty('Authorization', authHeader)
-				conn.setRequestProperty('Accept', 'application/json')
-				conn.setRequestProperty('Content-Type', 'application/json')
-				conn.doOutput = true
-
-				conn.outputStream.withWriter('UTF-8') { writer ->
-					writer.write(jsonBody)
-				}
-
-				int status = conn.responseCode
-				String responseBody = (status < 400)
-					? (conn.inputStream?.text ?: '')
-					: (conn.errorStream?.text ?: '')
-
-				lastStatus = status
-				lastResponseBody = responseBody
-
-				if ((status == 401) || (status == 403)) {
-					continue
-				}
-
-				if (status >= 400) {
-					throw new IllegalStateException(
-						"Headless POST ${path} returned HTTP ${status}: " +
-							responseBody)
-				}
-
-				_authHeader = authHeader
-
-				if (!responseBody?.trim() || responseBody.trim() == 'null') {
-					return null
-				}
-
-				return new JsonSlurper().parseText(responseBody)
-			}
-			finally {
-				conn.disconnect()
-			}
-		}
-
-		throw new IllegalStateException(
-			"Headless POST ${path} returned HTTP ${lastStatus} for all " +
-				"candidate passwords: ${lastResponseBody}")
+		return _request(
+			'Headless POST', 'POST', path, 'application/json', jsonBody)
 	}
 
 	Map createSite(String name, String membershipType = 'open') {
@@ -206,7 +150,7 @@ class JsonwsSetupHelper {
 
 	Map createDdmStructure(long groupId, String name, String definitionJson) {
 		Map response = _post(
-			'/api/jsonws/ddm/ddmstructure/add-structure',
+			'/api/jsonws/ddm.ddmstructure/add-structure',
 			[
 				'groupId': groupId,
 				'parentStructureId': '0',
@@ -221,7 +165,7 @@ class JsonwsSetupHelper {
 			]) as Map
 
 		_tracked << new Tracked(
-			'ddmStructure', '/api/jsonws/ddm/ddmstructure/delete-structure',
+			'ddmStructure', '/api/jsonws/ddm.ddmstructure/delete-structure',
 			'structureId',
 			response.structureId as Long)
 
@@ -232,7 +176,7 @@ class JsonwsSetupHelper {
 		long groupId, long structureId, String name, String script) {
 
 		Map response = _post(
-			'/api/jsonws/ddm/ddmtemplate/add-template',
+			'/api/jsonws/ddm.ddmtemplate/add-template',
 			[
 				'groupId': groupId,
 				'classNameId': _classNameIdFor(
@@ -251,7 +195,7 @@ class JsonwsSetupHelper {
 			]) as Map
 
 		_tracked << new Tracked(
-			'ddmTemplate', '/api/jsonws/ddm/ddmtemplate/delete-template',
+			'ddmTemplate', '/api/jsonws/ddm.ddmtemplate/delete-template',
 			'templateId',
 			response.templateId as Long)
 
@@ -350,54 +294,7 @@ class JsonwsSetupHelper {
 	}
 
 	private Object _get(String path) {
-		int lastStatus = 0
-		String lastResponseBody = ''
-
-		for (String password : _candidatePasswords) {
-			String authHeader = _basicAuthFor(password)
-
-			def conn = new URL(_baseUrl + path).openConnection() as HttpURLConnection
-
-			try {
-				conn.requestMethod = 'GET'
-				conn.connectTimeout = 10_000
-				conn.readTimeout = 30_000
-				conn.setRequestProperty('Authorization', authHeader)
-				conn.setRequestProperty('Accept', 'application/json')
-
-				int status = conn.responseCode
-				String body = (status < 400)
-					? (conn.inputStream?.text ?: '')
-					: (conn.errorStream?.text ?: '')
-
-				lastStatus = status
-				lastResponseBody = body
-
-				if ((status == 401) || (status == 403)) {
-					continue
-				}
-
-				if (status >= 400) {
-					throw new IllegalStateException(
-						"JSONWS GET ${path} returned HTTP ${status}: ${body}")
-				}
-
-				_authHeader = authHeader
-
-				if (!body?.trim() || body.trim() == 'null') {
-					return null
-				}
-
-				return new JsonSlurper().parseText(body)
-			}
-			finally {
-				conn.disconnect()
-			}
-		}
-
-		throw new IllegalStateException(
-			"JSONWS GET ${path} returned HTTP ${lastStatus} for all " +
-				"candidate passwords: ${lastResponseBody}")
+		return _request('JSONWS GET', 'GET', path, null, null)
 	}
 
 	private Object _post(String path, Map<String, Object> params) {
@@ -406,6 +303,22 @@ class JsonwsSetupHelper {
 				"${URLEncoder.encode(v == null ? '' : v.toString(), 'UTF-8')}"
 		}.join('&')
 
+		return _request(
+			'JSONWS POST', 'POST', path,
+			'application/x-www-form-urlencoded', body)
+	}
+
+	/**
+	 * Send an HTTP request with candidate-password retry. 401/403 triggers a
+	 * retry with the next candidate password because the admin password may
+	 * have been rotated (e.g. by the Playwright login flow in
+	 * {@code LdfResourceClient}). The working password is cached in
+	 * {@code _authHeader} so subsequent calls go straight to it.
+	 */
+	private Object _request(
+			String label, String method, String path, String contentType,
+			String requestBody) {
+
 		int lastStatus = 0
 		String lastResponseBody = ''
 
@@ -415,17 +328,21 @@ class JsonwsSetupHelper {
 			def conn = new URL(_baseUrl + path).openConnection() as HttpURLConnection
 
 			try {
-				conn.requestMethod = 'POST'
+				conn.requestMethod = method
 				conn.connectTimeout = 10_000
 				conn.readTimeout = 30_000
 				conn.setRequestProperty('Authorization', authHeader)
 				conn.setRequestProperty('Accept', 'application/json')
-				conn.setRequestProperty(
-					'Content-Type', 'application/x-www-form-urlencoded')
-				conn.doOutput = true
 
-				conn.outputStream.withWriter('UTF-8') { writer ->
-					writer.write(body)
+				if (contentType) {
+					conn.setRequestProperty('Content-Type', contentType)
+				}
+
+				if (requestBody != null) {
+					conn.doOutput = true
+					conn.outputStream.withWriter('UTF-8') { writer ->
+						writer.write(requestBody)
+					}
 				}
 
 				int status = conn.responseCode
@@ -436,20 +353,15 @@ class JsonwsSetupHelper {
 				lastStatus = status
 				lastResponseBody = responseBody
 
-				// 401/403 with this password may mean the admin's password has
-				// been rotated (e.g. by the Playwright login flow in
-				// LdfResourceClient). Retry with the other candidate password.
 				if ((status == 401) || (status == 403)) {
 					continue
 				}
 
 				if (status >= 400) {
 					throw new IllegalStateException(
-						"JSONWS POST ${path} returned HTTP ${status}: ${responseBody}")
+						"${label} ${path} returned HTTP ${status}: ${responseBody}")
 				}
 
-				// Remember the password that actually worked so subsequent
-				// calls go straight to it.
 				_authHeader = authHeader
 
 				if (!responseBody?.trim() || responseBody.trim() == 'null') {
@@ -464,7 +376,7 @@ class JsonwsSetupHelper {
 		}
 
 		throw new IllegalStateException(
-			"JSONWS POST ${path} returned HTTP ${lastStatus} for all " +
+			"${label} ${path} returned HTTP ${lastStatus} for all " +
 				"candidate passwords: ${lastResponseBody}")
 	}
 

@@ -44,7 +44,7 @@ class MBThreadFunctionalSpec extends BaseLiferaySpec {
 
 		// Discover Guest site groupId for the prereq MB category.
 		def group = jsonwsGet(
-			"/api/jsonws/group/get-group/company-id/${companyId}" +
+			"group/get-group/company-id/${companyId}" +
 			'/group-key/Guest') as Map
 
 		guestGroupId = group.groupId as Long
@@ -148,11 +148,13 @@ class MBThreadFunctionalSpec extends BaseLiferaySpec {
 		page.locator('[data-testid="mb-thread-result"].alert-success').isVisible()
 
 		when: 'query headless delivery API for created threads'
+		// Drop ?search= — Headless Delivery goes through Elasticsearch with
+		// ingestion lag after a create. Fetch with pageSize=100 and filter
+		// client-side for deterministic post-condition checks.
 		def response = headlessGet(
 			"/o/headless-delivery/v1.0/message-board-sections" +
 			"/${prereqCategoryId}/message-board-threads" +
-			"?search=${URLEncoder.encode(BASE_THREAD_NAME, 'UTF-8')}" +
-			'&pageSize=100')
+			"?pageSize=100")
 
 		then:
 		response != null

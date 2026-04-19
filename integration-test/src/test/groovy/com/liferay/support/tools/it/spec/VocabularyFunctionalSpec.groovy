@@ -40,7 +40,7 @@ class VocabularyFunctionalSpec extends BaseLiferaySpec {
 
 		// Discover Guest site groupId for vocabulary creation.
 		def group = jsonwsGet(
-			"/api/jsonws/group/get-group/company-id/${companyId}" +
+			"group/get-group/company-id/${companyId}" +
 			'/group-key/Guest') as Map
 
 		guestGroupId = group.groupId as Long
@@ -108,10 +108,12 @@ class VocabularyFunctionalSpec extends BaseLiferaySpec {
 
 	def 'Created vocabularies are visible via headless taxonomy API'() {
 		when:
+		// Drop ?search= — Headless Delivery goes through Elasticsearch which has
+		// ingestion lag after a create. Fetch with pageSize=100 and filter
+		// client-side for deterministic post-condition checks.
 		def response = headlessGet(
 			"/o/headless-admin-taxonomy/v1.0/sites/${guestGroupId}" +
-			"/taxonomy-vocabularies?search=${URLEncoder.encode(BASE_VOCAB_NAME, 'UTF-8')}" +
-			'&pageSize=100')
+			"/taxonomy-vocabularies?pageSize=100")
 
 		then:
 		response != null

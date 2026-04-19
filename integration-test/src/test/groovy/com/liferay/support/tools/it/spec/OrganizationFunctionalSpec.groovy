@@ -34,7 +34,7 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 		createdOrganizationIds.each { id ->
 			try {
 				jsonwsPost(
-					'/api/jsonws/organization/delete-organization',
+					'organization/delete-organization',
 					['organizationId': id])
 			}
 			catch (Exception e) {
@@ -88,7 +88,7 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 	def 'Created organizations are visible via JSONWS OrganizationService'() {
 		when:
 		def orgs = jsonwsGet(
-			"/api/jsonws/organization/get-organizations/company-id/${companyId}" +
+			"organization/get-organizations/company-id/${companyId}" +
 			'/parent-organization-id/0/start/-1/end/-1') as List
 
 		then:
@@ -129,14 +129,14 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 		page.locator('[data-testid="org-base-name-input"]').fill(BASE_ORG_NAME)
 		page.locator('[data-testid="org-submit"]').click()
 
-		then: 'alert appears'
-		page.locator('[data-testid="org-result"]').waitFor(
+		then: 'alert appears (re-creating duplicates yields alert-danger)'
+		page.locator('[data-testid="org-result"].alert-danger').waitFor(
 			new Locator.WaitForOptions().setTimeout(30_000)
 		)
 
 		and: 'organization count has not increased'
 		def orgs = jsonwsGet(
-			"/api/jsonws/organization/get-organizations/company-id/${companyId}" +
+			"organization/get-organizations/company-id/${companyId}" +
 			'/parent-organization-id/0/start/-1/end/-1') as List
 		def matchingItems = orgs.findAll { org ->
 			(org.name as String).startsWith(BASE_ORG_NAME)
@@ -148,13 +148,13 @@ class OrganizationFunctionalSpec extends BaseLiferaySpec {
 		when:
 		createdOrganizationIds.each { id ->
 			jsonwsPost(
-				'/api/jsonws/organization/delete-organization',
+				'organization/delete-organization',
 				['organizationId': id])
 		}
 
 		and: 'list organizations again'
 		def orgs = jsonwsGet(
-			"/api/jsonws/organization/get-organizations/company-id/${companyId}" +
+			"organization/get-organizations/company-id/${companyId}" +
 			'/parent-organization-id/0/start/-1/end/-1') as List
 
 		then: 'none of the test organizations remain'

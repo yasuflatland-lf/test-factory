@@ -38,10 +38,9 @@ class UserCreationSpec extends BaseLiferaySpec {
 
 		ldf = new LdfResourceClient(liferay.baseUrl)
 
-		// Prime the admin password via Playwright's login + password-change
-		// flow so JsonwsSetupHelper (which authenticates via Basic Auth to
-		// JSONWS) can succeed on a fresh container regardless of which spec
-		// runs first.
+		// Log in the admin session so JsonwsSetupHelper (which uses Basic Auth against
+		// JSONWS) runs under an already-primed cookie store. D2 removed the
+		// password-change detour; this is now a one-shot login.
 		ldf.login()
 
 		jsonws = new JsonwsSetupHelper(liferay.baseUrl)
@@ -51,7 +50,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 		createdUserIds.each { id ->
 			try {
 				jsonwsPost(
-					'/api/jsonws/user/delete-user',
+					'user/delete-user',
 					['userId': id])
 			}
 			catch (Exception e) {
@@ -84,7 +83,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 			String screenName = "${prefix}${i}"
 
 			Map user = jsonwsGet(
-				"/api/jsonws/user/get-user-by-screen-name" +
+				"user/get-user-by-screen-name" +
 				"/company-id/${companyId}" +
 				"/screen-name/${URLEncoder.encode(screenName, 'UTF-8')}"
 			) as Map
@@ -101,7 +100,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 		int count = 2
 
 		when: 'POST /ldf/user with fakerEnable=true and locale=en_US'
-		// en_US: ja_JP kanji names are rejected by CE 7.4 default screen-name validator
+		// en_US: ja_JP kanji names are rejected by Liferay's default screen-name validator
 		Map response = ldf.createUser([
 			count       : count,
 			baseName    : FAKER_BASE_NAME,
@@ -120,7 +119,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 			String screenName = created.screenName as String
 
 			Map user = jsonwsGet(
-				"/api/jsonws/user/get-user-by-screen-name" +
+				"user/get-user-by-screen-name" +
 				"/company-id/${companyId}" +
 				"/screen-name/${URLEncoder.encode(screenName, 'UTF-8')}"
 			) as Map
@@ -189,7 +188,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 
 		and: 'organization membership via JSONWS get-organization-users'
 		List orgUsers = jsonwsGet(
-			"/api/jsonws/user/get-organization-users" +
+			"user/get-organization-users" +
 			"/organization-id/${orgId}"
 		) as List
 
@@ -198,7 +197,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 
 		when: 'role membership via JSONWS has-role-user'
 		Object hasRole = jsonwsGet(
-			"/api/jsonws/user/has-role-user" +
+			"user/has-role-user" +
 			"/role-id/${roleId}" +
 			"/user-id/${userId}"
 		)
@@ -231,7 +230,7 @@ class UserCreationSpec extends BaseLiferaySpec {
 
 		and: 'the user appears in the site group via JSONWS get-user-sites-groups'
 		List siteGroups = jsonwsGet(
-			"/api/jsonws/group/get-user-sites-groups" +
+			"group/get-user-sites-groups" +
 			"/user-id/${userId}/start/-1/end/-1"
 		) as List
 
@@ -264,12 +263,12 @@ class UserCreationSpec extends BaseLiferaySpec {
 
 		and: 'query public and private layouts via JSONWS'
 		List publicLayouts = jsonwsGet(
-			"/api/jsonws/layout/get-layouts" +
+			"layout/get-layouts" +
 			"/group-id/${userGroupId}/private-layout/false"
 		) as List
 
 		List privateLayouts = jsonwsGet(
-			"/api/jsonws/layout/get-layouts" +
+			"layout/get-layouts" +
 			"/group-id/${userGroupId}/private-layout/true"
 		) as List
 

@@ -1,4 +1,7 @@
-<%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
+<%-- NOTE: DXP 2026 only advertises Provide-Capability for http://xmlns.jcp.org/portlet_3_0.
+     Switching to jakarta.tags.portlet breaks bundle resolution. Do not change the URI.
+     See docs/ADR/adr-0008-dxp-2026-migration.md. --%>
+<%@ taglib uri="http://xmlns.jcp.org/portlet_3_0" prefix="portlet" %>
 <%@ taglib uri="http://liferay.com/tld/portlet" prefix="liferay-portlet" %>
 <%@ taglib uri="http://liferay.com/tld/react" prefix="react" %>
 <%@ taglib uri="http://liferay.com/tld/theme" prefix="liferay-theme" %>

@@ -15,3 +15,8 @@ liferay-theme.json
 .claude/plan/
 **/src/main/resources/META-INF/resources/__liferay__/
 coverage/
+configs/*/deploy/activation-key.xml
+configs/*/deploy/*.lic
+
+# Enforce single package manager (yarn only)
+package-lock.json
