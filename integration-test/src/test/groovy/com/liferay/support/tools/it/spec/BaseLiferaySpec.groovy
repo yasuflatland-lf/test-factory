@@ -5,6 +5,7 @@ import com.liferay.support.tools.it.util.GogoShellClient
 import com.liferay.support.tools.it.util.PlaywrightLifecycle
 
 import com.microsoft.playwright.Page
+import com.microsoft.playwright.options.LoadState
 import com.microsoft.playwright.options.RequestOptions
 
 import groovy.json.JsonSlurper
@@ -25,6 +26,15 @@ abstract class BaseLiferaySpec extends Specification {
 	protected static final String PORTLET_ID = 'com_liferay_support_tools_portlet_LiferayDummyFactoryPortlet'
 
 	protected static final String JSONWS_BASE = '/api/jsonws/'
+
+	/**
+	 * Password submitted to the first-login {@code update_password} form.
+	 * DXP 2026 forces the default admin through the form regardless of
+	 * {@code passwords.default.policy.change.required}, so any Playwright
+	 * login must either submit this form or be turned back. We always submit
+	 * it with this value so subsequent specs hit a stable admin password.
+	 */
+	protected static final String NEW_ADMIN_PASSWORD = 'Test12345'
 
 	private static final Logger log = LoggerFactory.getLogger(BaseLiferaySpec)
 
@@ -122,29 +132,69 @@ abstract class BaseLiferaySpec extends Specification {
 		page.navigate("${liferay.baseUrl}/")
 		page.waitForLoadState()
 
+		// DXP 2026 defers window.Liferay through a module bootstrap, so the
+		// load event can fire before Liferay.authToken is populated.
+		page.waitForFunction(
+			'() => typeof window.Liferay !== "undefined" && ' +
+				'!!window.Liferay.authToken')
+
 		String authToken = page.evaluate('() => Liferay.authToken') as String
 
-		def response = page.request().post("${liferay.baseUrl}/c/portal/login",
-			RequestOptions.create()
-				.setHeader('Content-Type', 'application/x-www-form-urlencoded')
-				.setHeader('x-csrf-token', authToken)
-				.setData(
-					"login=${URLEncoder.encode(LiferayContainer.DEFAULT_ADMIN_EMAIL, 'UTF-8')}" +
-					"&password=${URLEncoder.encode(LiferayContainer.DEFAULT_ADMIN_PASSWORD, 'UTF-8')}" +
-					'&rememberMe=true'
-				)
-		)
+		// After a prior spec has submitted /c/portal/update_password the admin
+		// password is no longer DEFAULT_ADMIN_PASSWORD. Try candidates in
+		// order; the first one that returns a success status wins.
+		List<String> candidatePasswords = [
+			LiferayContainer.DEFAULT_ADMIN_PASSWORD, NEW_ADMIN_PASSWORD
+		].findAll { it != null }.unique()
 
-		int status = response.status()
-		if (status != 200 && status != 302) {
+		int lastStatus = -1
+		String lastBody = ''
+
+		for (String pwd : candidatePasswords) {
+			def response = page.request().post(
+				"${liferay.baseUrl}/c/portal/login",
+				RequestOptions.create()
+					.setHeader(
+						'Content-Type', 'application/x-www-form-urlencoded')
+					.setHeader('x-csrf-token', authToken)
+					.setData(
+						"login=${URLEncoder.encode(LiferayContainer.DEFAULT_ADMIN_EMAIL, 'UTF-8')}" +
+						"&password=${URLEncoder.encode(pwd, 'UTF-8')}" +
+						'&rememberMe=true'
+					)
+			)
+
+			lastStatus = response.status()
+
+			if (lastStatus == 200 || lastStatus == 302) {
+				break
+			}
+
+			lastBody = response.text()?.take(500) ?: ''
+		}
+
+		if (lastStatus != 200 && lastStatus != 302) {
 			throw new IllegalStateException(
-				"loginAsAdmin: portal login returned HTTP ${status} (expected 200 or 302). " +
-				"Body preview: ${response.text()?.take(500)}"
+				"loginAsAdmin: portal login returned HTTP ${lastStatus} " +
+				"(expected 200 or 302). Body preview: ${lastBody}"
 			)
 		}
 
 		page.navigate("${liferay.baseUrl}/")
 		page.waitForLoadState()
+
+		// DXP 2026 forces the default admin through /c/portal/update_password
+		// on first login regardless of passwords.default.policy.change.required.
+		// Fill the form so the browser reaches a normal page and the session
+		// is not stuck on the reset screen for later portlet navigations.
+		if (page.url().contains('/c/portal/update_password')) {
+			page.locator('#password1').fill(NEW_ADMIN_PASSWORD)
+			page.locator('#password2').fill(NEW_ADMIN_PASSWORD)
+
+			page.locator('[type=submit], button.btn-primary').first().click()
+
+			page.waitForLoadState(LoadState.NETWORKIDLE)
+		}
 	}
 
 	protected String jsonwsUrl(String path) {
@@ -315,9 +365,21 @@ abstract class BaseLiferaySpec extends Specification {
 		}
 	}
 
+	/**
+	 * Returns a Basic-Auth header for the default admin. DXP 2026 forces a
+	 * password change on first admin login (see {@link #loginAsAdmin}), and
+	 * every spec that exercises JSONWS first goes through either
+	 * {@code loginAsAdmin} or {@code LdfResourceClient.login}, both of which
+	 * submit the {@code update_password} form with {@link #NEW_ADMIN_PASSWORD}.
+	 * Using the post-reset value here avoids the silent-Guest fallback that
+	 * happens when {@code BasicAuthHeaderAutoLoginSupport.doLogin} authenticates
+	 * with the wrong password and {@code BasicAuthHeaderAuthVerifier} returns an
+	 * empty {@code AuthVerifierResult} (no challenge issued because
+	 * {@code forceBasicAuth} is unset on {@code BasicAuthHeaderAuthVerifierConfiguration}).
+	 */
 	protected String basicAuthHeader() {
 		String credentials =
-			"${LiferayContainer.DEFAULT_ADMIN_EMAIL}:${LiferayContainer.DEFAULT_ADMIN_PASSWORD}"
+			"${LiferayContainer.DEFAULT_ADMIN_EMAIL}:${NEW_ADMIN_PASSWORD}"
 
 		return "Basic ${credentials.bytes.encodeBase64().toString()}"
 	}
