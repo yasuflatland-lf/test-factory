@@ -63,7 +63,13 @@ jobs:
         # write" then loops forever on "Processing" because FileUtil.move silently
         # fails to delete the source file. Aligning the host ownership to UID 1000
         # lets move() succeed and liferay.dummy.factory reach ACTIVE.
-        run: sudo chown -R 1000:1000 build/docker
+        #
+        # Scope the chown to the bind-mounted subdirectories only — chowning the
+        # parent build/docker/ breaks the next Gradle invocation, which needs to
+        # write build/docker/Dockerfile as the runner (UID 1001).
+        run: |
+          sudo mkdir -p build/docker/deploy build/docker/work build/docker/client-extensions
+          sudo chown -R 1000:1000 build/docker/deploy build/docker/work build/docker/client-extensions
 
       - name: Run integration tests
         env:
