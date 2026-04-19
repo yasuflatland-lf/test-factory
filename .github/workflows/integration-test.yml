@@ -78,6 +78,15 @@ jobs:
         run: |
           ./gradlew :integration-test:integrationTest --no-daemon --info
 
+      - name: Upload integration coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: integration-test/build/reports/jacoco/integration/jacoco.xml
+          flags: integration
+          fail_ci_if_error: false
+
       - name: Collect Liferay container diagnostics on failure
         if: failure()
         env:
