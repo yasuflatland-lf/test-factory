@@ -113,26 +113,28 @@ gradle.projectsEvaluated {
 		// state for post-mortem inspection (see ADR-0008 D4).
 		hostConfig.autoRemove.set(false)
 
-		// Resolve and mount the JaCoCo agent JAR at task-execution time. Using
-		// doFirst (not a top-level def) keeps testRuntimeClasspath out of the
-		// configuration phase — Gradle 7+ warns on configuration-time resolution
-		// and will elevate it to an error in a future release. The filter matches
-		// both the legacy 'jacocoagent.jar' name and the Maven-classifier form
-		// 'org.jacoco.agent-<ver>-runtime.jar' that lives in the Gradle cache.
-		doFirst {
-			def jacocoJar = configurations.testRuntimeClasspath.find {
-				it.name.contains('jacocoagent') ||
-					(it.name.contains('org.jacoco.agent') && it.name.contains('runtime'))
-			}
-			if (jacocoJar == null) {
-				throw new GradleException(
-					'jacocoagent.jar not found on testRuntimeClasspath. ' +
-					'Ensure org.jacoco:org.jacoco.agent:0.8.14:runtime is declared as a testImplementation dependency.'
-				)
-			}
-			// Mount read-only (:ro) so a compromised container cannot tamper with the host-side agent JAR.
-			hostConfig.binds.put(jacocoJar.absolutePath, '/opt/liferay/jacocoagent.jar:ro')
+		// Mount the JaCoCo agent JAR at configuration time. bmuschko's
+		// DockerCreateContainer annotates `binds` as @Input, so Gradle
+		// finalizes the MapProperty before task actions run — binds.put(...)
+		// MUST happen at configuration time, not in doFirst. Gradle 7+ warns
+		// about configuration-time resolution of configurations; accept the
+		// warning as a known tradeoff since doFirst breaks the task with
+		// "binds is final and cannot be changed any further". The filter
+		// matches both the legacy 'jacocoagent.jar' name and the
+		// Maven-classifier form 'org.jacoco.agent-<ver>-runtime.jar' in the
+		// Gradle cache.
+		def jacocoJar = configurations.testRuntimeClasspath.find {
+			it.name.contains('jacocoagent') ||
+				(it.name.contains('org.jacoco.agent') && it.name.contains('runtime'))
 		}
+		if (jacocoJar == null) {
+			throw new GradleException(
+				'jacocoagent.jar not found on testRuntimeClasspath. ' +
+				'Ensure org.jacoco:org.jacoco.agent:0.8.14:runtime is declared as a testImplementation dependency.'
+			)
+		}
+		// Mount read-only (:ro) so a compromised container cannot tamper with the host-side agent JAR.
+		hostConfig.binds.put(jacocoJar.absolutePath, '/opt/liferay/jacocoagent.jar:ro')
 	}
 }
 
