@@ -99,13 +99,14 @@ gradle.projectsEvaluated {
 		withEnvVar 'LIFERAY_JVM_OPTS',
 			'-javaagent:/opt/liferay/jacocoagent.jar=output=tcpserver,address=0.0.0.0,port=6300'
 
-		// Publish the JaCoCo tcpserver port to the host loopback only.
-		// The workspace plugin's default portBindings (8000/8080/11311) do not
-		// include 6300, so without this line ExecDumpClient on the host cannot
-		// reach the agent and every spec's dumpJacocoCoverage() silently fails.
-		// Binding to 127.0.0.1 avoids exposing the unauthenticated tcpserver to
-		// other processes on the CI runner or the developer's LAN.
-		hostConfig.portBindings.add('127.0.0.1:6300:6300')
+		// Publish the JaCoCo tcpserver port on all interfaces (same as the other
+		// workspace-plugin ports 8080/11311/8000). Binding to 127.0.0.1 only
+		// caused "Connection refused" on GitHub Actions because Java 21 resolves
+		// "localhost" to ::1 (IPv6) while the 127.0.0.1-only binding has no IPv6
+		// counterpart. Binding without a host-IP prefix lets Docker publish on
+		// both 127.0.0.1 and ::1, so ExecDumpClient reaches the agent regardless
+		// of which address the JVM picks for "localhost".
+		hostConfig.portBindings.add('6300:6300')
 
 		// Override workspace plugin 16.0.5 default (autoRemove=true at
 		// RootProjectConfigurator.java:540). Keeping the container after
