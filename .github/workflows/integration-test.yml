@@ -83,7 +83,7 @@ jobs:
         run: |
           f=integration-test/build/reports/jacoco/integration/jacoco.xml
           if [ ! -s "$f" ]; then
-            echo "::error::Integration JaCoCo XML missing or empty at $f — jacocoIntegrationReport likely skipped (no .exec files dumped). Check ExecDumpClient connectivity to 127.0.0.1:6300 in BaseLiferaySpec.cleanupSpec."
+            echo "::error::Integration JaCoCo XML missing or empty at $f — jacocoIntegrationReport was skipped. Common causes: (a) :createDockerContainer failed before tests ran; (b) ExecDumpClient could not reach 127.0.0.1:6300 in BaseLiferaySpec.cleanupSpec; (c) all tests were filtered out."
             exit 1
           fi
 
